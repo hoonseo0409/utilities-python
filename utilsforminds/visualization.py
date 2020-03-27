@@ -2088,6 +2088,68 @@ def plot_bar_charts(path_to_save : str, name_numbers : dict, xlabels : list, xti
     plt.tight_layout()
     # plt.show()
     plt.savefig(path_to_save, format = format)
+    tikzplotlib.save(format_tex_path(path_to_save))
+
+def plot_multiple_lists(lists_dict: dict, path_to_save: str, labels : dict = {'x': 'Iteration', 'y': 'Loss'}, format = 'eps'):
+    """
     
+    Parameters
+    ----------
+    lists_dict : dict
+        Dictionary of lists, where key is name of constraint or dual and value is losses of them\n
+        ex) lists_dict[r'$\Vert Y_l - F_l \Vert _F$'] == [0.1, 30.5, 21, ...]
+    """
+
+    single_key = next(iter(lists_dict))
+    len_data = len(lists_dict[single_key])
+    for list_ in lists_dict.values():
+        assert(len(list_) == len_data)
+    xs = np.arange(len_data)
+    fig = plt.figure()
+    ax = plt.subplot(111)
+    for key, list_ in lists_dict.items():
+        ax.plot(xs, list_, label = key)
+    # plt.title('')
+    ax.legend()
+    plt.grid()
+    plt.yscale('log')
+
+    def format_fn(tick_val, tick_pos):
+        if int(tick_val) in xs:
+            return xs[int(tick_val)]
+        else:
+            return ''
+    ax.xaxis.set_major_formatter(FuncFormatter(format_fn))
+    ax.xaxis.set_major_locator(MaxNLocator(integer=True))
+
+    # plt.gca().xaxis.set_major_locator(mticker.MultipleLocator(1))
+    plt.xlabel(labels['x'])
+    plt.ylabel(labels['y'])
+    plt.savefig(path_to_save, format = format)
+
+def format_tex_path(path : str):
+    """ Format path as tex.
+    
+    Examples
+    --------
+        print(format_tex_path('Users/hi/something.eps'))
+        print(format_tex_path('abc/.def/ghi.eps'))
+        print(format_tex_path('abc/.def/ghi'))
+        print(format_tex_path('./abc/def/ghi'))
+        ==
+        Users/hi/something.tex
+        abc/.def/ghi.tex
+        abc/.def/ghi.tex
+        ./abc/def/ghi.tex
+    """
+
+    splitted_path = path.split('/')
+    if '.' in splitted_path[-1]:
+        for i in range(len(path) - 1):
+            if path[-(i + 1)] == '.':
+                return path[:-(i + 1)] + '.tex'
+    else:
+        return path + '.tex'
+
 # if __name__ == '__main__':
     # plot_bar_charts('dummy', {'Frank':[12.7, 0.4, 4.4, 5.3, 7.1, 3.2], 'Guido':[6.3, 10.3, 10, 0.3, 5.3, 2.9]}, ['RR', 'Lasso', 'SVR', 'CNN', 'SVR', 'LR'], ytitle="RMSE of Prediction of TRIAILB-A")

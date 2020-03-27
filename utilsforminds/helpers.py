@@ -361,6 +361,19 @@ def is_small_container(container, length_limit = 20):
     else:
         False
 
+def load_csv_columns_into_list(path_to_csv: str):
+    result_dict = {}
+    with open(path_to_csv, "r") as csv_file:
+        csv_reader = csv.DictReader(csv_file, delimiter = ',')
+        headers = csv_reader.fieldnames
+        for header in headers:
+            result_dict[header] = []
+        for line in csv_reader:
+            for header in line.keys():
+                result_dict[header].append(line[header])
+    del result_dict['']
+    return result_dict
+
 def paramDictToStr(param_dict):
     result = ""
     for key in param_dict.keys():
@@ -1184,27 +1197,46 @@ def random_pick_items(item_length_dict, pick_keep_probs_dict, keep_non_prob_item
                     picked_idc_dict[idx_0].append(idx_1)
     return picked_idc_dict
 
-def get_amount_counter_min_max_from_excel(path_to_xlsx, shape = (80, 80, 80)):
-    df = pd.read_excel(path_to_xlsx)
-    x = np.array(df["East.m"])
-    y = np.array(df["North.m"])
-    z = np.array(df["Sample.Elevm"])
-    min_max_tuple = [[np.min(x), np.min(y), np.min(z)], [np.max(x), np.max(y), np.max(z)]]
-    grid = [(min_max_tuple[1][0] - min_max_tuple[0][0]) / shape[0], (min_max_tuple[1][1] - min_max_tuple[0][1]) / shape[1], (min_max_tuple[1][2] - min_max_tuple[0][2]) / shape[2]]
-    amount = np.array(df["N_160"])
+def random_pick_items(item_length_dict, pick_keep_probs_dict, keep_non_prob_item= True):
+    """
 
-    i = np.round((x - min_max_tuple[0][0]) / grid[0]).astype(np.int)
-    j = np.round((y - min_max_tuple[0][1]) / grid[1]).astype(np.int)
-    k = np.round((z - min_max_tuple[0][2]) / grid[2]).astype(np.int)
+    Examples
+    --------
+    random_pick_items(item_length_dict= 0: 3, 1: 4, 4: 2}, pick_keep_probs_dict= {-1: 0.3, 0: 0.5}, keep_non_prob_item= True)
+        Returns
+        {0: [2, 1], 1: [1, 2], 4: [1]}
+    """
 
-    i = np.where(i >= shape[0], shape[0] - 1, i)
-    j = np.where(j >= shape[1], shape[1] - 1, j)
-    k = np.where(k >= shape[2], shape[2] - 1, k)
+    picked_idc_dict = {}
+    for idx_0 in item_length_dict.keys():
+        picked_idc_dict[idx_0] = []
+        done_idx= []
+        for key, prob in pick_keep_probs_dict.items():
+            key_positive = key if key>= 0 else item_length_dict[idx_0] + key
+            if key_positive in done_idx:
+                raise Exception(f"Ambiguous pick with index: {key}")
+            done_idx.append(key_positive)
+            rand_num= random()
+            if rand_num<= prob:
+                picked_idc_dict[idx_0].append(key_positive)
+        if keep_non_prob_item:
+            for idx_1 in range(item_length_dict[idx_0]):
+                if idx_1 not in done_idx and idx_1 not in picked_idc_dict[idx_0]:
+                    picked_idc_dict[idx_0].append(idx_1)
+    return picked_idc_dict
 
-    amount_arr = np.zeros(shape)
-    counter_arr = np.zeros(shape)
-    amount_arr[i, j, k] = amount
-    counter_arr[i, j, k] = 1.
-    return amount_arr, counter_arr, min_max_tuple
-
-
+def delete_items_from_list_with_indices(list_to_filter, indices, keep_not_remove = False):
+    base_idx = 0
+    sorted_indices = sorted(indices, reverse = False)
+    sorted_indices_to_remove = []
+    if keep_not_remove:
+        for i in range(len(list_to_filter)):
+            if i not in sorted_indices:
+                sorted_indices_to_remove.append(i)
+    else:
+        sorted_indices_to_remove = deepcopy(sorted_indices)
+    list_to_filter_copied = deepcopy(list_to_filter)
+    for idx in sorted_indices_to_remove:
+        del list_to_filter_copied[idx - base_idx]
+        base_idx += 1
+    return list_to_filter_copied

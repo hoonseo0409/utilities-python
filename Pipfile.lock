@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "17711e04d68dbfc402a6e1a6d07c81cade5f8dda1c68007eeaaf9e3188d60b01"
+            "sha256": "d8e8a7669f7336b38a58191e38901994f1fb01ea6b203eadffe25cc89cd16363"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -880,6 +880,14 @@
                 "sha256:1d6d69ce66211143803fbc56652b41d73b4a400a2891d7bf7a1cdf4c02de613b"
             ],
             "version": "==1.1.0"
+        },
+        "tikzplotlib": {
+            "hashes": [
+                "sha256:128f16ed618281644711624d2a452cf6098923c8213571b30644d23ba4e0b4da",
+                "sha256:150093df7c684cca8615e8e6ebf6b14ddc6ff30dec353b824d5c8467c8bb698d"
+            ],
+            "index": "pypi",
+            "version": "==0.9.1"
         },
         "tqdm": {
             "hashes": [
