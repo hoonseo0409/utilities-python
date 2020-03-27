@@ -27,19 +27,6 @@ from mpl_toolkits.axes_grid1 import AxesGrid
 import moviepy.editor as mpy
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 
-def savePlotTwoLst(lst1, lst2, label1, label2, xlabel, ylabel, title, directory):
-    '''
-        Deprecated, use utils.helpers.savePlotLstOfLsts instead.
-        plot two lists
-    '''
-    plt.plot(lst1, label = label1)
-    plt.plot(lst2, label = label2)
-    plt.title(title)
-    plt.xlabel(xlabel)
-    plt.ylabel(ylabel)
-    plt.legend()
-    plt.savefig(directory)
-
 def savePlotLstOfLsts(lstOfLsts, labelsLst, xlabel, ylabel, title, directory):
     '''
         plot multiple lists
@@ -53,6 +40,7 @@ def savePlotLstOfLsts(lstOfLsts, labelsLst, xlabel, ylabel, title, directory):
     plt.ylabel(ylabel)
     plt.legend()
     plt.savefig(directory)
+    tikzplotlib.save(format_tex_path(directory))
 
 def plot2Ds(planeLst, titleLst, filePath, cbarLabel = 'amount', plotShape = [3, 1], figSize = (8, 24), planeMaskLst = None, axis = 2, axisInfo = None, vmin_vmax = None, method = 'imshow', convertXYaxis = False, rotate = 0):
     '''
@@ -350,6 +338,7 @@ def plot2Ds(planeLst, titleLst, filePath, cbarLabel = 'amount', plotShape = [3, 
                 cbarInst.set_label(cbarLabel)
     
     plt.savefig(filePath_, bbox_inches='tight')
+    tikzplotlib.save(format_tex_path(filePath_))
     plt.close('all')
     
 
@@ -508,6 +497,7 @@ def plotPlanesOSR(originalNpArr, recoveredNpArr, sparsedNpArr, density, sparsedN
 
             if isSave:
                 plt.savefig(utilsforminds.helpers.getExecPath() + '/current_results/' + fileName)
+                tikzplotlib.save(format_tex_path(utilsforminds.helpers.getExecPath() + '/current_results/' + fileName))
             if showScreen:
                 plt.show()
         
@@ -602,6 +592,7 @@ def plotPlanesOSR(originalNpArr, recoveredNpArr, sparsedNpArr, density, sparsedN
 
             if isSave:
                 plt.savefig(utilsforminds.helpers.getExecPath() + '/current_results/' + fileName)
+                tikzplotlib.save(format_tex_path(utilsforminds.helpers.getExecPath() + '/current_results/' + fileName))
             if showScreen:
                 plt.show()
 
@@ -695,6 +686,7 @@ def plotPlanesOSR(originalNpArr, recoveredNpArr, sparsedNpArr, density, sparsedN
 
             if isSave:
                 plt.savefig(utilsforminds.helpers.getExecPath() + '/current_results/' + fileName)
+                tikzplotlib.save(format_tex_path(utilsforminds.helpers.getExecPath() + '/current_results/' + fileName))
             if showScreen:
                 plt.show()
             
@@ -836,6 +828,7 @@ def plotPlanesOSR(originalNpArr, recoveredNpArr, sparsedNpArr, density, sparsedN
 
             if isSave:
                 plt.savefig(utilsforminds.helpers.getExecPath() + '/current_results/' + fileName)
+                tikzplotlib.save(format_tex_path(utilsforminds.helpers.getExecPath() + '/current_results/' + fileName))
             if showScreen:
                 plt.show()
         elif axis == 'y':
@@ -977,6 +970,7 @@ def plotPlanesOSR(originalNpArr, recoveredNpArr, sparsedNpArr, density, sparsedN
 
             if isSave:
                 plt.savefig(utilsforminds.helpers.getExecPath() + '/current_results/' + fileName)
+                tikzplotlib.save(format_tex_path(utilsforminds.helpers.getExecPath() + '/current_results/' + fileName))
             if showScreen:
                 plt.show()
         else: # axis == 'z':
@@ -1246,6 +1240,7 @@ def plotPlanesOSR(originalNpArr, recoveredNpArr, sparsedNpArr, density, sparsedN
             if isSave:
                 # plt.savefig(utils.helpers.getExecPath() + '/current_results/' + fileName)
                 plt.savefig(utilsforminds.helpers.getExecPath() + '/current_results/' + fileName, bbox_inches='tight')
+                tikzplotlib.save(format_tex_path(utilsforminds.helpers.getExecPath() + '/current_results/' + fileName))
             if showScreen:
                 plt.show()
 
@@ -1566,6 +1561,7 @@ def plot3D(npArr,  vmin, vmax, filename = None):
     if filename != None:
         # mlab.show()
         mlab.savefig(filename = filename, figure = obj)
+        tikzplotlib.save(format_tex_path(filename))
     else:
         mlab.show()
 
@@ -1663,6 +1659,7 @@ def plot3DScatter(npArr, vmin = None, vmax = None, filename = None, axisInfo = N
         cbar.solids.set(alpha=1)
 
     plt.savefig(filename)
+    tikzplotlib.save(format_tex_path(filename))
 
 def plot3DScatterDistinguish(nparrValue, nparrOriginalMask = None, nparrRecoveredMask = None, vmin = None, vmax = None, filename = None, axisInfo = None, maxNth = None, cbarLabel = 'amount'):
     # xOriginal, yOriginal, zOriginal = npArrOriginal.nonzero()
@@ -1731,6 +1728,7 @@ def plot3DScatterDistinguish(nparrValue, nparrOriginalMask = None, nparrRecovere
     cbar.set_label(cbarLabel)
 
     plt.savefig(filename)
+    tikzplotlib.save(format_tex_path(filename))
 
 
 # xyz=np.array(np.random.random((100,3)))
@@ -1770,6 +1768,7 @@ def plotCube(big_cube, cube, dirPath = None):
 
         if dirPath != None:
             plt.savefig(dirPath + os.path.sep + f'frame_{step}.png')
+            tikzplotlib.save(format_tex_path(dirPath + os.path.sep + f'frame_{step}.png'))
         else:
             plt.show()
 
@@ -2126,6 +2125,7 @@ def plot_multiple_lists(lists_dict: dict, path_to_save: str, labels : dict = {'x
     plt.xlabel(labels['x'])
     plt.ylabel(labels['y'])
     plt.savefig(path_to_save, format = format)
+    tikzplotlib.save(format_tex_path(path_to_save))
 
 def format_tex_path(path : str):
     """ Format path as tex.
