@@ -16,7 +16,7 @@ import inspect
 import shutil
 from PIL import Image, ImageSequence
 import tensorflow as tf
-import utils.visualization as visualization
+import utilsforminds.visualization as visualization
 
 axisMap = {0: 'x', 1: 'y', 2: 'z', 'x': 0, 'y': 1, 'z': 2}
 

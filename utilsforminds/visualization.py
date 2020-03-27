@@ -8,15 +8,16 @@ if platform.lower() != 'darwin' and 'win' in platform.lower():
     matplotlib.use('TkAgg')
 else:
     matplotlib.use("MacOSX")
-matplotlib.pyplot.set_cmap('Paired')
+# matplotlib.pyplot.set_cmap('Paired')
 
 import matplotlib.pyplot as plt
+plt.set_cmap('Paired')
 import os
-import utils.helpers as helpers
+import utilsforminds.helpers as helpers
 import random
 from mpl_toolkits.mplot3d import Axes3D
 import numpy as np
-import utils
+import utilsforminds
 from mayavi import mlab # see install manual + brew install vtk
 from mayavi.api import Engine
 import mayavi.tools.pipeline
@@ -58,7 +59,7 @@ def plot2Ds(planeLst, titleLst, filePath, cbarLabel = 'amount', plotShape = [3, 
         If you want to provide mask matrix for scatter visualization, sequence should be (original matrix, recovered matrix) or (original matrix, recovered matrix, sparse matrix)
     '''
     if filePath.count('/') <= 2:
-        filePath_ = utils.helpers.getExecPath() + '/current_results/' + filePath
+        filePath_ = utilsforminds.helpers.getExecPath() + '/current_results/' + filePath
     else:
         filePath_ = filePath
     fig = plt.figure(figsize = figSize)
@@ -111,7 +112,7 @@ def plot2Ds(planeLst, titleLst, filePath, cbarLabel = 'amount', plotShape = [3, 
     vertLabelIdc = (0, shape_[0]*1//4, shape_[0]*2//4, shape_[0]*3//4, shape_[0] - 1)
     if axisInfo is None:
         if method == 'imshow':
-            horiLabels = utils.helpers.reverseLst(horiLabelIdc)
+            horiLabels = utilsforminds.helpers.reverseLst(horiLabelIdc)
             vertLabels = vertLabelIdc
         elif method == 'contour' or method == 'scatter':
             horiLabels = horiLabelIdc
@@ -423,7 +424,7 @@ def plotPlanesOSR(originalNpArr, recoveredNpArr, sparsedNpArr, density, sparsedN
             if rotate:
                 plt.ylabel('z')
                 if method == 'imshow':
-                    plt.yticks(horiLabels, utils.helpers.reverseLst(horiLabels))
+                    plt.yticks(horiLabels, utilsforminds.helpers.reverseLst(horiLabels))
                 elif method == 'contour':
                     plt.yticks(horiLabels, horiLabels)
                 plt.xlabel('y')
@@ -452,7 +453,7 @@ def plotPlanesOSR(originalNpArr, recoveredNpArr, sparsedNpArr, density, sparsedN
             if rotate:
                 plt.ylabel('z')
                 if method == 'imshow':
-                    plt.yticks(horiLabels, utils.helpers.reverseLst(horiLabels))
+                    plt.yticks(horiLabels, utilsforminds.helpers.reverseLst(horiLabels))
                 elif method == 'contour':
                     plt.yticks(horiLabels, horiLabels)
                 plt.xlabel('y')
@@ -481,7 +482,7 @@ def plotPlanesOSR(originalNpArr, recoveredNpArr, sparsedNpArr, density, sparsedN
             if rotate:
                 plt.ylabel('z')
                 if method == 'imshow':
-                    plt.yticks(horiLabels, utils.helpers.reverseLst(horiLabels))
+                    plt.yticks(horiLabels, utilsforminds.helpers.reverseLst(horiLabels))
                 elif method == 'contour':
                     plt.yticks(horiLabels, horiLabels)
                 plt.xlabel('y')
@@ -506,7 +507,7 @@ def plotPlanesOSR(originalNpArr, recoveredNpArr, sparsedNpArr, density, sparsedN
                     plt.imshow(sparsedNpArr, cmap='Greens')
 
             if isSave:
-                plt.savefig(utils.helpers.getExecPath() + '/current_results/' + fileName)
+                plt.savefig(utilsforminds.helpers.getExecPath() + '/current_results/' + fileName)
             if showScreen:
                 plt.show()
         
@@ -517,7 +518,7 @@ def plotPlanesOSR(originalNpArr, recoveredNpArr, sparsedNpArr, density, sparsedN
             if rotate:
                 plt.ylabel('z')
                 if method == 'imshow':
-                    plt.yticks(horiLabels, utils.helpers.reverseLst(horiLabels))
+                    plt.yticks(horiLabels, utilsforminds.helpers.reverseLst(horiLabels))
                 elif method == 'contour':
                     plt.yticks(horiLabels, horiLabels)
                 plt.xlabel('x')
@@ -546,7 +547,7 @@ def plotPlanesOSR(originalNpArr, recoveredNpArr, sparsedNpArr, density, sparsedN
             if rotate:
                 plt.ylabel('z')
                 if method == 'imshow':
-                    plt.yticks(horiLabels, utils.helpers.reverseLst(horiLabels))
+                    plt.yticks(horiLabels, utilsforminds.helpers.reverseLst(horiLabels))
                 elif method == 'contour':
                     plt.yticks(horiLabels, horiLabels)
                 plt.xlabel('x')
@@ -575,7 +576,7 @@ def plotPlanesOSR(originalNpArr, recoveredNpArr, sparsedNpArr, density, sparsedN
             if rotate:
                 plt.ylabel('z')
                 if method == 'imshow':
-                    plt.yticks(horiLabels, utils.helpers.reverseLst(horiLabels))
+                    plt.yticks(horiLabels, utilsforminds.helpers.reverseLst(horiLabels))
                 elif method == 'contour':
                     plt.yticks(horiLabels, horiLabels)
                 plt.xlabel('x')
@@ -600,7 +601,7 @@ def plotPlanesOSR(originalNpArr, recoveredNpArr, sparsedNpArr, density, sparsedN
                     plt.imshow(sparsedNpArr, cmap='Greens')
 
             if isSave:
-                plt.savefig(utils.helpers.getExecPath() + '/current_results/' + fileName)
+                plt.savefig(utilsforminds.helpers.getExecPath() + '/current_results/' + fileName)
             if showScreen:
                 plt.show()
 
@@ -610,7 +611,7 @@ def plotPlanesOSR(originalNpArr, recoveredNpArr, sparsedNpArr, density, sparsedN
             if rotate:
                 plt.ylabel('y')
                 if method == 'imshow':
-                    plt.yticks(horiLabels, utils.helpers.reverseLst(horiLabels))
+                    plt.yticks(horiLabels, utilsforminds.helpers.reverseLst(horiLabels))
                 elif method == 'contour':
                     plt.yticks(horiLabels, horiLabels)
                 plt.xlabel('x')
@@ -639,7 +640,7 @@ def plotPlanesOSR(originalNpArr, recoveredNpArr, sparsedNpArr, density, sparsedN
             if rotate:
                 plt.ylabel('y')
                 if method == 'imshow':
-                    plt.yticks(horiLabels, utils.helpers.reverseLst(horiLabels))
+                    plt.yticks(horiLabels, utilsforminds.helpers.reverseLst(horiLabels))
                 elif method == 'contour':
                     plt.yticks(horiLabels, horiLabels)
                 plt.xlabel('x')
@@ -668,7 +669,7 @@ def plotPlanesOSR(originalNpArr, recoveredNpArr, sparsedNpArr, density, sparsedN
             if rotate:
                 plt.ylabel('y')
                 if method == 'imshow':
-                    plt.yticks(horiLabels, utils.helpers.reverseLst(horiLabels))
+                    plt.yticks(horiLabels, utilsforminds.helpers.reverseLst(horiLabels))
                 elif method == 'contour':
                     plt.yticks(horiLabels, horiLabels)
                 plt.xlabel('x')
@@ -693,7 +694,7 @@ def plotPlanesOSR(originalNpArr, recoveredNpArr, sparsedNpArr, density, sparsedN
                     plt.imshow(sparsedNpArr, cmap='Greens')
 
             if isSave:
-                plt.savefig(utils.helpers.getExecPath() + '/current_results/' + fileName)
+                plt.savefig(utilsforminds.helpers.getExecPath() + '/current_results/' + fileName)
             if showScreen:
                 plt.show()
             
@@ -704,7 +705,7 @@ def plotPlanesOSR(originalNpArr, recoveredNpArr, sparsedNpArr, density, sparsedN
             if rotate:
                 plt.ylabel('Elevation(m)')
                 if method == 'imshow':
-                    plt.yticks(horiLabels, utils.helpers.reverseLst((round(axisInfo[2]["min"]), round(axisInfo[2]["min"] + (axisInfo[2]["max"]-axisInfo[2]["min"])*1/4), 
+                    plt.yticks(horiLabels, utilsforminds.helpers.reverseLst((round(axisInfo[2]["min"]), round(axisInfo[2]["min"] + (axisInfo[2]["max"]-axisInfo[2]["min"])*1/4), 
                     round(axisInfo[2]["min"] + (axisInfo[2]["max"]-axisInfo[2]["min"])*2/4),
                     round(axisInfo[2]["min"] + (axisInfo[2]["max"]-axisInfo[2]["min"])*3/4),
                     round(axisInfo[2]["max"]))))
@@ -751,7 +752,7 @@ def plotPlanesOSR(originalNpArr, recoveredNpArr, sparsedNpArr, density, sparsedN
             if rotate:
                 plt.ylabel('Elevation(m)')
                 if method == 'imshow':
-                    plt.yticks(horiLabels, utils.helpers.reverseLst((round(axisInfo[2]["min"]), round(axisInfo[2]["min"] + (axisInfo[2]["max"]-axisInfo[2]["min"])*1/4), 
+                    plt.yticks(horiLabels, utilsforminds.helpers.reverseLst((round(axisInfo[2]["min"]), round(axisInfo[2]["min"] + (axisInfo[2]["max"]-axisInfo[2]["min"])*1/4), 
                     round(axisInfo[2]["min"] + (axisInfo[2]["max"]-axisInfo[2]["min"])*2/4),
                     round(axisInfo[2]["min"] + (axisInfo[2]["max"]-axisInfo[2]["min"])*3/4),
                     round(axisInfo[2]["max"]))))
@@ -794,12 +795,12 @@ def plotPlanesOSR(originalNpArr, recoveredNpArr, sparsedNpArr, density, sparsedN
             if rotate:
                 plt.ylabel('Elevation(m)')
                 if method == 'imshow':
-                    plt.yticks(horiLabels, utils.helpers.reverseLst((round(axisInfo[2]["min"]), round(axisInfo[2]["min"] + (axisInfo[2]["max"]-axisInfo[2]["min"])*1/4), 
+                    plt.yticks(horiLabels, utilsforminds.helpers.reverseLst((round(axisInfo[2]["min"]), round(axisInfo[2]["min"] + (axisInfo[2]["max"]-axisInfo[2]["min"])*1/4), 
                     round(axisInfo[2]["min"] + (axisInfo[2]["max"]-axisInfo[2]["min"])*2/4),
                     round(axisInfo[2]["min"] + (axisInfo[2]["max"]-axisInfo[2]["min"])*3/4),
                     round(axisInfo[2]["max"]))))
                 elif method == 'contour':
-                    plt.yticks(horiLabels, utils.helpers.reverseLst((round(axisInfo[2]["min"]), round(axisInfo[2]["min"] + (axisInfo[2]["max"]-axisInfo[2]["min"])*1/4), 
+                    plt.yticks(horiLabels, utilsforminds.helpers.reverseLst((round(axisInfo[2]["min"]), round(axisInfo[2]["min"] + (axisInfo[2]["max"]-axisInfo[2]["min"])*1/4), 
                     round(axisInfo[2]["min"] + (axisInfo[2]["max"]-axisInfo[2]["min"])*2/4),
                     round(axisInfo[2]["min"] + (axisInfo[2]["max"]-axisInfo[2]["min"])*3/4),
                     round(axisInfo[2]["max"]))))
@@ -834,7 +835,7 @@ def plotPlanesOSR(originalNpArr, recoveredNpArr, sparsedNpArr, density, sparsedN
                     plt.imshow(sparsedNpArr, cmap='Greens')
 
             if isSave:
-                plt.savefig(utils.helpers.getExecPath() + '/current_results/' + fileName)
+                plt.savefig(utilsforminds.helpers.getExecPath() + '/current_results/' + fileName)
             if showScreen:
                 plt.show()
         elif axis == 'y':
@@ -844,7 +845,7 @@ def plotPlanesOSR(originalNpArr, recoveredNpArr, sparsedNpArr, density, sparsedN
             if rotate:
                 plt.ylabel('Elevation(m)')
                 if method == 'imshow':
-                    plt.yticks(horiLabels, utils.helpers.reverseLst((round(axisInfo[2]["min"]), round(axisInfo[2]["min"] + (axisInfo[2]["max"]-axisInfo[2]["min"])*1/4), 
+                    plt.yticks(horiLabels, utilsforminds.helpers.reverseLst((round(axisInfo[2]["min"]), round(axisInfo[2]["min"] + (axisInfo[2]["max"]-axisInfo[2]["min"])*1/4), 
                     round(axisInfo[2]["min"] + (axisInfo[2]["max"]-axisInfo[2]["min"])*2/4),
                     round(axisInfo[2]["min"] + (axisInfo[2]["max"]-axisInfo[2]["min"])*3/4),
                     round(axisInfo[2]["max"]))))
@@ -891,7 +892,7 @@ def plotPlanesOSR(originalNpArr, recoveredNpArr, sparsedNpArr, density, sparsedN
             if rotate:
                 plt.ylabel('Elevation(m)')
                 if method == 'imshow':
-                    plt.yticks(horiLabels, utils.helpers.reverseLst((round(axisInfo[2]["min"]), round(axisInfo[2]["min"] + (axisInfo[2]["max"]-axisInfo[2]["min"])*1/4), 
+                    plt.yticks(horiLabels, utilsforminds.helpers.reverseLst((round(axisInfo[2]["min"]), round(axisInfo[2]["min"] + (axisInfo[2]["max"]-axisInfo[2]["min"])*1/4), 
                     round(axisInfo[2]["min"] + (axisInfo[2]["max"]-axisInfo[2]["min"])*2/4),
                     round(axisInfo[2]["min"] + (axisInfo[2]["max"]-axisInfo[2]["min"])*3/4),
                     round(axisInfo[2]["max"]))))
@@ -935,7 +936,7 @@ def plotPlanesOSR(originalNpArr, recoveredNpArr, sparsedNpArr, density, sparsedN
             if rotate:
                 plt.ylabel('Elevation(m)')
                 if method == 'imshow':
-                    plt.yticks(horiLabels, utils.helpers.reverseLst((round(axisInfo[2]["min"]), round(axisInfo[2]["min"] + (axisInfo[2]["max"]-axisInfo[2]["min"])*1/4), 
+                    plt.yticks(horiLabels, utilsforminds.helpers.reverseLst((round(axisInfo[2]["min"]), round(axisInfo[2]["min"] + (axisInfo[2]["max"]-axisInfo[2]["min"])*1/4), 
                     round(axisInfo[2]["min"] + (axisInfo[2]["max"]-axisInfo[2]["min"])*2/4),
                     round(axisInfo[2]["min"] + (axisInfo[2]["max"]-axisInfo[2]["min"])*3/4),
                     round(axisInfo[2]["max"]))))
@@ -975,7 +976,7 @@ def plotPlanesOSR(originalNpArr, recoveredNpArr, sparsedNpArr, density, sparsedN
                     plt.imshow(sparsedNpArr, cmap='Greens')
 
             if isSave:
-                plt.savefig(utils.helpers.getExecPath() + '/current_results/' + fileName)
+                plt.savefig(utilsforminds.helpers.getExecPath() + '/current_results/' + fileName)
             if showScreen:
                 plt.show()
         else: # axis == 'z':
@@ -1015,7 +1016,7 @@ def plotPlanesOSR(originalNpArr, recoveredNpArr, sparsedNpArr, density, sparsedN
             if convertXYaxis:
                 plt.ylabel('North(m)')
                 if method == 'imshow':
-                    plt.yticks(horiLabels, utils.helpers.reverseLst((round(axisInfo[1]["min"]), round(axisInfo[1]["min"] + (axisInfo[1]["max"]-axisInfo[1]["min"])*1/4), 
+                    plt.yticks(horiLabels, utilsforminds.helpers.reverseLst((round(axisInfo[1]["min"]), round(axisInfo[1]["min"] + (axisInfo[1]["max"]-axisInfo[1]["min"])*1/4), 
                     round(axisInfo[1]["min"] + (axisInfo[1]["max"]-axisInfo[1]["min"])*2/4),
                     round(axisInfo[1]["min"] + (axisInfo[1]["max"]-axisInfo[1]["min"])*3/4),
                     round(axisInfo[1]["max"]))))
@@ -1091,7 +1092,7 @@ def plotPlanesOSR(originalNpArr, recoveredNpArr, sparsedNpArr, density, sparsedN
             if convertXYaxis:
                 plt.ylabel('North(m)')
                 if method == 'imshow':
-                    plt.yticks(horiLabels, utils.helpers.reverseLst((round(axisInfo[1]["min"]), round(axisInfo[1]["min"] + (axisInfo[1]["max"]-axisInfo[1]["min"])*1/4), 
+                    plt.yticks(horiLabels, utilsforminds.helpers.reverseLst((round(axisInfo[1]["min"]), round(axisInfo[1]["min"] + (axisInfo[1]["max"]-axisInfo[1]["min"])*1/4), 
                     round(axisInfo[1]["min"] + (axisInfo[1]["max"]-axisInfo[1]["min"])*2/4),
                     round(axisInfo[1]["min"] + (axisInfo[1]["max"]-axisInfo[1]["min"])*3/4),
                     round(axisInfo[1]["max"]))))
@@ -1244,7 +1245,7 @@ def plotPlanesOSR(originalNpArr, recoveredNpArr, sparsedNpArr, density, sparsedN
 
             if isSave:
                 # plt.savefig(utils.helpers.getExecPath() + '/current_results/' + fileName)
-                plt.savefig(utils.helpers.getExecPath() + '/current_results/' + fileName, bbox_inches='tight')
+                plt.savefig(utilsforminds.helpers.getExecPath() + '/current_results/' + fileName, bbox_inches='tight')
             if showScreen:
                 plt.show()
 
@@ -1346,10 +1347,10 @@ def compare3DTensorAndPlot(originalTensor, originalCounterTensor, recoveredTenso
         recoveredMat = helpers.getSlicesV2(recoveredTensor, {axis: idx})
         sparsedMat = helpers.getSlicesV2(sparsedTensor, {axis: idx})
 
-        sparsedNMAE = utils.helpers.getNMAE(originalMat, sparsedMat, originalCounterMat)
-        recoveredNMAE = utils.helpers.getNMAE(originalMat, recoveredMat, originalCounterMat)
+        sparsedNMAE = utilsforminds.helpers.getNMAE(originalMat, sparsedMat, originalCounterMat)
+        recoveredNMAE = utilsforminds.helpers.getNMAE(originalMat, recoveredMat, originalCounterMat)
 
-        plotPlanesOSR(originalMat, recoveredMat, sparsedMat, utils.helpers.getDataDensity(originalCounterMat), sparsedNMAE, recoveredNMAE, axis, axisInfo
+        plotPlanesOSR(originalMat, recoveredMat, sparsedMat, utilsforminds.helpers.getDataDensity(originalCounterMat), sparsedNMAE, recoveredNMAE, axis, axisInfo
             , idx * axisInfo[axis]["grid"] + axisInfo[axis]["min"], False, True, newDirectoryName + '/' + metalStr + "_" + helpers.axisMap[axis] + "{}_{}".format(round(idx * axisInfo[axis]["grid"] + axisInfo[axis]["min"]), round(samplingProb*100)))
 
     # if axis == 0:
@@ -1401,8 +1402,8 @@ def compare3DTensorAndPlot(originalTensor, originalCounterTensor, recoveredTenso
     #             , idx * axisInfo[axis]["grid"] + axisInfo[axis]["min"], False, True, newDirectoryName + '/' + metalStr + "_" + axis + "{}_{}".format(round(idx * axisInfo[axis]["grid"] + axisInfo[axis]["min"]), round(samplingProb*100)))
     
     
-    txtFile = open(utils.helpers.getExecPath() + '/current_results/' + newDirectoryName + "/summary.txt", "a")
-    txtContents = "{} with {}:\n3D recovered RMAE : {}\n3D sparsed RMAE: {}\n".format(metalStr, helpers.axisMap[axis], utils.helpers.getNMAE(originalTensor, recoveredTensor, originalCounterTensor), utils.helpers.getNMAE(originalTensor, sparsedTensor, originalCounterTensor))
+    txtFile = open(utilsforminds.helpers.getExecPath() + '/current_results/' + newDirectoryName + "/summary.txt", "a")
+    txtContents = "{} with {}:\n3D recovered RMAE : {}\n3D sparsed RMAE: {}\n".format(metalStr, helpers.axisMap[axis], utilsforminds.helpers.getNMAE(originalTensor, recoveredTensor, originalCounterTensor), utilsforminds.helpers.getNMAE(originalTensor, sparsedTensor, originalCounterTensor))
     txtFile.write(txtContents)
 
     txtFile.close()
@@ -1444,8 +1445,8 @@ def compare4DTensorAndPlot(originalTensor, originalCounterTensor, recoveredTenso
             recoveredMat = helpers.getSlicesV2(recoveredTensor, {axis: idx, 3: feature})
             sparsedMat = helpers.getSlicesV2(sparsedTensor, {axis: idx, 3: feature})
 
-            sparsedNMAE = utils.helpers.getNMAE(originalMat, sparsedMat, originalCounterMat)
-            recoveredNMAE = utils.helpers.getNMAE(originalMat, recoveredMat, originalCounterMat)
+            sparsedNMAE = utilsforminds.helpers.getNMAE(originalMat, sparsedMat, originalCounterMat)
+            recoveredNMAE = utilsforminds.helpers.getNMAE(originalMat, recoveredMat, originalCounterMat)
 
             recoveredCounterMat = helpers.getSlicesV2(recoveredTensorConter, {axis: idx, 3: feature})
             if compress is None:
@@ -1453,8 +1454,8 @@ def compare4DTensorAndPlot(originalTensor, originalCounterTensor, recoveredTenso
                 recoveredMat = helpers.getSlicesV2(recoveredTensor, {axis: idx, 3: feature})
                 sparsedMat = helpers.getSlicesV2(sparsedTensor, {axis: idx, 3: feature})
 
-                sparsedNMAE = utils.helpers.getNMAE(originalMat, sparsedMat, originalCounterMat)
-                recoveredNMAE = utils.helpers.getNMAE(originalMat, recoveredMat, originalCounterMat)
+                sparsedNMAE = utilsforminds.helpers.getNMAE(originalMat, sparsedMat, originalCounterMat)
+                recoveredNMAE = utilsforminds.helpers.getNMAE(originalMat, recoveredMat, originalCounterMat)
             else:
                 assert(shape[axis] > compress)
                 originalTmp = []
@@ -1470,9 +1471,9 @@ def compare4DTensorAndPlot(originalTensor, originalCounterTensor, recoveredTenso
                         originalTmp.append(helpers.getSlicesV2(originalTensor, {axis: idx + i, 3: feature}))
                         recoveredTmp.append(helpers.getSlicesV2(recoveredTensor, {axis: idx + i, 3: feature}))
                         sparsedTmp.append(helpers.getSlicesV2(sparsedTensor, {axis: idx + i, 3: feature}))
-                originalMat = utils.helpers.compressNparrLst(originalTmp)
-                recoveredMat = utils.helpers.compressNparrLst(recoveredTmp)
-                sparsedMat = utils.helpers.compressNparrLst(sparsedTmp)
+                originalMat = utilsforminds.helpers.compressNparrLst(originalTmp)
+                recoveredMat = utilsforminds.helpers.compressNparrLst(recoveredTmp)
+                sparsedMat = utilsforminds.helpers.compressNparrLst(sparsedTmp)
 
                 sparsedNMAE = 0.
                 recoveredNMAE = 0.  
@@ -1483,7 +1484,7 @@ def compare4DTensorAndPlot(originalTensor, originalCounterTensor, recoveredTenso
             else:
                 positions = [0, 0, 0]
                 positions[axis] = positions[axis] + idx
-            titleLst = ['x = {}, y = {}, z = {}\n density = {}'.format(positions[0], positions[1], positions[2], utils.helpers.getDataDensity(originalCounterMat)), 'NMAE recovered = {}'.format(recoveredNMAE), 'NMAE sampled = {}'.format(sparsedNMAE)]
+            titleLst = ['x = {}, y = {}, z = {}\n density = {}'.format(positions[0], positions[1], positions[2], utilsforminds.helpers.getDataDensity(originalCounterMat)), 'NMAE recovered = {}'.format(recoveredNMAE), 'NMAE sampled = {}'.format(sparsedNMAE)]
 
             if scaleSync:
                 if axisInfo is None:
@@ -1525,8 +1526,8 @@ def compare4DTensorAndPlot(originalTensor, originalCounterTensor, recoveredTenso
                             plot2Ds([originalMat, recoveredMat, sparsedMat], titleLst, newDirectoryName + '/' + str(feature) + "_" + helpers.axisMap[axis] + "_{}_{}_{}".format(round(idx * axisInfo[axis]["grid"] + axisInfo[axis]["min"]), round(samplingProbNum*100), method) + '.' + imgFormat, cbarLabel = 'amount', plotShape = [3, 1], 
                             figSize = (8, 24), planeMaskLst = None, axis = axis, axisInfo = axisInfo, method = method, rotate = 270, convertXYaxis = False)
     
-    txtFile = open(utils.helpers.getExecPath() + '/current_results/' + newDirectoryName + "/summary.txt", "a")
-    txtContents = "axis {}:\n4D recovered RMAE : {}\n4D sparsed RMAE: {}\n".format(axis, utils.helpers.getNMAE(originalTensor, recoveredTensor, originalCounterTensor), utils.helpers.getNMAE(originalTensor, sparsedTensor, originalCounterTensor))
+    txtFile = open(utilsforminds.helpers.getExecPath() + '/current_results/' + newDirectoryName + "/summary.txt", "a")
+    txtContents = "axis {}:\n4D recovered RMAE : {}\n4D sparsed RMAE: {}\n".format(axis, utilsforminds.helpers.getNMAE(originalTensor, recoveredTensor, originalCounterTensor), utilsforminds.helpers.getNMAE(originalTensor, sparsedTensor, originalCounterTensor))
     txtFile.write(txtContents)
 
     txtFile.close()
