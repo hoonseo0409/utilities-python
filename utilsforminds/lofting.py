@@ -22,3 +22,15 @@ def get_amount_counter_min_max_from_excel(path_to_xlsx, shape = (80, 80, 80)):
     amount_arr[i, j, k] = amount
     counter_arr[i, j, k] = 1.
     return amount_arr, counter_arr, min_max_tuple
+
+def getDataDensity(npArr):
+    """Get the proportion of non-zero elements.
+
+    Works for any dimension
+    
+    """
+
+    noEntries = 1
+    for length in npArr.shape:
+        noEntries = noEntries * length
+    return 1. - np.count_nonzero(npArr == 0.)/float(noEntries)

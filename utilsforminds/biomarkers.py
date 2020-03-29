@@ -2,6 +2,8 @@ import matplotlib.pyplot as plt
 import matplotlib.ticker as mticker
 from matplotlib.ticker import FuncFormatter, MaxNLocator
 import tikzplotlib
+import csv
+import numpy as np
 
 def get_SNP_name_sequence_dict(path_to_csv):
     """

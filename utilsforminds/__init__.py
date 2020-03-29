@@ -1,4 +1,8 @@
-__all__ = ['helpers', 'visualization']
+__all__ = ['helpers', 'visualization', 'biomarkers', 'lofting', 'math', 'decorators']
 
 from . import helpers
 from . import visualization
+from . import biomarkers
+from . import lofting
+from . import math
+from . import decorators

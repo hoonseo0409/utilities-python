@@ -49,14 +49,14 @@ def getNewDirectoryName(parentDir, newDir):
 
     return newDir
 
-def getPlaneAverageData(npArr, normalDirection):  # https://stackoverflow.com/questions/37142135/sum-numpy-ndarray-with-3d-array-along-a-given-axis-1
-    assert(normalDirection in ('x', 'y', 'z'))
-    if normalDirection == 'x':
-        return np.average(npArr, axis=0)
-    elif normalDirection == 'y':
-        return np.average(npArr, axis=1)
-    else:
-        return np.average(npArr, axis=2)
+# def getPlaneAverageData(npArr, normalDirection):  # https://stackoverflow.com/questions/37142135/sum-numpy-ndarray-with-3d-array-along-a-given-axis-1
+#     assert(normalDirection in ('x', 'y', 'z'))
+#     if normalDirection == 'x':
+#         return np.average(npArr, axis=0)
+#     elif normalDirection == 'y':
+#         return np.average(npArr, axis=1)
+#     else:
+#         return np.average(npArr, axis=2)
 
 def getDataDensity(npArr):
     """Get the proportion of non-zero elements.
@@ -70,81 +70,29 @@ def getDataDensity(npArr):
         noEntries = noEntries * length
     return 1. - np.count_nonzero(npArr == 0.)/float(noEntries)
 
-def getMostObsIdx(npArr3D, axis):
-    assert(axis in ('x', 'y', 'z'))
-    maxCount = -1
-    maxIdx = 0
-    if axis == 'x':
-        for i in range(npArr3D.shape[0]):
-            if maxCount <= np.count_nonzero(npArr3D[i, :, :]):
-                maxIdx = i
-                maxCount = np.count_nonzero(npArr3D[i, :, :])
-        return maxIdx
-    elif axis == 'y':
-        for i in range(npArr3D.shape[1]):
-            if maxCount <= np.count_nonzero(npArr3D[:, i, :]):
-                maxIdx = i
-                maxCount = np.count_nonzero(npArr3D[:, i, :])
-        return maxIdx
-    else: # axis == 'z':
-        for i in range(npArr3D.shape[2]):
-            if maxCount <= np.count_nonzero(npArr3D[:, :, i]):
-                maxIdx = i
-                maxCount = np.count_nonzero(npArr3D[:, :, i])
-        return maxIdx
+# def getMostObsIdx(npArr3D, axis):
+#     assert(axis in ('x', 'y', 'z'))
+#     maxCount = -1
+#     maxIdx = 0
+#     if axis == 'x':
+#         for i in range(npArr3D.shape[0]):
+#             if maxCount <= np.count_nonzero(npArr3D[i, :, :]):
+#                 maxIdx = i
+#                 maxCount = np.count_nonzero(npArr3D[i, :, :])
+#         return maxIdx
+#     elif axis == 'y':
+#         for i in range(npArr3D.shape[1]):
+#             if maxCount <= np.count_nonzero(npArr3D[:, i, :]):
+#                 maxIdx = i
+#                 maxCount = np.count_nonzero(npArr3D[:, i, :])
+#         return maxIdx
+#     else: # axis == 'z':
+#         for i in range(npArr3D.shape[2]):
+#             if maxCount <= np.count_nonzero(npArr3D[:, :, i]):
+#                 maxIdx = i
+#                 maxCount = np.count_nonzero(npArr3D[:, :, i])
+#         return maxIdx
 
-# def getNMAE(groundTruthMat, recoveredMat, groundTruthObsMat):
-#     noObsEntries = np.count_nonzero(groundTruthObsMat)
-
-#     if noObsEntries == 0: # to avoid division by zero exception
-#         return 0.
-
-#     sumNMAE = 0.
-#     shape = groundTruthMat.shape
-#     assert(len(shape) == 2 and shape == recoveredMat.shape and shape == groundTruthObsMat.shape)
-#     rMax = groundTruthMat.max()
-#     rMin = groundTruthMat.min()
-
-#     for i in range(shape[0]):
-#         for j in range(shape[1]):
-#             if groundTruthObsMat[i, j] >= 1.:
-#                 sumNMAE = sumNMAE + abs(groundTruthMat[i, j] - recoveredMat[i, j])
-#     return sumNMAE / (float(noObsEntries) * (rMax - rMin))
-
-# def getNMAE3D(groundTruthTensor, recoveredTensor, groundTruthCounterTensor):
-#     noObsEntries = np.count_nonzero(groundTruthCounterTensor)
-#     sumNMAE = 0.
-#     shape = groundTruthTensor.shape
-#     assert(len(shape) == 3 and shape == recoveredTensor.shape and shape == groundTruthCounterTensor.shape)
-#     rMax = groundTruthTensor.max()
-#     rMin = groundTruthTensor.min()
-
-#     for i in range(shape[0]):
-#         for j in range(shape[1]):
-#             for k in range(shape[2]):
-#                 if groundTruthCounterTensor[i, j, k] >= 1.:
-#                     sumNMAE = sumNMAE + abs(groundTruthTensor[i, j, k] - recoveredTensor[i, j, k])
-    
-#     return sumNMAE / (float(noObsEntries) * (rMax - rMin))
-
-# def getNMAE4D(groundTruthTensor, recoveredTensor, groundTruthCounterTensor):
-#     # noObsEntries = np.count_nonzero(groundTruthCounterTensor)
-#     noObsEntries = 0.
-#     sumNMAE = 0.
-#     shape = groundTruthTensor.shape
-#     assert(len(shape) == 4 and shape == recoveredTensor.shape and shape == groundTruthCounterTensor.shape)
-#     rMax = groundTruthTensor.max()
-#     rMin = groundTruthTensor.min()
-
-#     for i in range(shape[0]):
-#         for j in range(shape[1]):
-#             for k in range(shape[2]):
-#                 for l in range(shape[3]):
-#                     if groundTruthCounterTensor[i, j, k, l] >= 1.:
-#                         noObsEntries = noObsEntries + 1.
-#                         sumNMAE = sumNMAE + abs(groundTruthTensor[i, j, k, l] - recoveredTensor[i, j, k, l])
-    
-#     return sumNMAE / ((noObsEntries + 1e-8) * (rMax - rMin))
 
 def getNMAE(ground_truth_amount_arr, recovered_arr, ground_truth_counter_arr):
     """Get Normalized Mean Absolute Error.
@@ -160,56 +108,6 @@ def getNMAE(ground_truth_amount_arr, recovered_arr, ground_truth_counter_arr):
     if np.count_nonzero(groundTruthCounterTensor01) == 0. or rMax == rMin:
         return 0.
     return np.sum(np.absolute(ground_truth_amount_arr - recovered_arr) * groundTruthCounterTensor01) / (np.sum(groundTruthCounterTensor01) * (rMax - rMin))
-
-# def getSparsedDataObs2D(npArrData, npArrCounter, prob):
-    
-#     assert(prob >= 0. and prob <= 1. and npArrData.shape == npArrCounter.shape and len(npArrData.shape) == 2)
-#     shape = npArrData.shape
-#     resultData = np.zeros(shape)
-#     resultObs = np.zeros(shape)
-#     for i in range(shape[0]):
-#         for j in range(shape[1]):
-#             if npArrCounter[i, j] != 0.:
-#                 pick = random.uniform(0, 1)
-#                 if pick <= prob: # with probability prob
-#                     resultObs[i, j] = 1.
-#                     resultData[i, j] = npArrData[i, j]
-#     return resultData, resultObs
-
-# def getSparsedDataCounter3D(npArrData, npArrCounter, prob):
-    
-#     assert(prob >= 0. and prob <= 1. and npArrData.shape == npArrCounter.shape and len(npArrData.shape) == 3)
-#     shape = npArrData.shape
-#     resultData = np.zeros(shape)
-#     resultCounter = np.zeros(shape)
-#     for i in range(shape[0]):
-#         for j in range(shape[1]):
-#             for k in range(shape[2]):
-#                 if npArrCounter[i, j, k] != 0.:
-#                     pick = random.uniform(0, 1)
-#                     if pick <= prob: # with probability prob
-#                         resultCounter[i, j, k] = npArrCounter[i, j, k]
-#                         resultData[i, j, k] = npArrData[i, j, k]
-
-#     return resultData, resultCounter
-
-# def getSparsedDataCounter4D(npArrData, npArrCounter, prob):
-    
-#     assert(prob >= 0. and prob <= 1. and npArrData.shape == npArrCounter.shape and len(npArrData.shape) == 4)
-#     shape = npArrData.shape
-#     resultData = np.zeros(shape)
-#     resultCounter = np.zeros(shape)
-#     for i in range(shape[0]):
-#         for j in range(shape[1]):
-#             for k in range(shape[2]):
-#                 for l in range(shape[3]):
-#                     if npArrCounter[i, j, k, l] != 0.:
-#                         pick = random.uniform(0, 1)
-#                         if pick <= prob: # with probability prob
-#                             resultCounter[i, j, k, l] = npArrCounter[i, j, k, l]
-#                             resultData[i, j, k, l] = npArrData[i, j, k, l]
-
-#     return resultData, resultCounter
 
 def getSparsedDataCounterRandom(npArrData, npArrCounter, samplingProb):
     """Get regularly sampled mineral amount array and counter array.
@@ -284,21 +182,21 @@ def getSparsedDataCounterCuvicHole(npArrData, npArrCounter, lstOfProportions):
 
     return npArrData * samplingArr, npArrCounter * samplingArr
 
-def getScaledMinMax(npArr2D):
-    """
-        Deprecated
-    """
-    shape = npArr2D.shape
-    assert(len(shape) == 2)
-    max = npArr2D.max()
-    min = npArr2D.min()
-    scaled = np.zeros(shape)
+# def getScaledMinMax(npArr2D):
+#     """
+#         Deprecated
+#     """
+#     shape = npArr2D.shape
+#     assert(len(shape) == 2)
+#     max = npArr2D.max()
+#     min = npArr2D.min()
+#     scaled = np.zeros(shape)
 
-    for i in range(shape[0]):
-        for j in range(shape[1]):
-            scaled[i, j] = (npArr2D[i, j] - min)/(max - min)
+#     for i in range(shape[0]):
+#         for j in range(shape[1]):
+#             scaled[i, j] = (npArr2D[i, j] - min)/(max - min)
     
-    return scaled, min, max
+#     return scaled, min, max
 
 def min_max_scale(arr, vmin = None, vmax = None):
     """Apply min-max scaling
@@ -338,13 +236,6 @@ def reverseMinMaxScale(arr, min_, max_, onlyPositive = False):
         return np.where(arr == min_, 0.5, 0.)
     else:
         raise Exception(f'max: {max_} is smaller than min: {min_}')
-
-# def getScaledConcat_MinMaxLst4D(npArr3D_lst):
-#     assert(type(npArr3D_lst) == type([]))
-#     data = []
-#     minMaxLst = []
-#     for npArr3D in npArr3D_lst:
-
 
 def is_small_container(container, length_limit = 20):
     if (type(container) == type({}) or type(container) == type([]) or type(container) == type(tuple([3, 3]))) and len(container) < length_limit:
@@ -476,11 +367,6 @@ def splitList(isNoPartitions, number, lst):
         result.append(lst[rng[0]:rng[1]])
     return result
 
-# test = list(range(13))
-# np.random.shuffle(test)
-
-# print(splitList(False, 3, test))
-
 def fromDictToDirName(dict, limitLength = 150):
     dirName = ''
     for key in dict.keys():
@@ -501,76 +387,77 @@ def getDirSize(pathStart): # https://stackoverflow.com/questions/20267220/how-to
             bytes = bytes + os.path.getsize(path)
     return bytes / (1000 * 1000 * 1000) # return in GB unit
 
-def saveGeoTensor(geoTensor, suffix = ''):
-    sizeCurr = getDirSize('mappings')
-    print('print size of mapping files: ', str(sizeCurr) + 'GB')
-    noOfEntries = geoTensor.shape[0] * geoTensor.shape[1] * geoTensor.shape[2]
-    assert(noOfEntries <= 300 * 700 * 300 and sizeCurr < 20.) # to prevent too large disk consumption
-    if geoTensor.sampling_rate is not None:
-        sampling_rate = round(geoTensor.sampling_rate * 100)
-    else:
-        sampling_rate = None
+# def saveGeoTensor(geoTensor, suffix = ''):
+#     sizeCurr = getDirSize('mappings')
+#     print('print size of mapping files: ', str(sizeCurr) + 'GB')
+#     noOfEntries = geoTensor.shape[0] * geoTensor.shape[1] * geoTensor.shape[2]
+#     assert(noOfEntries <= 300 * 700 * 300 and sizeCurr < 20.) # to prevent too large disk consumption
+#     if geoTensor.sampling_rate is not None:
+#         sampling_rate = round(geoTensor.sampling_rate * 100)
+#     else:
+#         sampling_rate = None
 
-    # geoTensorFile = open(getExecPath() + '/mappings/' + 'shape-' + str(geoTensor.shape[0]) + '_' + str(geoTensor.shape[1]) + '_' + str(geoTensor.shape[2]) + '_' + 'mapping-' + '' + geoTensor.mapping + '.obj', 'wb')
-    geoTensorFile = open(getExecPath() + f'/mappings/shape-{str(geoTensor.shape[0])}_{str(geoTensor.shape[1])}_{str(geoTensor.shape[2])}_mapping-{geoTensor.mapping}_sr-{str(sampling_rate)}_sm-{str(geoTensor.sampling_method)}'+suffix+'.obj', 'wb')
-    pickle.dump(geoTensor, geoTensorFile)
+#     # geoTensorFile = open(getExecPath() + '/mappings/' + 'shape-' + str(geoTensor.shape[0]) + '_' + str(geoTensor.shape[1]) + '_' + str(geoTensor.shape[2]) + '_' + 'mapping-' + '' + geoTensor.mapping + '.obj', 'wb')
+#     geoTensorFile = open(getExecPath() + f'/mappings/shape-{str(geoTensor.shape[0])}_{str(geoTensor.shape[1])}_{str(geoTensor.shape[2])}_mapping-{geoTensor.mapping}_sr-{str(sampling_rate)}_sm-{str(geoTensor.sampling_method)}'+suffix+'.obj', 'wb')
+#     pickle.dump(geoTensor, geoTensorFile)
 
-def loadGeoTensor(shape, mapping, sampling_rate = None, sampling_method = None, suffix = ''):
-    sizeCurr = getDirSize('mappings')
-    print('print size of mapping files: ', str(sizeCurr) + 'GB')
+# def loadGeoTensor(shape, mapping, sampling_rate = None, sampling_method = None, suffix = ''):
+#     sizeCurr = getDirSize('mappings')
+#     print('print size of mapping files: ', str(sizeCurr) + 'GB')
 
-    if sampling_method == 'irregular':
-        total_sampling_rate = 1.
-        for proportion in sampling_rate:
-            total_sampling_rate = total_sampling_rate * (1 - proportion)
-        total_sampling_rate = round(total_sampling_rate * 100)
-    elif sampling_method == 'regular':
-        total_sampling_rate = round(sampling_rate * 100)
-    else:
-        total_sampling_rate = None
-    # geoTensorFileOpened = open(getExecPath() + '/mappings/' + 'shape-' + str(shape[0]) + '_' + str(shape[1]) + '_' + str(shape[2]) + '_' + 'mapping-' + mapping + '_sr-' + str(sampling_rate) + '.obj', 'rb')
-    geoTensorFileOpened = open(getExecPath() + f'/mappings/shape-{str(shape[0])}_{str(shape[1])}_{str(shape[2])}_mapping-{mapping}_sr-{str(total_sampling_rate)}_sm-{str(sampling_method)}'+suffix+'.obj', 'rb')
-    # print('size of loaded obj: ', sys.getsizeof(geoTensorFileOpened))
-    return pickle.load(geoTensorFileOpened)
+#     if sampling_method == 'irregular':
+#         total_sampling_rate = 1.
+#         for proportion in sampling_rate:
+#             total_sampling_rate = total_sampling_rate * (1 - proportion)
+#         total_sampling_rate = round(total_sampling_rate * 100)
+#     elif sampling_method == 'regular':
+#         total_sampling_rate = round(sampling_rate * 100)
+#     else:
+#         total_sampling_rate = None
+#     # geoTensorFileOpened = open(getExecPath() + '/mappings/' + 'shape-' + str(shape[0]) + '_' + str(shape[1]) + '_' + str(shape[2]) + '_' + 'mapping-' + mapping + '_sr-' + str(sampling_rate) + '.obj', 'rb')
+#     geoTensorFileOpened = open(getExecPath() + f'/mappings/shape-{str(shape[0])}_{str(shape[1])}_{str(shape[2])}_mapping-{mapping}_sr-{str(total_sampling_rate)}_sm-{str(sampling_method)}'+suffix+'.obj', 'rb')
+#     # print('size of loaded obj: ', sys.getsizeof(geoTensorFileOpened))
+#     return pickle.load(geoTensorFileOpened)
 
-def keepAvgOnUnobs4D(dataAfterImputation, maskAfterImputation, maskBeforeImputation, avgBeforeImputation):
-    assert(len(dataAfterImputation.shape) == 4 and dataAfterImputation.shape == maskAfterImputation.shape and maskAfterImputation.shape == maskBeforeImputation.shape)
-    mask01AfterImputation = np.where(maskAfterImputation >= 1., 1., 0.)
-    mask01BeforeImputation = np.where(maskBeforeImputation >= 1., 1., 0.)
-    mask01ForImputedEntries = mask01AfterImputation - mask01BeforeImputation
+# def keepAvgOnUnobs4D(dataAfterImputation, maskAfterImputation, maskBeforeImputation, avgBeforeImputation):
+#     assert(len(dataAfterImputation.shape) == 4 and dataAfterImputation.shape == maskAfterImputation.shape and maskAfterImputation.shape == maskBeforeImputation.shape)
+#     mask01AfterImputation = np.where(maskAfterImputation >= 1., 1., 0.)
+#     mask01BeforeImputation = np.where(maskBeforeImputation >= 1., 1., 0.)
+#     mask01ForImputedEntries = mask01AfterImputation - mask01BeforeImputation
 
-    avgForImputedEntries = np.sum(mask01ForImputedEntries * dataAfterImputation) / np.count_nonzero(mask01ForImputedEntries)
+#     avgForImputedEntries = np.sum(mask01ForImputedEntries * dataAfterImputation) / np.count_nonzero(mask01ForImputedEntries)
 
-    return dataAfterImputation * mask01BeforeImputation + dataAfterImputation * mask01ForImputedEntries * (avgBeforeImputation / (avgForImputedEntries + 1e-8))
+#     return dataAfterImputation * mask01BeforeImputation + dataAfterImputation * mask01ForImputedEntries * (avgBeforeImputation / (avgForImputedEntries + 1e-8))
 
-def keepAvgOnUnobs4DForEachFeature(dataAfterImputation, maskAfterImputation, maskBeforeImputation, avgLst):
-    '''
-        Make average of imputed entries same as each feature of avgLst
-    '''
-    assert(len(dataAfterImputation.shape) == 4 and dataAfterImputation.shape == maskAfterImputation.shape and maskAfterImputation.shape == maskBeforeImputation.shape and len(avgLst) == dataAfterImputation.shape[3])
+# def keepAvgOnUnobs4DForEachFeature(dataAfterImputation, maskAfterImputation, maskBeforeImputation, avgLst):
+#     '''
+#         Make average of imputed entries same as each feature of avgLst
+#     '''
+#     assert(len(dataAfterImputation.shape) == 4 and dataAfterImputation.shape == maskAfterImputation.shape and maskAfterImputation.shape == maskBeforeImputation.shape and len(avgLst) == dataAfterImputation.shape[3])
 
-    dataResult = np.copy(dataAfterImputation)
+#     dataResult = np.copy(dataAfterImputation)
 
-    # mask01AfterImputationLst = []
-    # mask01BeforeImputationLst = []
-    # mask01ForImputedEntriesLst = []
+#     # mask01AfterImputationLst = []
+#     # mask01BeforeImputationLst = []
+#     # mask01ForImputedEntriesLst = []
 
-    for feature in range(len(avgLst)):
-        # mask01AfterImputationLst.append(np.where(maskAfterImputation >= 1., 1., 0.))
-        # mask01BeforeImputationLst.append(np.where(maskBeforeImputation >= 1., 1., 0.))
-        mask01AfterImputation = np.where(maskAfterImputation[:, :, :, feature] >= 1., 1., 0.)
-        mask01BeforeImputation = np.where(maskBeforeImputation[:, :, :, feature] >= 1., 1., 0.)
-        mask01ForImputedEntries = mask01AfterImputation - mask01BeforeImputation
+#     for feature in range(len(avgLst)):
+#         # mask01AfterImputationLst.append(np.where(maskAfterImputation >= 1., 1., 0.))
+#         # mask01BeforeImputationLst.append(np.where(maskBeforeImputation >= 1., 1., 0.))
+#         mask01AfterImputation = np.where(maskAfterImputation[:, :, :, feature] >= 1., 1., 0.)
+#         mask01BeforeImputation = np.where(maskBeforeImputation[:, :, :, feature] >= 1., 1., 0.)
+#         mask01ForImputedEntries = mask01AfterImputation - mask01BeforeImputation
 
-        avgForImputedEntries = np.sum(mask01ForImputedEntries * dataResult[:, :, :, feature]) / (np.count_nonzero(mask01ForImputedEntries) + 1e-8)
-        dataResult[:, :, :, feature] = dataResult[:, :, :, feature] * mask01BeforeImputation + dataResult[:, :, :, feature] * mask01ForImputedEntries * (avgLst[feature] / (avgForImputedEntries + 1e-8))
+#         avgForImputedEntries = np.sum(mask01ForImputedEntries * dataResult[:, :, :, feature]) / (np.count_nonzero(mask01ForImputedEntries) + 1e-8)
+#         dataResult[:, :, :, feature] = dataResult[:, :, :, feature] * mask01BeforeImputation + dataResult[:, :, :, feature] * mask01ForImputedEntries * (avgLst[feature] / (avgForImputedEntries + 1e-8))
 
-    return dataResult
+#     return dataResult
 
 def getAvgLstFrom4DArr(dataArr, counterArr):
     '''
         Get average for each feature on entries whose counterArr > 1.
     '''
+
     assert(len(dataArr.shape) == 4 and dataArr.shape == counterArr.shape)
     avgLst = []
     for feature in range(dataArr.shape[3]):
@@ -606,26 +493,26 @@ def compressNparrLst(lst):
     
     return valueNparr
 
-def getSlices(npArr, dimIdxDict):
-    """Deprecated. Use getSlicesV2 instead.
+# def getSlices(npArr, dimIdxDict):
+#     """Deprecated. Use getSlicesV2 instead.
 
-        example: getSlices(arr, {2: 3, 0: 1}) == arr[1, :, 3]
-        getSlices(arr, {2: [1, 3], 0:1}) == arr[1, :, 1:3]
-    """
-    dims = []
-    idxs = []
-    for dim in dimIdxDict.keys():
-        dims.append(dim)
-        if type(dimIdxDict[dim]) == type([]) or type(dimIdxDict[dim]) == type(()):
-            assert(len(dimIdxDict[dim]) == 2)
-            assert(npArr.shape[dim] >= dimIdxDict[dim][1])
-            idxs.append(list(range(dimIdxDict[dim][0], dimIdxDict[dim][1])))
-        else:
-            assert(npArr.shape[dim] > dimIdxDict[dim])
-            idxs.append(dimIdxDict[dim])
+#         example: getSlices(arr, {2: 3, 0: 1}) == arr[1, :, 3]
+#         getSlices(arr, {2: [1, 3], 0:1}) == arr[1, :, 1:3]
+#     """
+#     dims = []
+#     idxs = []
+#     for dim in dimIdxDict.keys():
+#         dims.append(dim)
+#         if type(dimIdxDict[dim]) == type([]) or type(dimIdxDict[dim]) == type(()):
+#             assert(len(dimIdxDict[dim]) == 2)
+#             assert(npArr.shape[dim] >= dimIdxDict[dim][1])
+#             idxs.append(list(range(dimIdxDict[dim][0], dimIdxDict[dim][1])))
+#         else:
+#             assert(npArr.shape[dim] > dimIdxDict[dim])
+#             idxs.append(dimIdxDict[dim])
     
-    movedDims = list(range(len(dims)))
-    return np.moveaxis(npArr, dims, movedDims)[tuple(idxs)]
+#     movedDims = list(range(len(dims)))
+#     return np.moveaxis(npArr, dims, movedDims)[tuple(idxs)]
 
 def getSlicesV2(npArr, dimIdxDict):
     """Get slices given tuple.
@@ -702,27 +589,27 @@ def is_number_repl_isdigit(s):
 
     return s.replace('.','',1).isdigit()
 
-def isProperNumFunctEskayCreek(string):
-    if type(string) == type(1.2):
-        if string < 0.:
-            return False
-        else:
-            return string
-    elif string == '':
-        return False
-    elif is_number_repl_isdigit(string):
-        if float(string) < 0.:
-            return False
-        else:
-            return float(string)
-    else:
-        return False
+# def isProperNumFunctEskayCreek(string):
+#     if type(string) == type(1.2):
+#         if string < 0.:
+#             return False
+#         else:
+#             return string
+#     elif string == '':
+#         return False
+#     elif is_number_repl_isdigit(string):
+#         if float(string) < 0.:
+#             return False
+#         else:
+#             return float(string)
+#     else:
+#         return False
 
-def isProperLabelFunctEskayCreek(string):
-    if string [0:2] != 'U-':
-        return string
-    else:
-        return False
+# def isProperLabelFunctEskayCreek(string):
+#     if string [0:2] != 'U-':
+#         return string
+#     else:
+#         return False
 
 def deleteKeysFromDct(dct, keys):
     """Delete elements from dictionary dct whose key is in keys
@@ -942,21 +829,21 @@ def gifToArr(gifPath):
     with Image.open(gifPath) as img:
         return np.array([np.array(frame.copy().convert('RGB').getdata(),dtype=np.float32).reshape(frame.size[1],frame.size[0],3) for frame in ImageSequence.Iterator(img)])
 
-def cutArrayToMinMax(arr, min = None, max = None):
-    """Cut given array with given ceil and floor
+# def cutArrayToMinMax(arr, min = None, max = None):
+#     """Cut given array with given ceil and floor
     
-    This is not scaling but cutting.
-    """
+#     This is not scaling but cutting.
+#     """
 
-    if min is not None and max is not None:
-        assert(max >= min)
-        return np.where(arr > max, max, np.where(arr < min, min, arr))
-    elif min is None and max is not None:
-        return np.where(arr > max, max, arr)
-    elif min is not None and max is None:
-        return np.where(arr < min, min, arr)
-    else:
-        return arr
+#     if min is not None and max is not None:
+#         assert(max >= min)
+#         return np.where(arr > max, max, np.where(arr < min, min, arr))
+#     elif min is None and max is not None:
+#         return np.where(arr > max, max, arr)
+#     elif min is not None and max is None:
+#         return np.where(arr < min, min, arr)
+#     else:
+#         return arr
 
 # def saveGifFromArr(arr, path, fps = 5, vmin = None, vmax = None, axis = 0):
 #     """Save 4D Numpy array into gif.
@@ -1138,18 +1025,18 @@ def get_dummy_arr_list(shape_, functions_list, relation_matrix, origin = 'center
         result_arr_list_after_relation.append(min_max_scale(array_after_relation))
     return result_arr_list_after_relation
 
-def sample_z_uniform(min, max, shape):
-    # assert(len(shape) >= 1)
-    return np.random.uniform(min, max, size = shape).astype(np.float32)
+# def sample_z_uniform(min, max, shape):
+#     # assert(len(shape) >= 1)
+#     return np.random.uniform(min, max, size = shape).astype(np.float32)
 
-def sample_z_normal(mean, std, shape):
-    assert(len(shape) >= 1)
-    return np.random.normal(loc = mean, scale = std, size = shape).astype(np.float32)
+# def sample_z_normal(mean, std, shape):
+#     assert(len(shape) >= 1)
+#     return np.random.normal(loc = mean, scale = std, size = shape).astype(np.float32)
 
-def mask_prob(shape, p):
-    A = np.random.uniform(0., 1., size = shape)
-    B = A < p
-    return (1. * B).astype(np.float32)
+# def mask_prob(shape, p):
+#     A = np.random.uniform(0., 1., size = shape)
+#     B = A < p
+#     return (1. * B).astype(np.float32)
 
 def get_y_x_dictionary(x, y, num_samples_each_category = 1000):
     assert(x.shape[0] == y.shape[0])
@@ -1240,3 +1127,26 @@ def delete_items_from_list_with_indices(list_to_filter, indices, keep_not_remove
         del list_to_filter_copied[idx - base_idx]
         base_idx += 1
     return list_to_filter_copied
+
+def cutArrayToMinMax(arr, min = None, max = None):
+    """Cut given array with given ceil and floor
+    
+    This is not scaling but cutting.
+    """
+
+    if min is not None and max is not None:
+        assert(max >= min)
+        return np.where(arr > max, max, np.where(arr < min, min, arr))
+    elif min is None and max is not None:
+        return np.where(arr > max, max, arr)
+    elif min is not None and max is None:
+        return np.where(arr < min, min, arr)
+    else:
+        return arr
+        
+# @decorators.redirect_function(decorators)
+# def test_func(number):
+#     return number + 1
+
+if __name__ == '__main__':
+    pass
