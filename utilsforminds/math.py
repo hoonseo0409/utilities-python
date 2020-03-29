@@ -31,3 +31,7 @@ def get_norm_from_matrix(arr, under_p_1, under_p_2):
     for i in range(arr.shape[0]):
         summed += np.sum(arr[i, :] ** under_p_1) ** (under_p_2 / under_p_1)
     return summed ** (1 / under_p_2)
+
+def get_RMSE(arr_1, arr_2):
+    assert(arr_1.shape == arr_2.shape)
+    return (np.sum((arr_1 - arr_2) ** 2) / arr_1.shape[0]) ** (1/2.)
