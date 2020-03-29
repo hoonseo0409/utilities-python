@@ -22,7 +22,7 @@ from mayavi import mlab # see install manual + brew install vtk
 from mayavi.api import Engine
 import mayavi.tools.pipeline
 from scipy import ndimage
-from matplotlib.ticker import FormatStrFormatter
+from matplotlib.ticker import FormatStrFormatter, FuncFormatter, MaxNLocator
 from mpl_toolkits.axes_grid1 import AxesGrid
 import moviepy.editor as mpy
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes

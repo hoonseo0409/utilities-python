@@ -215,7 +215,7 @@ def min_max_scale(arr, vmin = None, vmax = None):
         arr_01_scaled = (arr - min_) / (max_ - min_)
     if vmax is not None and vmin is not None:
         assert(vmax >= vmin)
-        return arr_01_scaled * (vmax - vimn) + vmin
+        return arr_01_scaled * (vmax - vmin) + vmin
     elif vmax is not None and vmin is None:
         return arr_01_scaled + (vmax - 1.)
     elif vmax is None and vmin is not None:
