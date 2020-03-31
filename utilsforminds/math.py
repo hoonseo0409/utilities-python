@@ -1,5 +1,5 @@
 import numpy as np
-import helpers
+import utilsforminds.helpers
 from copy import deepcopy
 
 def p_exponent_matrix(arr, p):
