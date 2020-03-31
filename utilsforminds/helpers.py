@@ -1143,10 +1143,83 @@ def cutArrayToMinMax(arr, min = None, max = None):
         return np.where(arr < min, min, arr)
     else:
         return arr
-        
-# @decorators.redirect_function(decorators)
-# def test_func(number):
-#     return number + 1
+
+def access_with_list_of_keys_or_indices_rec(container_tobe_accessed, list_of_keys_or_indices):
+    """Helper recursive function for access_with_list_of_keys_or_indices function.
+    
+    """
+    key_or_index = list_of_keys_or_indices.pop(0)
+    if isinstance(container_tobe_accessed[key_or_index], list) or isinstance(container_tobe_accessed[key_or_index], dict) or isinstance(container_tobe_accessed[key_or_index], tuple):
+        if len(list_of_keys_or_indices) > 0:
+            return access_with_list_of_keys_or_indices_rec(container_tobe_accessed[key_or_index], list_of_keys_or_indices)
+        else:
+            return container_tobe_accessed[key_or_index]
+    else:
+        return container_tobe_accessed[key_or_index]
+
+def access_with_list_of_keys_or_indices(container_tobe_accessed, list_of_keys_or_indices):
+    """
+    
+    Examples
+    --------
+    test_dict = {'hi':[1, {'hello': [3, 4]}], 'end': [3, 6]}\n
+    print(access_with_list_of_keys_or_indices(test_dict, ['hi', 1, 'hello', 1]))
+        : 4
+    """
+
+    list_of_keys_or_indices_copied = deepcopy(list_of_keys_or_indices)
+    return access_with_list_of_keys_or_indices_rec(container_tobe_accessed, list_of_keys_or_indices)
+
+def get_paths_to_leaves_rec(container, paths):
+    """Helper recursive function for get_paths_to_leaves"""
+
+    result_paths = []
+    for path in paths:
+        current_path = deepcopy(path)
+        current_container = access_with_list_of_keys_or_indices(container, path)
+        current_indices = []
+        if any([isinstance(current_container, list), isinstance(current_container, tuple)]):
+            for i in range(len(current_container)):
+                current_indices.append([i])
+        elif isinstance(current_container, dict):
+            for key in current_container.keys():
+                current_indices.append([key])
+        else: ## base case
+            result_paths.append(current_path)
+        if any([isinstance(current_container, list), isinstance(current_container, tuple), isinstance(current_container, dict)]):
+            sub_paths = get_paths_to_leaves_rec(current_container, current_indices)
+            for sub_path in sub_paths:
+                result_paths.append(current_path + sub_path)
+    return result_paths             
+
+def get_paths_to_leaves(container):
+    """Get paths to leaves from nested dictionary or list
+    
+    Parameters
+    ----------
+    container : dict or list or tuple
+
+    Examples
+    --------
+    test_dict = {'hi':[1, {'hello': [3, 4]}], 'end': [3, 6]}\n
+    print(get_paths_to_leaves(test_dict))
+        : [['hi', 0], ['hi', 1, 'hello', 0], ['hi', 1, 'hello', 1], ['end', 0], ['end', 1]]
+    """
+
+    assert(any([isinstance(container, list), isinstance(container, tuple), isinstance(container, dict)]))
+    current_indices = []
+    if any([isinstance(container, list), isinstance(container, tuple)]):
+        for i in range(len(container)):
+            current_indices.append([i])
+    elif isinstance(container, dict):
+        for key in container.keys():
+            current_indices.append([key])
+    return get_paths_to_leaves_rec(container, current_indices)
+
+def statistics_across_containers(containers_list, kind_of_stat = 'std'):
+    result_dict = deepcopy(containers_list[0])
+
+
 
 if __name__ == '__main__':
     pass
