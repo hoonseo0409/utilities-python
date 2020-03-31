@@ -1,4 +1,6 @@
 import numpy as np
+import helpers
+from copy import deepcopy
 
 def p_exponent_matrix(arr, p):
     """
@@ -35,3 +37,49 @@ def get_norm_from_matrix(arr, under_p_1, under_p_2):
 def get_RMSE(arr_1, arr_2):
     assert(arr_1.shape == arr_2.shape)
     return (np.sum((arr_1 - arr_2) ** 2) / arr_1.shape[0]) ** (1/2.)
+
+def statistics_across_containers(containers_list, kind_of_stat = 'std'):
+    """Get statistic values across the list of the leaves of the nested containers whose shapes are same
+    
+    Parameters
+    ----------
+    containers_list : list
+        List of containers, say [container_1, container_2, ..., container_n]. Here container_1, container_2, ..., container_n can be nested dict or list or tuple, but their nested structure should be same.
+    
+    Returns
+    -------
+    : container
+        Container of statistic values
+
+    Examples
+    --------
+    test_containers_list = [{'a': [1, 2.5, 3], 'b': {'c': [2, 4], 'd': 5}}, {'a': [2, 3.5, 4], 'b': {'c': [3, 5], 'd': 6}}]\n
+    print(statistics_across_containers(test_containers_list, kind_of_stat = 'mean'))
+        {'a': [1.5, 3.0, 3.5], 'b': {'c': [2.5, 4.5], 'd': 5.5}}
+    """
+
+    result_container = deepcopy(containers_list[0])
+    paths_to_leaves = deepcopy(helpers.get_paths_to_leaves(result_container))
+    for path in paths_to_leaves:
+        container_last_one = helpers.access_with_list_of_keys_or_indices(result_container, path[:-1])
+        container_last_one[path[-1]] = []
+    
+    for container in containers_list:
+        for path in paths_to_leaves:
+            helpers.access_with_list_of_keys_or_indices(result_container, path).append(helpers.access_with_list_of_keys_or_indices(container, path))
+    
+    for path in paths_to_leaves:
+        container_last_one = helpers.access_with_list_of_keys_or_indices(result_container, path[:-1])
+        if kind_of_stat == 'std':
+            container_last_one[path[-1]] = np.std(np.array(container_last_one[path[-1]]))
+        elif kind_of_stat == 'mean':
+            container_last_one[path[-1]] = np.mean(np.array(container_last_one[path[-1]]))
+        else:
+            raise Exception(f"Unsupported kind_of_stat: {kind_of_stat}")
+    
+    return result_container
+
+if __name__ == '__main__':
+    pass
+    # test_containers_list = [{'a': [1, 2.5, 3], 'b': {'c': [2, 4], 'd': 5}}, {'a': [2, 3.5, 4], 'b': {'c': [3, 5], 'd': 6}}]
+    # print(statistics_across_containers(test_containers_list, kind_of_stat = 'mean'))

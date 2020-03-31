@@ -1090,7 +1090,6 @@ def random_pick_items(item_length_dict, pick_keep_probs_dict, keep_non_prob_item
     Examples
     --------
     random_pick_items(item_length_dict= 0: 3, 1: 4, 4: 2}, pick_keep_probs_dict= {-1: 0.3, 0: 0.5}, keep_non_prob_item= True)
-        Returns
         {0: [2, 1], 1: [1, 2], 4: [1]}
     """
 
@@ -1158,17 +1157,17 @@ def access_with_list_of_keys_or_indices_rec(container_tobe_accessed, list_of_key
         return container_tobe_accessed[key_or_index]
 
 def access_with_list_of_keys_or_indices(container_tobe_accessed, list_of_keys_or_indices):
-    """
+    """This is not in-place function. This function returns pointer to an element, not an element copied. 
     
     Examples
     --------
     test_dict = {'hi':[1, {'hello': [3, 4]}], 'end': [3, 6]}\n
     print(access_with_list_of_keys_or_indices(test_dict, ['hi', 1, 'hello', 1]))
-        : 4
+        4
     """
 
     list_of_keys_or_indices_copied = deepcopy(list_of_keys_or_indices)
-    return access_with_list_of_keys_or_indices_rec(container_tobe_accessed, list_of_keys_or_indices)
+    return access_with_list_of_keys_or_indices_rec(container_tobe_accessed, list_of_keys_or_indices_copied)
 
 def get_paths_to_leaves_rec(container, paths):
     """Helper recursive function for get_paths_to_leaves"""
@@ -1203,7 +1202,7 @@ def get_paths_to_leaves(container):
     --------
     test_dict = {'hi':[1, {'hello': [3, 4]}], 'end': [3, 6]}\n
     print(get_paths_to_leaves(test_dict))
-        : [['hi', 0], ['hi', 1, 'hello', 0], ['hi', 1, 'hello', 1], ['end', 0], ['end', 1]]
+        [['hi', 0], ['hi', 1, 'hello', 0], ['hi', 1, 'hello', 1], ['end', 0], ['end', 1]]
     """
 
     assert(any([isinstance(container, list), isinstance(container, tuple), isinstance(container, dict)]))
@@ -1215,11 +1214,6 @@ def get_paths_to_leaves(container):
         for key in container.keys():
             current_indices.append([key])
     return get_paths_to_leaves_rec(container, current_indices)
-
-def statistics_across_containers(containers_list, kind_of_stat = 'std'):
-    result_dict = deepcopy(containers_list[0])
-
-
 
 if __name__ == '__main__':
     pass
