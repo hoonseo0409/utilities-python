@@ -6,10 +6,10 @@ def redirect_function(module, func_name = None):
 
     def decorator_redirect_function(func):
         @functools.wraps(func)
-        def wrapper_redicrect_function(*args, **kwargs):
+        def wrapper_redirect_function(*args, **kwargs):
             if func_name is None:
                 return getattr(module, func.__name__)(*args, **kwargs)
             else:
                 return getattr(module, func_name)(*args, **kwargs)
-        return wrapper_redicrect_function
+        return wrapper_redirect_function
     return decorator_redirect_function

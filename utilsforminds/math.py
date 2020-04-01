@@ -1,6 +1,7 @@
 import numpy as np
-import utilsforminds.helpers
+import utilsforminds.helpers as helpers
 from copy import deepcopy
+import numbers
 
 def p_exponent_matrix(arr, p):
     """
@@ -58,6 +59,7 @@ def statistics_across_containers(containers_list, kind_of_stat = 'std'):
         {'a': [1.5, 3.0, 3.5], 'b': {'c': [2.5, 4.5], 'd': 5.5}}
     """
 
+    assert(isinstance(containers_list, list))
     result_container = deepcopy(containers_list[0])
     paths_to_leaves = deepcopy(helpers.get_paths_to_leaves(result_container))
     for path in paths_to_leaves:
@@ -70,12 +72,17 @@ def statistics_across_containers(containers_list, kind_of_stat = 'std'):
     
     for path in paths_to_leaves:
         container_last_one = helpers.access_with_list_of_keys_or_indices(result_container, path[:-1])
-        if kind_of_stat == 'std':
-            container_last_one[path[-1]] = np.std(np.array(container_last_one[path[-1]]))
-        elif kind_of_stat == 'mean':
-            container_last_one[path[-1]] = np.mean(np.array(container_last_one[path[-1]]))
-        else:
-            raise Exception(f"Unsupported kind_of_stat: {kind_of_stat}")
+        is_all_elements_are_number = True
+        for element in container_last_one:
+            if not isinstance(element, numbers.Number):
+                is_all_elements_are_number = False
+        if is_all_elements_are_number:
+            if kind_of_stat == 'std':
+                container_last_one[path[-1]] = np.std(np.array(container_last_one[path[-1]]))
+            elif kind_of_stat == 'mean':
+                container_last_one[path[-1]] = np.mean(np.array(container_last_one[path[-1]]))
+            else:
+                raise Exception(f"Unsupported kind_of_stat: {kind_of_stat}")
     
     return result_container
 
