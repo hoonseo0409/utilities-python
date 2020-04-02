@@ -72,15 +72,18 @@ def statistics_across_containers(containers_list, kind_of_stat = 'std'):
     
     for path in paths_to_leaves:
         container_last_one = helpers.access_with_list_of_keys_or_indices(result_container, path[:-1])
+        elements_across_containers_list = helpers.access_with_list_of_keys_or_indices(result_container, path)
         is_all_elements_are_number = True
-        for element in container_last_one:
+        for element in elements_across_containers_list:
+            assert(not isinstance(element, list))
             if not isinstance(element, numbers.Number):
                 is_all_elements_are_number = False
+                break
         if is_all_elements_are_number:
             if kind_of_stat == 'std':
-                container_last_one[path[-1]] = np.std(np.array(container_last_one[path[-1]]))
+                container_last_one[path[-1]] = np.std(np.array(elements_across_containers_list))
             elif kind_of_stat == 'mean':
-                container_last_one[path[-1]] = np.mean(np.array(container_last_one[path[-1]]))
+                container_last_one[path[-1]] = np.mean(np.array(elements_across_containers_list))
             else:
                 raise Exception(f"Unsupported kind_of_stat: {kind_of_stat}")
     
