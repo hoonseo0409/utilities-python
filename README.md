@@ -14,8 +14,11 @@ Installation / Usage
 
 To install use pip:
 
-    $ pip install utilsforminds
+    $ pip install -e path_to_utilsforminds
 
+Or use pipenv:
+
+    $ pipenv install -e path_to_utilsforminds
 
 Or clone the repo:
 
