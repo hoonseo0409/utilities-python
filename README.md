@@ -22,7 +22,7 @@ Or use pipenv:
 
 Or clone the repo:
 
-    $ git clone https://github.com/hoonseo0409/utilsforminds.git
+    $ git clone https://gitlab.com/hoonseo/utilsforminds.git
     $ python setup.py install
     
 Contributing
