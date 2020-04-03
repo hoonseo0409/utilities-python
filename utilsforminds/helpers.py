@@ -889,7 +889,7 @@ def get_proportional_ranked_value(amount_arr, counter_arr = None, proportion = 0
     rank = int(proportion * num_of_nonzero)
     return np.partition(amount_arr.flatten(), -1 * rank)[-1 * rank]
 
-def collect_idx_of_dense_slices_along_axis(arr, axis, get_dense_slice_threshold = 0, nonzero_threshold = 1e-8):
+def collect_idx_of_dense_slices_along_axis(arr, axis, get_dense_slice_threshold = 0, nonzero_threshold = 1e-8, return_first_slice_when_empty = True):
     """Get list of indices of dense(the number of nonzero entries are larger than get_dense_slice_threshold) slices along axis
     
     """
@@ -900,7 +900,10 @@ def collect_idx_of_dense_slices_along_axis(arr, axis, get_dense_slice_threshold 
             sliced = get_slices_with_idc(arr, {axis:[idx]})
             if np.count_nonzero(np.where(sliced > nonzero_threshold, 1., 0.)) >= get_dense_slice_threshold:
                 nonzero_idx_list.append(idx)
-        return nonzero_idx_list
+        if return_first_slice_when_empty and len(nonzero_idx_list) == 0:
+            return [0]
+        else:
+            return nonzero_idx_list
     else:
         return list(range(arr.shape[axis]))
 # def tfAssertionAll(conditionTensor):
