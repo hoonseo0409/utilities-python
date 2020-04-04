@@ -3,6 +3,7 @@ import utilsforminds.helpers as helpers
 from copy import deepcopy
 import numbers
 import math
+from keras import backend as K
 
 def p_exponent_matrix(arr, p):
     """
@@ -36,9 +37,12 @@ def get_norm_from_matrix(arr, under_p_1, under_p_2):
         summed += np.sum(arr[i, :] ** under_p_1) ** (under_p_2 / under_p_1)
     return summed ** (1 / under_p_2)
 
-def get_RMSE(arr_1, arr_2):
-    assert(arr_1.shape == arr_2.shape)
-    return (np.sum((arr_1 - arr_2) ** 2) / arr_1.shape[0]) ** (1/2.)
+def get_RMSE(y_true, y_pred):
+    assert(y_true.shape == y_pred.shape)
+    return (np.sum((y_true - y_pred) ** 2) / y_true.shape[0]) ** (1/2.)
+
+def get_RMSE_keras(y_true, y_pred):
+    return K.sqrt(K.mean(K.square(y_pred - y_true), axis=-1))
 
 def statistics_across_containers(containers_list, kind_of_stat = 'std'):
     """Get statistic values across the list of the leaves of the nested containers whose shapes are same
