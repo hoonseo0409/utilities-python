@@ -1218,5 +1218,36 @@ def get_paths_to_leaves(container):
             current_indices.append([key])
     return get_paths_to_leaves_rec(container, current_indices)
 
+def index_arr_with_arraylike(arr_tobe_indexed, index_arraylike):
+    """Index Numpy array with indices
+    
+    Examples
+    --------
+    print('1: ', index_arr_with_arraylike(test_arr, np.array([1, 2])))
+    print('2: ', index_arr_with_arraylike(test_arr, [0]))
+    print('3: ', test_arr)
+        1:  1.0
+        2:  [1. 1. 1.]
+        3:  [[1. 1. 1.]
+        [1. 1. 1.]
+        [1. 1. 1.]]
+    """
+
+    result = arr_tobe_indexed ## shallow copy
+    if isinstance(index_arraylike, np.ndarray):
+        assert(len(index_arraylike.shape) == 1)
+        for i in range(index_arraylike.shape[0]):
+            result = result[index_arraylike[i]]
+    elif isinstance(index_arraylike, (list, tuple)):
+        for i in index_arraylike:
+            result = result[i]
+    else:
+        raise Exception("Unsupported type of index_arraylike")
+    return result
+
 if __name__ == '__main__':
     pass
+    # test_arr = np.ones((3, 3))
+    # print('1: ', index_arr_with_arraylike(test_arr, np.array([1, 2])))
+    # print('2: ', index_arr_with_arraylike(test_arr, [0]))
+    # print('3: ', test_arr)

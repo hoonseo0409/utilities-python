@@ -6,9 +6,7 @@ verify_ssl = true
 [dev-packages]
 
 [packages]
-utilsforminds = {editable = true,path = "."}
-pytest = "*"
-tikzplotlib = "*"
+keras = "*"
 
 [requires]
 python_version = "3.7"
