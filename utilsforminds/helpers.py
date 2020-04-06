@@ -1115,6 +1115,14 @@ def random_pick_items(item_length_dict, pick_keep_probs_dict, keep_non_prob_item
     return picked_idc_dict
 
 def delete_items_from_list_with_indices(list_to_filter, indices, keep_not_remove = False):
+    """Delete items from list with indices
+    
+    Examples
+    --------
+    delete_items_from_list_with_indices(['a', 'b', 7], [0, 2])
+        : ['b']
+    """
+    
     base_idx = 0
     sorted_indices = sorted(indices, reverse = False)
     sorted_indices_to_remove = []

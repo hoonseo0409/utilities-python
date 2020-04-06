@@ -708,5 +708,55 @@ def format_path_extension(path : str, extension : str = '.tex'):
     else:
         return path + extension
 
+def plot_group_scatter(group_df, path_to_save, group_column = "chr", y_column = "weights", index_column = "index_original", color_column = "color", colors = ["red", "navy", "lightgreen", "lavender", "khaki", "teal", "gold", "violet", "green", "orange", "blue", "coral", "azure", "yellowgreen", "sienna", "olive", "maroon", "goldenrod", "darkblue", "orchid", "crimson"], group_sequence = [1, 2, 3, 4, 6, 7, 8, 9, 10, 11, 15, 17, 19, 20, 21]):
+    group_df_copied = group_df.copy()
+    assert("order" not in group_df_copied.columns)
+    unique_group_names_list = list(group_df_copied[group_column].unique())
+    if group_sequence is None:
+        group_sequence_copied = deepcopy(unique_group_names_list)
+    else:
+        group_sequence_copied = deepcopy(group_sequence)
+        assert(set(unique_group_names_list) == set(group_sequence_copied))
+    group_df_copied["order"] = group_df_copied[group_column].apply(lambda x, group_sequence_copied: group_sequence_copied.index(x), args = (group_sequence_copied,))
+
+    group_df_copied.sort_values(by = ["order", y_column], ascending = [True, True])
+    # reordered_SNPs_info_df_copied['color'] = reordered_SNPs_info_df_copied["chr"].apply(lambda x: colors[x])
+    ax = group_df_copied.plot.scatter(x = index_column, y = y_column, c = group_df_copied[color_column], s = 0.03, figsize = (8, 2), colorbar = False, fontsize = 6, marker = ',')
+    counts_snps = [0]
+    for group in unique:
+        series_obj = group_df_copied.apply(lambda x: True if x[group_column] == group else False, axis = 1)
+        counts_snps.append(len(series_obj[series_obj == True].index))
+    hori_labels = [] ## position of horizontal labels
+    accumulated = 0
+    for i in range(21):
+        accumulated += counts_snps[i]
+        hori_labels.append(round(counts_snps[i + 1] / 2 + accumulated))
+    x_ticks_texts = group_sequence_copied if group_sequence is not None else deepcopy(unique_group_names_list)
+    x_ticks_colors = deepcopy(colors)
+    x_ticks_indices = list(range(len(unique_group_names_list)))
+
+    hori_labels = helpers.delete_items_from_list_with_indices(hori_labels, x_ticks_indices, keep_not_remove = True)
+    x_ticks_texts = helpers.delete_items_from_list_with_indices(x_ticks_texts, x_ticks_indices, keep_not_remove = True)
+    x_ticks_colors = helpers.delete_items_from_list_with_indices(x_ticks_colors, x_ticks_indices, keep_not_remove = True)
+
+    x_axis = ax.axes.get_xaxis()
+    # x_axis.set_visible(False)
+    ax.set_xticks(hori_labels)
+    ax.set_xticklabels(x_ticks_texts)
+    # ax.tick_params(axis = 'x', colors = x_ticks_colors)
+    for i in range(len(x_ticks_colors)):
+        ax.get_xticklabels()[i].set_color(x_ticks_colors[i])
+    ax.margins(x = 0)
+    ax.margins(y = 0)
+    plt.xlabel("")
+    plt.ylabel("Weights")
+    # cbar = plt.colorbar(mappable = ax)
+    # cbar.remove()
+    # plt.margins(y=0)
+    # plt.tight_layout()
+    # plt.grid(which = 'major', linestyle='-', linewidth=2)
+    plt.savefig(path_to_save, bbox_inches = "tight")
+    tikzplotlib.save(utilsforminds.visualization.format_path_extension(path_to_save))
+
 # if __name__ == '__main__':
     # plot_bar_charts('dummy', {'Frank':[12.7, 0.4, 4.4, 5.3, 7.1, 3.2], 'Guido':[6.3, 10.3, 10, 0.3, 5.3, 2.9]}, ['RR', 'Lasso', 'SVR', 'CNN', 'SVR', 'LR'], ytitle="RMSE of Prediction of TRIAILB-A")
