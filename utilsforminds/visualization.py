@@ -708,10 +708,14 @@ def format_path_extension(path : str, extension : str = '.tex'):
     else:
         return path + extension
 
-def plot_group_scatter(group_df, path_to_save, group_column = "chr", y_column = "weights", index_column = "index_original", color_column = "color", colors = ["red", "navy", "lightgreen", "lavender", "khaki", "teal", "gold", "violet", "green", "orange", "blue", "coral", "azure", "yellowgreen", "sienna", "olive", "maroon", "goldenrod", "darkblue", "orchid", "crimson"], group_sequence = [1, 2, 3, 4, 6, 7, 8, 9, 10, 11, 15, 17, 19, 20, 21]):
+def plot_group_scatter(group_df, path_to_save, group_column = "chr", y_column = "weights", index_column = "index_original", color_column = "color", colors_rotation = ["red", "navy", "lightgreen", "lavender", "khaki", "teal", "gold", "violet", "green", "orange", "blue", "coral", "azure", "yellowgreen", "sienna", "olive", "maroon", "goldenrod", "darkblue", "orchid", "crimson"], group_sequence = [1, 2, 3, 4, 6, 7, 8, 9, 10, 11, 15, 17, 19, 20, 21], xlabel = None, ylabel = None, group_column_xtext_dict = None):
     group_df_copied = group_df.copy()
     assert("order" not in group_df_copied.columns)
+    assert(group_df_copied[[group_column, color_column]].groupby(group_column).agg(lambda x: len(set(x)) == 1).all(axis = None))
+    ## To get most common color : group_df_copied[[group_column, color_column]].groupby(group_column).agg(lambda x:x.value_counts().index[0])
     unique_group_names_list = list(group_df_copied[group_column].unique())
+    group_color_dict = dict(group_df_copied[[group_column, color_column]].groupby(group_column)[color_column].apply(lambda x: list(x)[0]))
+    assert(set(group_color_dict.keys()) == set(unique_group_names_list))
     if group_sequence is None:
         group_sequence_copied = deepcopy(unique_group_names_list)
     else:
@@ -723,33 +727,48 @@ def plot_group_scatter(group_df, path_to_save, group_column = "chr", y_column = 
     # reordered_SNPs_info_df_copied['color'] = reordered_SNPs_info_df_copied["chr"].apply(lambda x: colors[x])
     ax = group_df_copied.plot.scatter(x = index_column, y = y_column, c = group_df_copied[color_column], s = 0.03, figsize = (8, 2), colorbar = False, fontsize = 6, marker = ',')
     counts_snps = [0]
-    for group in unique:
+    for group in unique_group_names_list:
         series_obj = group_df_copied.apply(lambda x: True if x[group_column] == group else False, axis = 1)
         counts_snps.append(len(series_obj[series_obj == True].index))
     hori_labels = [] ## position of horizontal labels
     accumulated = 0
-    for i in range(21):
+    for i in range(len(counts_snps) - 1): ## instead use group_df_copied[[group_column, color_column]].groupby(group_column).count()?
         accumulated += counts_snps[i]
         hori_labels.append(round(counts_snps[i + 1] / 2 + accumulated))
-    x_ticks_texts = group_sequence_copied if group_sequence is not None else deepcopy(unique_group_names_list)
-    x_ticks_colors = deepcopy(colors)
+    # x_ticks_texts = group_sequence_copied if group_sequence is not None else deepcopy(unique_group_names_list)
+    x_ticks_texts = []
+    x_ticks_colors = []
+    for group in group_sequence_copied:
+        x_ticks_colors.append(group_color_dict[group])
+        if group_column_xtext_dict is None:
+            x_ticks_texts.append(group)
+        else:
+            x_ticks_texts.append(group_column_xtext_dict[group])
+    # x_ticks_colors_rotation = deepcopy(colors_rotation)
     x_ticks_indices = list(range(len(unique_group_names_list)))
 
     hori_labels = helpers.delete_items_from_list_with_indices(hori_labels, x_ticks_indices, keep_not_remove = True)
     x_ticks_texts = helpers.delete_items_from_list_with_indices(x_ticks_texts, x_ticks_indices, keep_not_remove = True)
     x_ticks_colors = helpers.delete_items_from_list_with_indices(x_ticks_colors, x_ticks_indices, keep_not_remove = True)
+    assert(len(hori_labels) == len(x_ticks_texts))
 
     x_axis = ax.axes.get_xaxis()
     # x_axis.set_visible(False)
     ax.set_xticks(hori_labels)
     ax.set_xticklabels(x_ticks_texts)
     # ax.tick_params(axis = 'x', colors = x_ticks_colors)
-    for i in range(len(x_ticks_colors)):
+    for i in range(len(hori_labels)):
         ax.get_xticklabels()[i].set_color(x_ticks_colors[i])
     ax.margins(x = 0)
     ax.margins(y = 0)
-    plt.xlabel("")
-    plt.ylabel("Weights")
+    if xlabel is not None:
+        plt.xlabel(xlabel)
+    else:
+        plt.xlabel(group_column)
+    if ylabel is not None:
+        plt.ylabel(ylabel)
+    else:
+        plt.ylabel(y_column)
     # cbar = plt.colorbar(mappable = ax)
     # cbar.remove()
     # plt.margins(y=0)
