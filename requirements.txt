@@ -3,4 +3,12 @@ sphinx
 sphinx_rtd_theme
 nose
 coverage
-pypi-publisher
+pypi-publisherkeras
+mayavi
+moviepy
+pandas
+pytest
+scikit-learn
+tensorflow
+tikzplotlib
+utilsforminds
