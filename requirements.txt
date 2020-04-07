@@ -4,15 +4,3 @@ sphinx_rtd_theme
 nose
 coverage
 pypi-publisher
-scipy
-tensorflow
-pandas==0.25.1
-numpy
-matplotlib==3.1.1
-matlab==0.1
-mayavi==4.7.1
-moviepy==1.0.2
-Pillow==7.0.0
-PyQt5==5.14.1
-scikit_learn==0.22.2.post1
-tikzplotlib
