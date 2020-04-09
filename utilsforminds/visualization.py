@@ -712,7 +712,7 @@ def format_path_extension(path : str, extension : str = '.tex'):
 
 def plot_group_scatter(group_df, path_to_save, group_column, y_column, index_column, color_column = None, colors_rotation = ["red", "navy", "lightgreen", "lavender", "khaki", "teal", "gold", "violet", "green", "orange", "blue", "coral", "azure", "yellowgreen", "sienna", "olive", "maroon", "goldenrod", "darkblue", "orchid", "crimson"], group_sequence = None, xlabel = None, ylabel = None, diagonal_xtickers = False, group_column_xtext_dict = None):
     group_df_copied = group_df.copy()
-    assert("order" not in group_df_copied.columns and "color_temp" not in group_df_copied.columns)
+    assert("order" not in group_df_copied.columns and "color_temp" not in group_df_copied.columns and "index_temp" not in group_df_copied.columns)
     ## To get most common color : group_df_copied[[group_column, color_column]].groupby(group_column).agg(lambda x:x.value_counts().index[0])
     unique_group_names_list = list(group_df_copied[group_column].unique())
 
@@ -741,17 +741,18 @@ def plot_group_scatter(group_df, path_to_save, group_column, y_column, index_col
         assert(set(group_color_dict.keys()) == set(unique_group_names_list))
     else:
         group_color_dict = {}
-        for group, i in zip(unique_group_names_list, range(len(unique_group_names_list))):
+        for group, i in zip(group_sequence_copied, range(len(group_sequence_copied))):
             group_color_dict[group] = colors_rotation[i % len(colors_rotation)]
         group_df_copied['color_temp'] = group_df_copied[group_column].apply(lambda x: group_color_dict[x])
         
     group_df_copied["order"] = group_df_copied[group_column].apply(lambda x, group_sequence_copied: group_sequence_copied.index(x), args = (group_sequence_copied,))
 
     group_df_copied.sort_values(by = ["order", y_column], ascending = [True, True], inplace = True)
+    group_df_copied['index_temp'] = range(1, len(group_df_copied) + 1)
     if color_column is not None:
-        ax = group_df_copied.plot.scatter(x = index_column, y = y_column, c = group_df_copied[color_column], s = 0.03, figsize = (8, 2), colorbar = False, fontsize = 6, marker = ',')
+        ax = group_df_copied.plot.scatter(x = 'index_temp', y = y_column, c = group_df_copied[color_column], s = 0.03, figsize = (8, 2), colorbar = False, fontsize = 6, marker = ',')
     else:
-        ax = group_df_copied.plot.scatter(x = index_column, y = y_column, c = group_df_copied["color_temp"], s = 0.03, figsize = (8, 2), colorbar = False, fontsize = 6, marker = ',')
+        ax = group_df_copied.plot.scatter(x = 'index_temp', y = y_column, c = group_df_copied["color_temp"], s = 0.03, figsize = (8, 2), colorbar = False, fontsize = 6, marker = ',')
     
     # x_ticks_texts = group_sequence_copied if group_sequence is not None else deepcopy(unique_group_names_list)
     x_ticks_texts = []
