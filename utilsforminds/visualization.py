@@ -710,7 +710,7 @@ def format_path_extension(path : str, extension : str = '.tex'):
     else:
         return path + extension
 
-def plot_group_scatter(group_df, path_to_save, group_column, y_column, index_column, color_column = None, colors_rotation = ["red", "navy", "lightgreen", "lavender", "khaki", "teal", "gold", "violet", "green", "orange", "blue", "coral", "azure", "yellowgreen", "sienna", "olive", "maroon", "goldenrod", "darkblue", "orchid", "crimson"], group_sequence = None, xlabel = None, ylabel = None, diagonal_xtickers = False, group_column_xtext_dict = None):
+def plot_group_scatter(group_df, path_to_save, group_column, y_column, color_column = None, colors_rotation = ["red", "navy", "lightgreen", "lavender", "khaki", "teal", "gold", "violet", "green", "orange", "blue", "coral", "azure", "yellowgreen", "sienna", "olive", "maroon", "goldenrod", "darkblue", "orchid", "crimson"], group_sequence = None, xlabel = None, ylabel = None, diagonal_xtickers = False, group_column_xtext_dict = None, order_by = None):
     group_df_copied = group_df.copy()
     assert("order" not in group_df_copied.columns and "color_temp" not in group_df_copied.columns and "index_temp" not in group_df_copied.columns)
     ## To get most common color : group_df_copied[[group_column, color_column]].groupby(group_column).agg(lambda x:x.value_counts().index[0])
@@ -747,7 +747,10 @@ def plot_group_scatter(group_df, path_to_save, group_column, y_column, index_col
         
     group_df_copied["order"] = group_df_copied[group_column].apply(lambda x, group_sequence_copied: group_sequence_copied.index(x), args = (group_sequence_copied,))
 
-    group_df_copied.sort_values(by = ["order", y_column], ascending = [True, True], inplace = True)
+    if order_by is None:
+        group_df_copied.sort_values(by = ["order"], ascending = [True], inplace = True)
+    else:
+        group_df_copied.sort_values(by = ["order", order_by], ascending = [True, True], inplace = True)
     group_df_copied['index_temp'] = range(1, len(group_df_copied) + 1)
     if color_column is not None:
         ax = group_df_copied.plot.scatter(x = 'index_temp', y = y_column, c = group_df_copied[color_column], s = 0.03, figsize = (8, 2), colorbar = False, fontsize = 6, marker = ',')
@@ -798,6 +801,67 @@ def plot_group_scatter(group_df, path_to_save, group_column, y_column, index_col
     # plt.grid(which = 'major', linestyle='-', linewidth=2)
     plt.savefig(path_to_save, bbox_inches = "tight")
     tikzplotlib.save(utilsforminds.visualization.format_path_extension(path_to_save))
+
+def plot_top_bars_with_rows(reordered_SNPs_info_df, color_column = None, order_by = "weights", num_bars = 10, num_rows = 2, path_to_save : str, bar_width = 'auto', opacity = 0.8, format = 'eps', xticks_fontsize = 6, diagonal_xtickers = False):
+    """
+    
+    Parameters
+    ----------
+        name_numbers : dict
+            For example, name_numbers['enriched'] == [0.12, 0.43, 0.12] for RMSE
+        xlabels : list
+            Name of groups, For example ['CNN', 'LR', 'SVR', ..]
+    """
+
+    reordered_SNPs_info_df_copied = reordered_SNPs_info_df.copy()
+    reordered_SNPs_info_df_copied = reordered_SNPs_info_df_copied.sort_values(by = 'weights', ascending = False, inplace = False)
+    top_20_SNPs_names = list(reordered_SNPs_info_df_copied.loc[:, "SNP"][:20])
+    top_20_SNPs_weights = list(reordered_SNPs_info_df_copied.loc[:, "weights"][:20])
+    top_20_SNPs_colors = list(reordered_SNPs_info_df_copied.loc[:, "color_chr"][:20])
+    fig = plt.figure(figsize = (7, 4))
+
+    n_groups = 10
+
+    if bar_width == 'auto':
+        bar_width_ = 0.1
+
+    ## create plot
+    ax_1 = plt.subplot(2, 1, 1)
+    index = np.arange(n_groups)
+
+    ## set range
+    min_, max_ = np.min(top_20_SNPs_weights), np.max(top_20_SNPs_weights)
+    plt.ylim([0.5 * min_, 1.2 * max_])
+
+    rects_list = []
+    plt.bar(np.arange(10), top_20_SNPs_weights[:10], alpha = opacity, color = top_20_SNPs_colors[:10])
+    plt.xlabel("")
+    plt.ylabel("Weights")
+    if diagonal_xtickers:
+        plt.xticks(index + (bar_width_/2) * (1-1), top_20_SNPs_names[:10], rotation = 45, ha = "right")
+    else:
+        plt.xticks(index + (bar_width_/2) * (1-1), top_20_SNPs_names[:10])
+    # plt.legend()
+    plt.title('Top-20 SNPs')
+    for obj in ax_1.get_xticklabels():
+        obj.set_fontsize(xticks_fontsize)
+    
+    ax_2 = plt.subplot(2, 1, 2)
+    plt.ylim([0.5 * min_, 1.2 * max_])
+    plt.bar(np.arange(10), top_20_SNPs_weights[10:], alpha = opacity, color = top_20_SNPs_colors[10:])
+    plt.xlabel("")
+    plt.ylabel("Weights")
+    if diagonal_xtickers:
+        plt.xticks(index + (bar_width_/2) * (1-1), top_20_SNPs_names[10:], rotation = 45, ha = "right")
+    else:
+        plt.xticks(index + (bar_width_/2) * (1-1), top_20_SNPs_names[10:])
+    for obj in ax_2.get_xticklabels():
+        obj.set_fontsize(xticks_fontsize)
+    # plt.legend()
+
+    # plt.tight_layout()
+    # plt.show()
+    plt.savefig(path_to_save, format = format)
 
 # if __name__ == '__main__':
     # plot_bar_charts('dummy', {'Frank':[12.7, 0.4, 4.4, 5.3, 7.1, 3.2], 'Guido':[6.3, 10.3, 10, 0.3, 5.3, 2.9]}, ['RR', 'Lasso', 'SVR', 'CNN', 'SVR', 'LR'], ytitle="RMSE of Prediction of TRIAILB-A")
