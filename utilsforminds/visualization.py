@@ -720,11 +720,13 @@ def plot_group_scatter(group_df, path_to_save, group_column, y_column, index_col
         group_sequence_copied = deepcopy(unique_group_names_list)
     else:
         group_sequence_copied = deepcopy(group_sequence)
-        assert(set(unique_group_names_list) == set(group_sequence_copied)) ## The groups should match without ordering
+        # assert(set(unique_group_names_list) == set(group_sequence_copied)) ## The groups should match without ordering
+        is_in_group_sequence = group_df_copied[group_column].isin(group_sequence_copied)
+        group_df_copied = group_df_copied[is_in_group_sequence]
     
     ## Set the label locations.
     counts_groups = [0]
-    for group in group_sequence:
+    for group in group_sequence_copied:
         series_obj = group_df_copied.apply(lambda x: True if x[group_column] == group else False, axis = 1)
         counts_groups.append(len(series_obj[series_obj == True].index))
     hori_labels = [] ## position of horizontal labels
@@ -745,7 +747,7 @@ def plot_group_scatter(group_df, path_to_save, group_column, y_column, index_col
         
     group_df_copied["order"] = group_df_copied[group_column].apply(lambda x, group_sequence_copied: group_sequence_copied.index(x), args = (group_sequence_copied,))
 
-    group_df_copied.sort_values(by = ["order", y_column], ascending = [True, True])
+    group_df_copied.sort_values(by = ["order", y_column], ascending = [True, True], inplace = True)
     if color_column is not None:
         ax = group_df_copied.plot.scatter(x = index_column, y = y_column, c = group_df_copied[color_column], s = 0.03, figsize = (8, 2), colorbar = False, fontsize = 6, marker = ',')
     else:
