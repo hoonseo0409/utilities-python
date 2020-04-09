@@ -710,7 +710,7 @@ def format_path_extension(path : str, extension : str = '.tex'):
     else:
         return path + extension
 
-def plot_group_scatter(group_df, path_to_save, group_column, y_column, color_column = None, colors_rotation = ["red", "navy", "lightgreen", "lavender", "khaki", "teal", "gold", "violet", "green", "orange", "blue", "coral", "azure", "yellowgreen", "sienna", "olive", "maroon", "goldenrod", "darkblue", "orchid", "crimson"], group_sequence = None, xlabel = None, ylabel = None, diagonal_xtickers = False, group_column_xtext_dict = None, order_by = None):
+def plot_group_scatter(group_df, path_to_save, group_column, y_column, color_column = None, colors_rotation = ["red", "navy", "lightgreen", "khaki", "teal", "gold", "violet", "green", "orange", "blue", "coral", "yellowgreen", "sienna", "olive", "maroon", "goldenrod", "darkblue", "orchid", "crimson"], group_sequence = None, xlabel = None, ylabel = None, diagonal_xtickers = False, group_column_xtext_dict = None, order_by = None):
     group_df_copied = group_df.copy()
     assert("order" not in group_df_copied.columns and "color_temp" not in group_df_copied.columns and "index_temp" not in group_df_copied.columns)
     ## To get most common color : group_df_copied[[group_column, color_column]].groupby(group_column).agg(lambda x:x.value_counts().index[0])
@@ -802,7 +802,7 @@ def plot_group_scatter(group_df, path_to_save, group_column, y_column, color_col
     plt.savefig(path_to_save, bbox_inches = "tight")
     tikzplotlib.save(utilsforminds.visualization.format_path_extension(path_to_save))
 
-def plot_top_bars_with_rows(reordered_SNPs_info_df, color_column = None, order_by = "weights", num_bars = 10, num_rows = 2, path_to_save : str, bar_width = 'auto', opacity = 0.8, format = 'eps', xticks_fontsize = 6, diagonal_xtickers = False):
+def plot_top_bars_with_rows(reordered_SNPs_info_df, path_to_save : str, color_column = None, order_by = "weights", num_bars = 10, num_rows = 2, bar_width = 'auto', opacity = 0.8, format = 'eps', xticks_fontsize = 6, diagonal_xtickers = False):
     """
     
     Parameters

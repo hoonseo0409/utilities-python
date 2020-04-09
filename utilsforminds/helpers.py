@@ -1,5 +1,5 @@
 import numpy as np
-import random
+from random import random
 import os
 import sys
 import math
@@ -1067,33 +1067,6 @@ def random_pick_items(item_length_dict, pick_keep_probs_dict, keep_non_prob_item
     keep_non_prob_item = True\n
     print(random_pick_items(item_length_dict, pick_keep_probs_dict, keep_non_prob_item))\n
     {0: [2, 1], 1: [1, 2], 4: [1]}\n
-    """
-
-    picked_idc_dict = {}
-    for idx_0 in item_length_dict.keys():
-        picked_idc_dict[idx_0] = []
-        done_idx= []
-        for key, prob in pick_keep_probs_dict.items():
-            key_positive = key if key>= 0 else item_length_dict[idx_0] + key
-            if key_positive in done_idx:
-                raise Exception(f"Ambiguous pick with index: {key}")
-            done_idx.append(key_positive)
-            rand_num= random()
-            if rand_num<= prob:
-                picked_idc_dict[idx_0].append(key_positive)
-        if keep_non_prob_item:
-            for idx_1 in range(item_length_dict[idx_0]):
-                if idx_1 not in done_idx and idx_1 not in picked_idc_dict[idx_0]:
-                    picked_idc_dict[idx_0].append(idx_1)
-    return picked_idc_dict
-
-def random_pick_items(item_length_dict, pick_keep_probs_dict, keep_non_prob_item= True):
-    """
-
-    Examples
-    --------
-    random_pick_items(item_length_dict= 0: 3, 1: 4, 4: 2}, pick_keep_probs_dict= {-1: 0.3, 0: 0.5}, keep_non_prob_item= True)
-        {0: [2, 1], 1: [1, 2], 4: [1]}
     """
 
     picked_idc_dict = {}
