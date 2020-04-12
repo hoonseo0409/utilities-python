@@ -876,7 +876,7 @@ def plot_top_bars_with_rows(reordered_SNPs_info_df, path_to_save : str, color_co
     plt.savefig(path_to_save, format = format)
     plt.clf()
 
-def plot_xy_lines(x, y_dict_list : list, path_to_save : str, title = None, x_label = None, y_label = None, figsize= (17, 5), label_fontsize = 10, format = 'eps', save_tikz = True):
+def plot_xy_lines(x, y_dict_list : list, path_to_save : str, title = None, x_label = None, y_label = None, figsize= (17, 5), label_fontsize = 20, format = 'eps', save_tikz = True):
     """
     
     Examples
