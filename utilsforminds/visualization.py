@@ -710,7 +710,7 @@ def format_path_extension(path : str, extension : str = '.tex'):
     else:
         return path + extension
 
-def plot_group_scatter(group_df, path_to_save, group_column, y_column, color_column = None, colors_rotation = ["red", "navy", "lightgreen", "teal", "gold", "violet", "green", "orange", "blue", "coral", "yellowgreen", "sienna", "olive", "maroon", "goldenrod", "darkblue", "orchid", "crimson"], group_sequence = None, xlabel = None, ylabel = None, diagonal_xtickers = False, group_column_xtext_dict = None, order_by = None, num_truncate_small_groups = 0):
+def plot_group_scatter(group_df, path_to_save, group_column, y_column, color_column = None, colors_rotation = ["red", "navy", "lightgreen", "teal", "violet", "green", "orange", "blue", "coral", "yellowgreen", "sienna", "olive", "maroon", "goldenrod", "darkblue", "orchid", "crimson"], group_sequence = None, xlabel = None, ylabel = None, diagonal_xtickers = False, group_column_xtext_dict = None, order_by = None, num_truncate_small_groups = 0, save_tikz = True):
     group_df_copied = group_df.copy()
     assert("order" not in group_df_copied.columns and "color_temp" not in group_df_copied.columns and "index_temp" not in group_df_copied.columns)
     ## To get most common color : group_df_copied[[group_column, color_column]].groupby(group_column).agg(lambda x:x.value_counts().index[0])
@@ -810,7 +810,9 @@ def plot_group_scatter(group_df, path_to_save, group_column, y_column, color_col
     # plt.tight_layout()
     # plt.grid(which = 'major', linestyle='-', linewidth=2)
     plt.savefig(path_to_save, bbox_inches = "tight")
-    tikzplotlib.save(utilsforminds.visualization.format_path_extension(path_to_save))
+    if save_tikz:
+        tikzplotlib.save(utilsforminds.visualization.format_path_extension(path_to_save))
+    plt.cla()
 
 def plot_top_bars_with_rows(reordered_SNPs_info_df, path_to_save : str, color_column = None, order_by = "weights", num_bars = 10, num_rows = 2, bar_width = 'auto', opacity = 0.8, format = 'eps', xticks_fontsize = 6, diagonal_xtickers = False):
     """
@@ -872,6 +874,49 @@ def plot_top_bars_with_rows(reordered_SNPs_info_df, path_to_save : str, color_co
     # plt.tight_layout()
     # plt.show()
     plt.savefig(path_to_save, format = format)
+    plt.clf()
 
-# if __name__ == '__main__':
+def plot_xy_lines(x, y_dict_list : list, path_to_save : str, title = None, x_label = None, y_label = None, figsize= (17, 5), label_fontsize = 10, format = 'eps', save_tikz = True):
+    """
+    
+    Examples
+    --------
+    plot_xy_lines([1, 2, 3, 4], [{"label": "my label", "ydata": [3.4, 3.2, 1.1, 0.3]}], "dummy.eps")
+    """
+    x_arr_copied = np.array(x)
+    x_arr_sorted_ind = np.argsort(x_arr_copied)
+    x_arr_copied = x_arr_copied[x_arr_sorted_ind]
+
+    y_dict_list_copied = deepcopy(y_dict_list)
+    for y_dict_idx in range(len(y_dict_list_copied)):
+        for required_key in ["label", "ydata"]:
+            assert(required_key in y_dict_list_copied[y_dict_idx].keys())
+        y_dict_list_copied[y_dict_idx]["ydata"] = np.array(y_dict_list_copied[y_dict_idx]["ydata"])
+        assert(y_dict_list_copied[y_dict_idx]["ydata"].shape == x_arr_copied.shape)
+        y_dict_list_copied[y_dict_idx]["ydata"] = y_dict_list_copied[y_dict_idx]["ydata"][x_arr_sorted_ind]
+
+    plt.figure(figsize=figsize)
+    for y_dict in y_dict_list_copied:
+        y_dict_no_ydata = deepcopy(y_dict)
+        y_dict_no_ydata.pop("ydata", None)
+        plt.plot(x_arr_copied, y_dict["ydata"], **y_dict_no_ydata)
+
+    plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+    if title is not None:
+        plt.title(title, fontsize = int(label_fontsize * 1.5))
+    if x_label is not None:
+        plt.xlabel(x_label, fontsize = label_fontsize)
+    if y_label is not None:
+        plt.ylabel(y_label, fontsize = label_fontsize)
+    plt.savefig(path_to_save, format = format)
+    if save_tikz:
+        tikzplotlib.save(utilsforminds.visualization.format_path_extension(path_to_save))
+    plt.clf()
+
+if __name__ == '__main__':
+    pass
     # plot_bar_charts('dummy', {'Frank':[12.7, 0.4, 4.4, 5.3, 7.1, 3.2], 'Guido':[6.3, 10.3, 10, 0.3, 5.3, 2.9]}, ['RR', 'Lasso', 'SVR', 'CNN', 'SVR', 'LR'], ytitle="RMSE of Prediction of TRIAILB-A")
+    test_list = []
+    for i in range(15):
+        test_list.append({"label": f"my label_{i}", "ydata": [3.4, 3.2, 1.1, 0.3]})
+    plot_xy_lines([1, 2, 3, 4], test_list, "dummy.eps")
