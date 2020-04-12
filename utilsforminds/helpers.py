@@ -1204,6 +1204,7 @@ def index_arr_with_arraylike(arr_tobe_indexed, index_arraylike):
     
     Examples
     --------
+    test_arr = np.ones((3, 3))
     print('1: ', index_arr_with_arraylike(test_arr, np.array([1, 2])))
     print('2: ', index_arr_with_arraylike(test_arr, [0]))
     print('3: ', test_arr)
@@ -1226,8 +1227,56 @@ def index_arr_with_arraylike(arr_tobe_indexed, index_arraylike):
         raise Exception("Unsupported type of index_arraylike")
     return result
 
+def get_smallest_largest_idc(input_list, num_idc = 1, smallest = True):
+    """Get the num_idc smallest items
+    
+    Examples
+    --------
+    test_list = [3, 4.5, 2, 9, 4]\n
+    print(get_smallest_largest_idc(test_list, 2))
+        : [2, 0]
+    """
+
+    assert(num_idc > 0)
+    temp_list = []
+    for elements, index in zip(input_list, range(len(input_list))):
+        temp_list.append([elements, index])
+    temp_list.sort(key = lambda x: x[0], reverse = not smallest)
+    result_idc_list = []
+    for i in range(num_idc):
+        result_idc_list.append(temp_list[i][1])
+    return result_idc_list
+
+def get_top_n_indices(array_like, n = 1, from_largest = True):
+    """Get the indices of top-n elements largest(default) or smallest
+    
+    Examples
+    --------
+    print(get_top_n_indices(array_like = [3, 5, 1, 7, 3, 5], n = 3, from_largest = True))
+        : [3 1 5]
+    print(get_top_n_indices(array_like = np.array([3, 5, 1, 7, 3, 5]), n = 3, from_largest = False))
+        : [2 4 0]
+    """
+    
+    if not isinstance(array_like, np.ndarray):
+        array_input = np.array(array_like)
+        assert(len(array_input.shape) == 1)
+    else:
+        assert(len(array_like.shape) == 1)
+        array_input = np.copy(array_like)
+    factor_from_largest = -1 if from_largest else +1
+    if from_largest:
+        ind = np.argpartition(array_input, n * factor_from_largest)[n * factor_from_largest:]
+    else:
+        ind = np.argpartition(array_input, n * factor_from_largest)[:n * factor_from_largest]
+    return ind[np.argsort(factor_from_largest * array_input[ind])]
+
 if __name__ == '__main__':
     pass
+    print(get_top_n_indices(array_like = [3, 5, 1, 7, 3, 5], n = 3, from_largest = True))
+    print(get_top_n_indices(array_like = np.array([3, 5, 1, 7, 3, 5]), n = 3, from_largest = False))
+    # test_list = [3, 4.5, 2, 9, 4]
+    # print(get_smallest_largest_idc(test_list, 2))
     # test_arr = np.ones((3, 3))
     # print('1: ', index_arr_with_arraylike(test_arr, np.array([1, 2])))
     # print('2: ', index_arr_with_arraylike(test_arr, [0]))

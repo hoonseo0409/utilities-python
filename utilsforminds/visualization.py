@@ -710,13 +710,13 @@ def format_path_extension(path : str, extension : str = '.tex'):
     else:
         return path + extension
 
-def plot_group_scatter(group_df, path_to_save, group_column, y_column, color_column = None, colors_rotation = ["red", "navy", "lightgreen", "khaki", "teal", "gold", "violet", "green", "orange", "blue", "coral", "yellowgreen", "sienna", "olive", "maroon", "goldenrod", "darkblue", "orchid", "crimson"], group_sequence = None, xlabel = None, ylabel = None, diagonal_xtickers = False, group_column_xtext_dict = None, order_by = None):
+def plot_group_scatter(group_df, path_to_save, group_column, y_column, color_column = None, colors_rotation = ["red", "navy", "lightgreen", "teal", "gold", "violet", "green", "orange", "blue", "coral", "yellowgreen", "sienna", "olive", "maroon", "goldenrod", "darkblue", "orchid", "crimson"], group_sequence = None, xlabel = None, ylabel = None, diagonal_xtickers = False, group_column_xtext_dict = None, order_by = None, num_truncate_small_groups = 0):
     group_df_copied = group_df.copy()
     assert("order" not in group_df_copied.columns and "color_temp" not in group_df_copied.columns and "index_temp" not in group_df_copied.columns)
     ## To get most common color : group_df_copied[[group_column, color_column]].groupby(group_column).agg(lambda x:x.value_counts().index[0])
-    unique_group_names_list = list(group_df_copied[group_column].unique())
 
     if group_sequence is None:
+        unique_group_names_list = list(group_df_copied[group_column].unique())
         group_sequence_copied = deepcopy(unique_group_names_list)
     else:
         group_sequence_copied = deepcopy(group_sequence)
@@ -725,10 +725,20 @@ def plot_group_scatter(group_df, path_to_save, group_column, y_column, color_col
         group_df_copied = group_df_copied[is_in_group_sequence]
     
     ## Set the label locations.
-    counts_groups = [0]
+    # counts_groups = [0]
+    counts_groups = []
     for group in group_sequence_copied:
         series_obj = group_df_copied.apply(lambda x: True if x[group_column] == group else False, axis = 1)
         counts_groups.append(len(series_obj[series_obj == True].index))
+    
+    if num_truncate_small_groups > 0:
+        smallest_groups_idc_list = helpers.get_smallest_largest_idc(counts_groups, num_truncate_small_groups)
+        counts_groups = helpers.delete_items_from_list_with_indices(counts_groups, smallest_groups_idc_list, keep_not_remove = False)
+        group_sequence_copied = helpers.delete_items_from_list_with_indices(group_sequence_copied, smallest_groups_idc_list, keep_not_remove = False)
+        is_in_group_sequence = group_df_copied[group_column].isin(group_sequence_copied)
+        group_df_copied = group_df_copied[is_in_group_sequence]
+    counts_groups.insert(0, 0)
+    
     hori_labels = [] ## position of horizontal labels
     accumulated = 0
     for i in range(len(counts_groups) - 1): ## instead use group_df_copied[[group_column, color_column]].groupby(group_column).count()?
@@ -738,7 +748,7 @@ def plot_group_scatter(group_df, path_to_save, group_column, y_column, color_col
     if color_column is not None:
         assert(group_df_copied[[group_column, color_column]].groupby(group_column).agg(lambda x: len(set(x)) == 1).all(axis = None))
         group_color_dict = dict(group_df_copied[[group_column, color_column]].groupby(group_column)[color_column].apply(lambda x: list(x)[0]))
-        assert(set(group_color_dict.keys()) == set(unique_group_names_list))
+        assert(set(group_color_dict.keys()) == set(group_sequence_copied))
     else:
         group_color_dict = {}
         for group, i in zip(group_sequence_copied, range(len(group_sequence_copied))):
@@ -757,7 +767,7 @@ def plot_group_scatter(group_df, path_to_save, group_column, y_column, color_col
     else:
         ax = group_df_copied.plot.scatter(x = 'index_temp', y = y_column, c = group_df_copied["color_temp"], s = 0.03, figsize = (8, 2), colorbar = False, fontsize = 6, marker = ',')
     
-    # x_ticks_texts = group_sequence_copied if group_sequence is not None else deepcopy(unique_group_names_list)
+    # x_ticks_texts = group_sequence_copied if group_sequence is not None else deepcopy(group_sequence_copied)
     x_ticks_texts = []
     x_ticks_colors = []
     for group, i in zip(group_sequence_copied, range(len(group_sequence_copied))):
@@ -767,7 +777,7 @@ def plot_group_scatter(group_df, path_to_save, group_column, y_column, color_col
         else:
             x_ticks_texts.append(group_column_xtext_dict[group])
     # x_ticks_colors_rotation = deepcopy(colors_rotation)
-    x_ticks_indices = list(range(len(unique_group_names_list)))
+    x_ticks_indices = list(range(len(group_sequence_copied)))
 
     hori_labels = helpers.delete_items_from_list_with_indices(hori_labels, x_ticks_indices, keep_not_remove = True)
     x_ticks_texts = helpers.delete_items_from_list_with_indices(x_ticks_texts, x_ticks_indices, keep_not_remove = True)
