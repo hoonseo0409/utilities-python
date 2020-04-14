@@ -115,7 +115,7 @@ def plot2Ds(planeLst, titleLst, filePath, cbarLabel = 'amount', plotShape = [3, 
         horiAxis = (axis + 2) % 3
         vertAxis = (axis + 1) % 3
         if method == 'imshow':
-            horiLabels = (round(axisInfo[horiAxis]["max"]), 
+            horiLabels = utilsforminds.helpers.reverseLst(round(axisInfo[horiAxis]["max"]), 
             round(axisInfo[horiAxis]["min"] + (axisInfo[horiAxis]["max"]-axisInfo[horiAxis]["min"])*3/4),
             round(axisInfo[horiAxis]["min"] + (axisInfo[horiAxis]["max"]-axisInfo[horiAxis]["min"])*2/4),
             round(axisInfo[horiAxis]["min"] + (axisInfo[horiAxis]["max"]-axisInfo[horiAxis]["min"])*1/4),
@@ -125,7 +125,7 @@ def plot2Ds(planeLst, titleLst, filePath, cbarLabel = 'amount', plotShape = [3, 
                     round(axisInfo[horiAxis]["min"] + (axisInfo[horiAxis]["max"]-axisInfo[horiAxis]["min"])*2/4),
                     round(axisInfo[horiAxis]["min"] + (axisInfo[horiAxis]["max"]-axisInfo[horiAxis]["min"])*3/4),
                     round(axisInfo[horiAxis]["max"]))
-        vertLabels = (round(axisInfo[vertAxis]["min"]), round(axisInfo[vertAxis]["min"] + (axisInfo[vertAxis]["max"]-axisInfo[vertAxis]["min"])*1/4), 
+        vertLabels = utilsforminds.helpers.reverseLst(round(axisInfo[vertAxis]["min"]), round(axisInfo[vertAxis]["min"] + (axisInfo[vertAxis]["max"]-axisInfo[vertAxis]["min"])*1/4), 
             round(axisInfo[vertAxis]["min"] + (axisInfo[vertAxis]["max"]-axisInfo[vertAxis]["min"])*2/4),
             round(axisInfo[vertAxis]["min"] + (axisInfo[vertAxis]["max"]-axisInfo[vertAxis]["min"])*3/4),
             round(axisInfo[vertAxis]["max"]))
@@ -146,8 +146,8 @@ def plot2Ds(planeLst, titleLst, filePath, cbarLabel = 'amount', plotShape = [3, 
             xlabel = 'East(m)'
             ylabel = 'Elevation(m)'
         else:
-            xlabel = 'Elevation(m)'
-            ylabel = 'East(m)'
+            xlabel = 'East(m)'
+            ylabel = 'Elevation(m)'
     elif axis == 2:
         if convertXYaxis:
             xlabel = 'North(m)'
@@ -164,15 +164,15 @@ def plot2Ds(planeLst, titleLst, filePath, cbarLabel = 'amount', plotShape = [3, 
             plt.xlabel(xlabel, fontsize = label_font_size)
             plt.ylabel(ylabel, fontsize = label_font_size)
 
-            plt.xticks(horiLabelIdc, horiLabels)
-            plt.yticks(vertLabelIdc, vertLabels)
+            plt.xticks(horiLabelIdc, horiLabels, fontsize = label_font_size)
+            plt.yticks(vertLabelIdc, vertLabels, fontsize = label_font_size)
 
             if method == 'imshow':
                 if vmin_vmax is not None:
                     img = plt.imshow(plotPlaneLst[i], vmin = vmin_, vmax = vmax_)
                 else:
                     img = plt.imshow(plotPlaneLst[i])
-                cbarInst = plt.colorbar()
+                cbarInst = plt.colorbar(fraction=0.046, pad=0.04)
                 cbarInst.set_label(cbarLabel, fontsize = cbar_font_size)
             elif method == 'contour':
                 if vmin_vmax is not None:
@@ -190,8 +190,8 @@ def plot2Ds(planeLst, titleLst, filePath, cbarLabel = 'amount', plotShape = [3, 
             plt.xlabel(xlabel, fontsize = label_font_size)
             plt.ylabel(ylabel, fontsize = label_font_size)
 
-            plt.xticks(horiLabelIdc, horiLabels)
-            plt.yticks(vertLabelIdc, vertLabels)
+            plt.xticks(horiLabelIdc, horiLabels, fontsize = label_font_size)
+            plt.yticks(vertLabelIdc, vertLabels, fontsize = label_font_size)
 
             if planeMaskLst is not None:
                 xCounterOriginal, yCounterOriginal = np.nonzero(np.where(plotPlaneMaskLst[0] >= 1., 1., 0.))
@@ -209,7 +209,7 @@ def plot2Ds(planeLst, titleLst, filePath, cbarLabel = 'amount', plotShape = [3, 
                 img = plt.scatter(xZeroCounter, yZeroCounter, c = minArr[xZeroCounter, yZeroCounter], marker = 'x') # param s = 5.0 sets size of dots for 150 * 150 * 150 mapping
                 img = plt.scatter(xCounterOriginal, yCounterOriginal, c = plotPlaneLst[0][xCounterOriginal, yCounterOriginal], marker = 'o', s = pointSize)
             
-            cbarInst = plt.colorbar()
+            cbarInst = plt.colorbar(fraction=0.046, pad=0.04)
             cbarInst.set_label(cbarLabel, fontsize = cbar_font_size)
 
 
@@ -219,8 +219,8 @@ def plot2Ds(planeLst, titleLst, filePath, cbarLabel = 'amount', plotShape = [3, 
             plt.xlabel(xlabel, fontsize = label_font_size)
             plt.ylabel(ylabel, fontsize = label_font_size)
 
-            plt.xticks(horiLabelIdc, horiLabels)
-            plt.yticks(vertLabelIdc, vertLabels)
+            plt.xticks(horiLabelIdc, horiLabels, fontsize = label_font_size)
+            plt.yticks(vertLabelIdc, vertLabels, fontsize = label_font_size)
 
             # xCounterOriginal, yCounterOriginal = np.nonzero(np.where(plotPlaneLst[0] >= 1., 1., 0.))
             if planeMaskLst is not None:
@@ -238,14 +238,14 @@ def plot2Ds(planeLst, titleLst, filePath, cbarLabel = 'amount', plotShape = [3, 
                 img = plt.scatter(xCounterOriginal, yCounterOriginal, c = plotPlaneLst[0][xCounterOriginal, yCounterOriginal], vmin=vmin_, vmax=vmax_, marker = 'o', s = pointSize)
                 img = plt.scatter(xCounterOnlyRecovered, yCounterOnlyRecovered, c = plotPlaneLst[1][xCounterOnlyRecovered, yCounterOnlyRecovered], vmin=vmin_, vmax=vmax_, marker = '^', s = pointSize)
 
-                cbarInst = plt.colorbar()
+                cbarInst = plt.colorbar(fraction=0.046, pad=0.04)
                 cbarInst.set_label(cbarLabel, fontsize = cbar_font_size)
             else:
                 img = plt.scatter(xZeroCounter, yZeroCounter, c = minArr[xZeroCounter, yZeroCounter], marker = 'x')
                 img = plt.scatter(xCounterOriginal, yCounterOriginal, c = plotPlaneLst[0][xCounterOriginal, yCounterOriginal], marker = 'o')
                 img = plt.scatter(xCounterOnlyRecovered, yCounterOnlyRecovered, c = plotPlaneLst[1][xCounterOnlyRecovered, yCounterOnlyRecovered], marker = '^')
 
-                cbarInst = plt.colorbar()
+                cbarInst = plt.colorbar(fraction=0.046, pad=0.04)
                 cbarInst.set_label(cbarLabel, fontsize = cbar_font_size)
         else: # nPlots == 3
             plt.subplot(*(plotShape + [1]))
@@ -254,8 +254,8 @@ def plot2Ds(planeLst, titleLst, filePath, cbarLabel = 'amount', plotShape = [3, 
             plt.xlabel(xlabel, fontsize = label_font_size)
             plt.ylabel(ylabel, fontsize = label_font_size)
 
-            plt.xticks(horiLabelIdc, horiLabels)
-            plt.yticks(vertLabelIdc, vertLabels)
+            plt.xticks(horiLabelIdc, horiLabels, fontsize = label_font_size)
+            plt.yticks(vertLabelIdc, vertLabels, fontsize = label_font_size)
 
             if planeMaskLst is not None:
                 xCounterOriginal, yCounterOriginal = np.nonzero(np.where(plotPlaneMaskLst[0] >= 1., 1., 0.))
@@ -273,7 +273,7 @@ def plot2Ds(planeLst, titleLst, filePath, cbarLabel = 'amount', plotShape = [3, 
                 img = plt.scatter(xZeroCounter, yZeroCounter, c = minArr[xZeroCounter, yZeroCounter], marker = 'x') # param s = 5.0 sets size of dots for 150 * 150 * 150 mapping
                 img = plt.scatter(xCounterOriginal, yCounterOriginal, c = plotPlaneLst[0][xCounterOriginal, yCounterOriginal], marker = 'o')
             
-            cbarInst = plt.colorbar()
+            cbarInst = plt.colorbar(fraction=0.046, pad=0.04)
             cbarInst.set_label(cbarLabel, fontsize = cbar_font_size)
 
 
@@ -283,8 +283,8 @@ def plot2Ds(planeLst, titleLst, filePath, cbarLabel = 'amount', plotShape = [3, 
             plt.xlabel(xlabel, fontsize = label_font_size)
             plt.ylabel(ylabel, fontsize = label_font_size)
 
-            plt.xticks(horiLabelIdc, horiLabels)
-            plt.yticks(vertLabelIdc, vertLabels)
+            plt.xticks(horiLabelIdc, horiLabels, fontsize = label_font_size)
+            plt.yticks(vertLabelIdc, vertLabels, fontsize = label_font_size)
 
             # xCounterOriginal, yCounterOriginal = np.nonzero(np.where(plotPlaneLst[0] >= 1., 1., 0.))
             if planeMaskLst is not None:
@@ -302,14 +302,14 @@ def plot2Ds(planeLst, titleLst, filePath, cbarLabel = 'amount', plotShape = [3, 
                 img = plt.scatter(xCounterOriginal, yCounterOriginal, c = plotPlaneLst[0][xCounterOriginal, yCounterOriginal], vmin=vmin_, vmax=vmax_, marker = 'o', s = pointSize)
                 img = plt.scatter(xCounterOnlyRecovered, yCounterOnlyRecovered, c = plotPlaneLst[1][xCounterOnlyRecovered, yCounterOnlyRecovered], vmin=vmin_, vmax=vmax_, marker = '^', s = pointSize)
 
-                cbarInst = plt.colorbar()
+                cbarInst = plt.colorbar(fraction=0.046, pad=0.04)
                 cbarInst.set_label(cbarLabel, fontsize = cbar_font_size)
             else:
                 img = plt.scatter(xZeroCounter, yZeroCounter, c = minArr[xZeroCounter, yZeroCounter], marker = 'x', s = pointSize)
                 img = plt.scatter(xCounterOriginal, yCounterOriginal, c = plotPlaneLst[0][xCounterOriginal, yCounterOriginal], marker = 'o', s = pointSize)
                 img = plt.scatter(xCounterOnlyRecovered, yCounterOnlyRecovered, c = plotPlaneLst[1][xCounterOnlyRecovered, yCounterOnlyRecovered], marker = '^', s = pointSize)
 
-                cbarInst = plt.colorbar()
+                cbarInst = plt.colorbar(fraction=0.046, pad=0.04)
                 cbarInst.set_label(cbarLabel, fontsize = cbar_font_size)
 
 
@@ -319,8 +319,8 @@ def plot2Ds(planeLst, titleLst, filePath, cbarLabel = 'amount', plotShape = [3, 
             plt.xlabel(xlabel, fontsize = label_font_size)
             plt.ylabel(ylabel, fontsize = label_font_size)
 
-            plt.xticks(horiLabelIdc, horiLabels)
-            plt.yticks(vertLabelIdc, vertLabels)
+            plt.xticks(horiLabelIdc, horiLabels, fontsize = label_font_size)
+            plt.yticks(vertLabelIdc, vertLabels, fontsize = label_font_size)
 
             if planeMaskLst is not None:
                 xCounterSampled, yCounterSampled = np.nonzero(np.where(plotPlaneMaskLst[2] >= 1., 1., 0.))
@@ -334,13 +334,13 @@ def plot2Ds(planeLst, titleLst, filePath, cbarLabel = 'amount', plotShape = [3, 
                 img = plt.scatter(xZeroCounter, yZeroCounter, c = minArr[xZeroCounter, yZeroCounter], vmin=vmin_, vmax=vmax_, marker = 'x', s = pointSize)
                 img = plt.scatter(xCounterSampled, yCounterSampled, c = plotPlaneLst[2][xCounterSampled, yCounterSampled], vmin=vmin_, vmax=vmax_, marker = 'o', s = pointSize)
 
-                cbarInst = plt.colorbar()
+                cbarInst = plt.colorbar(fraction=0.046, pad=0.04)
                 cbarInst.set_label(cbarLabel, fontsize = cbar_font_size)
             else:
                 img = plt.scatter(xZeroCounter, yZeroCounter, c = minArr[xZeroCounter, yZeroCounter], marker = 'x', s = pointSize)
                 img = plt.scatter(xCounterSampled, yCounterSampled, c = plotPlaneLst[2][xCounterSampled, yCounterSampled], marker = 'o', s = pointSize)
 
-                cbarInst = plt.colorbar()
+                cbarInst = plt.colorbar(fraction=0.046, pad=0.04)
                 cbarInst.set_label(cbarLabel, fontsize = cbar_font_size)
 
     # tikzplotlib.save(format_path_extension(filePath_))
@@ -351,7 +351,7 @@ def plot2Ds(planeLst, titleLst, filePath, cbarLabel = 'amount', plotShape = [3, 
     plt.close('all')
     
 
-def plot3DScatter(npArr, vmin = None, vmax = None, filename = None, axisInfo = None, highest_amount_proportion_threshod = None, small_delta = 1e-8, bar_label = 'gram/ton', default_point_size = 1.0, alpha_min = 0.2, transparent_cbar = False, cbar_font_size = 10, adjust_axis_ratio = True, save_tikz = True):
+def plot3DScatter(npArr, vmin = None, vmax = None, filename = None, axisInfo = None, highest_amount_proportion_threshod = None, small_delta = 1e-8, bar_label = 'gram/ton', default_point_size = 1.0, alpha_min = 0.2, view_angle = 0, transparent_cbar = False, cbar_font_size = 10, label_fontsize = 10, adjust_axis_ratio = True, save_tikz = True):
     """Plot the points with amounts of mineral in 3D numpy array.
 
     Color intensities indicate the amounts.
@@ -407,9 +407,19 @@ def plot3DScatter(npArr, vmin = None, vmax = None, filename = None, axisInfo = N
     else:
         ax.scatter(x, y, z, zdir='z', c= npArr_[x, y, z], alpha = max(1. - (num_obs / num_entries) ** (1/12), alpha_min), s = default_point_size * (100/avg_length))
     
-    ax.set_xlabel('East(m)')
-    ax.set_ylabel('North(m)')
-    ax.set_zlabel('Elevation(m)')
+    ax.view_init(30, view_angle) ## set angle
+    ## set background color as white
+    ax.xaxis.set_pane_color((1.0, 1.0, 1.0, 0.0))
+    ax.yaxis.set_pane_color((1.0, 1.0, 1.0, 0.0))
+    ax.zaxis.set_pane_color((1.0, 1.0, 1.0, 0.0))
+    # make the grid lines transparent
+    # ax.xaxis._axinfo["grid"]['color'] =  (1,1,1,0)
+    # ax.yaxis._axinfo["grid"]['color'] =  (1,1,1,0)
+    # ax.zaxis._axinfo["grid"]['color'] =  (1,1,1,0)
+
+    ax.set_xlabel('East(m)', fontsize = label_fontsize)
+    ax.set_ylabel('North(m)', fontsize = label_fontsize)
+    ax.set_zlabel('Elevation(m)', fontsize = label_fontsize)
 
     if axisInfo != None:
         vertLabels = (0, shape[1]*1//4, shape[1]*2//4, shape[1]*3//4, shape[1])
@@ -420,17 +430,17 @@ def plot3DScatter(npArr, vmin = None, vmax = None, filename = None, axisInfo = N
         ax.set_xticklabels((round(axisInfo[0]["min"]), round(axisInfo[0]["min"] + (axisInfo[0]["max"]-axisInfo[0]["min"])*1/4), 
                 round(axisInfo[0]["min"] + (axisInfo[0]["max"]-axisInfo[0]["min"])*2/4),
                 round(axisInfo[0]["min"] + (axisInfo[0]["max"]-axisInfo[0]["min"])*3/4),
-                round(axisInfo[0]["max"])))
+                round(axisInfo[0]["max"])), fontsize = label_fontsize)
         ax.set_yticks(vertLabels)
         ax.set_yticklabels((round(axisInfo[1]["min"]), round(axisInfo[1]["min"] + (axisInfo[1]["max"]-axisInfo[1]["min"])*1/4), 
                 round(axisInfo[1]["min"] + (axisInfo[1]["max"]-axisInfo[1]["min"])*2/4),
                 round(axisInfo[1]["min"] + (axisInfo[1]["max"]-axisInfo[1]["min"])*3/4),
-                round(axisInfo[1]["max"])))
+                round(axisInfo[1]["max"])), fontsize = label_fontsize)
         ax.set_zticks(elevLabels)
         ax.set_zticklabels((round(axisInfo[2]["min"]), round(axisInfo[2]["min"] + (axisInfo[2]["max"]-axisInfo[2]["min"])*1/4), 
                 round(axisInfo[2]["min"] + (axisInfo[2]["max"]-axisInfo[2]["min"])*2/4),
                 round(axisInfo[2]["min"] + (axisInfo[2]["max"]-axisInfo[2]["min"])*3/4),
-                round(axisInfo[2]["max"])))        
+                round(axisInfo[2]["max"])), fontsize = label_fontsize)        
 
     #%% colorbar plot
     axins = inset_axes(ax, width = "1%", height = "60%", loc = 'upper left')
