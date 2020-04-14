@@ -47,16 +47,24 @@ def savePlotLstOfLsts(lstOfLsts, labelsLst, xlabel, ylabel, title, directory, sa
     if save_tikz:
         tikzplotlib.save(format_path_extension(directory, '.tex'))
 
-def plot2Ds(planeLst, titleLst, filePath, cbarLabel = 'amount', plotShape = [3, 1], figSize = (8, 24), planeMaskLst = None, axis = 2, axisInfo = None, vmin_vmax = None, method = 'imshow', convertXYaxis = False, rotate = 0, label_font_size = 15, title_font_size = 18, cbar_font_size = 15, save_tikz = True):
+def plot2Ds(planeLst, titleLst, filePath, cbarLabel = 'amount', plotShape = [3, 1], figSize = (8, 8), planeMaskLst = None, axis = 2, axisInfo = None, vmin_vmax = None, method = 'imshow', convertXYaxis = False, rotate = 0, label_font_size = 15, title_font_size = 15, cbar_font_size = 15, save_tikz = True):
     '''
         If you want to provide mask matrix for scatter visualization, sequence should be (original matrix, recovered matrix) or (original matrix, recovered matrix, sparse matrix)
+
+        Parameters
+        ----------
+        figSize : array-like
+            horizontal, vertical size of each subplot.
     '''
 
     if filePath.count('/') <= 2:
         filePath_ = utilsforminds.helpers.getExecPath() + '/current_results/' + filePath
     else:
         filePath_ = filePath
-    fig = plt.figure(figsize = figSize)
+    num_plots = len(planeLst)
+    whole_figure_size = list(figSize)
+    whole_figure_size[1] *= num_plots ## increase horizontal length
+    fig = plt.figure(figsize = whole_figure_size)
     
     nPlots = len(planeLst)
     if vmin_vmax is None:
@@ -115,20 +123,20 @@ def plot2Ds(planeLst, titleLst, filePath, cbarLabel = 'amount', plotShape = [3, 
         horiAxis = (axis + 2) % 3
         vertAxis = (axis + 1) % 3
         if method == 'imshow':
-            horiLabels = utilsforminds.helpers.reverseLst(round(axisInfo[horiAxis]["max"]), 
+            horiLabels = utilsforminds.helpers.reverseLst((round(axisInfo[horiAxis]["max"]), 
             round(axisInfo[horiAxis]["min"] + (axisInfo[horiAxis]["max"]-axisInfo[horiAxis]["min"])*3/4),
             round(axisInfo[horiAxis]["min"] + (axisInfo[horiAxis]["max"]-axisInfo[horiAxis]["min"])*2/4),
             round(axisInfo[horiAxis]["min"] + (axisInfo[horiAxis]["max"]-axisInfo[horiAxis]["min"])*1/4),
-            round(axisInfo[horiAxis]["min"]))
+            round(axisInfo[horiAxis]["min"])))
         elif method == 'contour' or method == 'scatter':
             horiLabels = (round(axisInfo[horiAxis]["min"]), round(axisInfo[horiAxis]["min"] + (axisInfo[horiAxis]["max"]-axisInfo[horiAxis]["min"])*1/4), 
                     round(axisInfo[horiAxis]["min"] + (axisInfo[horiAxis]["max"]-axisInfo[horiAxis]["min"])*2/4),
                     round(axisInfo[horiAxis]["min"] + (axisInfo[horiAxis]["max"]-axisInfo[horiAxis]["min"])*3/4),
                     round(axisInfo[horiAxis]["max"]))
-        vertLabels = utilsforminds.helpers.reverseLst(round(axisInfo[vertAxis]["min"]), round(axisInfo[vertAxis]["min"] + (axisInfo[vertAxis]["max"]-axisInfo[vertAxis]["min"])*1/4), 
+        vertLabels = utilsforminds.helpers.reverseLst((round(axisInfo[vertAxis]["min"]), round(axisInfo[vertAxis]["min"] + (axisInfo[vertAxis]["max"]-axisInfo[vertAxis]["min"])*1/4), 
             round(axisInfo[vertAxis]["min"] + (axisInfo[vertAxis]["max"]-axisInfo[vertAxis]["min"])*2/4),
             round(axisInfo[vertAxis]["min"] + (axisInfo[vertAxis]["max"]-axisInfo[vertAxis]["min"])*3/4),
-            round(axisInfo[vertAxis]["max"]))
+            round(axisInfo[vertAxis]["max"])))
     if convertXYaxis:
         tmp = vertLabels
         vertLabels = horiLabels
@@ -139,8 +147,8 @@ def plot2Ds(planeLst, titleLst, filePath, cbarLabel = 'amount', plotShape = [3, 
             xlabel = 'Elevation(m)'
             ylabel = 'North(m)'
         else:
-            xlabel = 'North(m)'
-            ylabel = 'Elevation(m)'
+            xlabel = 'Elevation(m)'
+            ylabel = 'North(m)'
     elif axis == 1:
         if convertXYaxis:
             xlabel = 'East(m)'
@@ -169,9 +177,9 @@ def plot2Ds(planeLst, titleLst, filePath, cbarLabel = 'amount', plotShape = [3, 
 
             if method == 'imshow':
                 if vmin_vmax is not None:
-                    img = plt.imshow(plotPlaneLst[i], vmin = vmin_, vmax = vmax_)
+                    img = plt.imshow(plotPlaneLst[i], vmin = vmin_, vmax = vmax_, aspect = 'auto')
                 else:
-                    img = plt.imshow(plotPlaneLst[i])
+                    img = plt.imshow(plotPlaneLst[i], aspect = 'auto')
                 cbarInst = plt.colorbar(fraction=0.046, pad=0.04)
                 cbarInst.set_label(cbarLabel, fontsize = cbar_font_size)
             elif method == 'contour':
@@ -407,6 +415,7 @@ def plot3DScatter(npArr, vmin = None, vmax = None, filename = None, axisInfo = N
     else:
         ax.scatter(x, y, z, zdir='z', c= npArr_[x, y, z], alpha = max(1. - (num_obs / num_entries) ** (1/12), alpha_min), s = default_point_size * (100/avg_length))
     
+    ax.grid(b = None, which = 'minor') ## turn off grid lines
     ax.view_init(30, view_angle) ## set angle
     ## set background color as white
     ax.xaxis.set_pane_color((1.0, 1.0, 1.0, 0.0))
@@ -418,7 +427,9 @@ def plot3DScatter(npArr, vmin = None, vmax = None, filename = None, axisInfo = N
     # ax.zaxis._axinfo["grid"]['color'] =  (1,1,1,0)
 
     ax.set_xlabel('East(m)', fontsize = label_fontsize)
-    ax.set_ylabel('North(m)', fontsize = label_fontsize)
+    ax.set_ylabel('North(m)', fontsize = label_fontsize, linespacing=8.5)
+    # ax.set_ylabel('North(m)', fontsize = label_fontsize)
+    ax.yaxis.labelpad=80 ## set label margin
     ax.set_zlabel('Elevation(m)', fontsize = label_fontsize)
 
     if axisInfo != None:
