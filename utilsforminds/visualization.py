@@ -467,7 +467,8 @@ def plot3DScatter(npArr, vmin = None, vmax = None, filename = None, axisInfo = N
                 round(axisInfo[2]["min"] + (axisInfo[2]["max"]-axisInfo[2]["min"])*3/4),
                 round(axisInfo[2]["max"])), fontsize = label_fontsize)        
 
-    ax.view_init(30, view_angle) ## set angle, elev, azimuth angle
+    # ax.view_init(30, view_angle) ## set angle, elev, azimuth angle
+    ax.set_proj_type('ortho') ## make z axis vertical: https://stackoverflow.com/questions/26796997/how-to-get-vertical-z-axis-in-3d-surface-plot-of-matplotlib
     # plt.tight_layout()
 
     #%% colorbar plot
