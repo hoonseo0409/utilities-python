@@ -446,6 +446,10 @@ def plot3DScatter(npArr, vmin = None, vmax = None, filename = None, axisInfo = N
     ax.set_ylabel('North(m)', fontsize = label_fontsize)
     ax.set_zlabel('Elevation(m)', fontsize = label_fontsize)
     # ax.xaxis.labelpad=60 ## set label margin
+    ## set label margin
+    ax.set_xlim(0, npArr.shape[0])
+    ax.set_ylim(0, npArr.shape[1])
+    ax.set_zlim(0, npArr.shape[2])
 
     if axisInfo != None:
         vertLabels = (0, shape[1]*1//4, shape[1]*2//4, shape[1]*3//4, shape[1] - 1)
