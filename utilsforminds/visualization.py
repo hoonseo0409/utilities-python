@@ -9,23 +9,24 @@ if platform.lower() != 'darwin' and 'win' in platform.lower():
 else:
     matplotlib.use("MacOSX")
 # matplotlib.pyplot.set_cmap('Paired')
-
 import matplotlib.pyplot as plt
 plt.set_cmap('Paired')
+from mpl_toolkits.axes_grid1 import make_axes_locatable
+from matplotlib.ticker import FormatStrFormatter, FuncFormatter, MaxNLocator
+from mpl_toolkits.axes_grid1 import AxesGrid
+from mpl_toolkits.axes_grid1.inset_locator import inset_axes
+from mpl_toolkits.mplot3d import Axes3D
+
 import os
 import utilsforminds.helpers as helpers
 import random
-from mpl_toolkits.mplot3d import Axes3D
 import numpy as np
 import utilsforminds
 from mayavi import mlab # see install manual + brew install vtk
 from mayavi.api import Engine
 import mayavi.tools.pipeline
 from scipy import ndimage
-from matplotlib.ticker import FormatStrFormatter, FuncFormatter, MaxNLocator
-from mpl_toolkits.axes_grid1 import AxesGrid
 import moviepy.editor as mpy
-from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 from copy import deepcopy
 import tikzplotlib
 
@@ -47,26 +48,30 @@ def savePlotLstOfLsts(lstOfLsts, labelsLst, xlabel, ylabel, title, directory, sa
     if save_tikz:
         tikzplotlib.save(format_path_extension(directory, '.tex'))
 
-def plot2Ds(planeLst, titleLst, filePath, cbarLabel = 'amount', plotShape = [3, 1], figSize = (8, 8), planeMaskLst = None, axis = 2, axisInfo = None, vmin_vmax = None, method = 'imshow', convertXYaxis = False, rotate = 0, label_font_size = 15, title_font_size = 15, cbar_font_size = 15, save_tikz = True):
+def plot2Ds(planeLst, titleLst, filePath, cbarLabel = 'amount', plotShape = [3, 1], subplot_length = 16., subplot_ratio = (1., 1.), planeMaskLst = None, axis = 2, axisInfo = None, vmin_vmax = None, method = 'imshow', convertXYaxis = False, rotate = 0, label_font_size = 15, title_font_size = 15, cbar_font_size = 15, save_tikz = True):
     '''
         If you want to provide mask matrix for scatter visualization, sequence should be (original matrix, recovered matrix) or (original matrix, recovered matrix, sparse matrix)
 
         Parameters
         ----------
-        figSize : array-like
-            horizontal, vertical size of each subplot.
+        subplot_ration : array-like
+            horizontal, vertical size ration of each subplot.
     '''
 
     if filePath.count('/') <= 2:
         filePath_ = utilsforminds.helpers.getExecPath() + '/current_results/' + filePath
     else:
         filePath_ = filePath
-    num_plots = len(planeLst)
-    whole_figure_size = list(figSize)
-    whole_figure_size[1] *= num_plots ## increase horizontal length
+    nPlots = len(planeLst)
+    whole_figure_size = [subplot_length * subplot_ratio[0] / (subplot_ratio[0] + subplot_ratio[1]), subplot_length * subplot_ratio[1] * nPlots / (subplot_ratio[0] + subplot_ratio[1])]
+    whole_figure_size[1] *= nPlots ## increase horizontal length
     fig = plt.figure(figsize = whole_figure_size)
     
-    nPlots = len(planeLst)
+    ## adjust colorbar
+    ax = plt.gca()
+    divider = make_axes_locatable(ax)
+    cax = divider.append_axes("right", size="5%", pad=0.05)
+
     if vmin_vmax is None:
         vmax_ = planeLst[0].max()
         vmin_ = planeLst[0].min()
@@ -120,8 +125,7 @@ def plot2Ds(planeLst, titleLst, filePath, cbarLabel = 'amount', plotShape = [3, 
             horiLabels = horiLabelIdc
             vertLabels = vertLabelIdc
     else:
-        horiAxis = (axis + 2) % 3
-        vertAxis = (axis + 1) % 3
+        horiAxis, vertAxis = get_xy_axis_from_z(axis)
         if method == 'imshow':
             horiLabels = utilsforminds.helpers.reverseLst((round(axisInfo[horiAxis]["max"]), 
             round(axisInfo[horiAxis]["min"] + (axisInfo[horiAxis]["max"]-axisInfo[horiAxis]["min"])*3/4),
@@ -181,6 +185,7 @@ def plot2Ds(planeLst, titleLst, filePath, cbarLabel = 'amount', plotShape = [3, 
                 else:
                     img = plt.imshow(plotPlaneLst[i], aspect = 'auto')
                 cbarInst = plt.colorbar(fraction=0.046, pad=0.04)
+                # cbarInst = plt.colorbar(cax = cax)
                 cbarInst.set_label(cbarLabel, fontsize = cbar_font_size)
             elif method == 'contour':
                 if vmin_vmax is not None:
@@ -218,6 +223,7 @@ def plot2Ds(planeLst, titleLst, filePath, cbarLabel = 'amount', plotShape = [3, 
                 img = plt.scatter(xCounterOriginal, yCounterOriginal, c = plotPlaneLst[0][xCounterOriginal, yCounterOriginal], marker = 'o', s = pointSize)
             
             cbarInst = plt.colorbar(fraction=0.046, pad=0.04)
+            # cbarInst = plt.colorbar(cax = cax)
             cbarInst.set_label(cbarLabel, fontsize = cbar_font_size)
 
 
@@ -247,6 +253,7 @@ def plot2Ds(planeLst, titleLst, filePath, cbarLabel = 'amount', plotShape = [3, 
                 img = plt.scatter(xCounterOnlyRecovered, yCounterOnlyRecovered, c = plotPlaneLst[1][xCounterOnlyRecovered, yCounterOnlyRecovered], vmin=vmin_, vmax=vmax_, marker = '^', s = pointSize)
 
                 cbarInst = plt.colorbar(fraction=0.046, pad=0.04)
+                # cbarInst = plt.colorbar(cax = cax)
                 cbarInst.set_label(cbarLabel, fontsize = cbar_font_size)
             else:
                 img = plt.scatter(xZeroCounter, yZeroCounter, c = minArr[xZeroCounter, yZeroCounter], marker = 'x')
@@ -254,6 +261,7 @@ def plot2Ds(planeLst, titleLst, filePath, cbarLabel = 'amount', plotShape = [3, 
                 img = plt.scatter(xCounterOnlyRecovered, yCounterOnlyRecovered, c = plotPlaneLst[1][xCounterOnlyRecovered, yCounterOnlyRecovered], marker = '^')
 
                 cbarInst = plt.colorbar(fraction=0.046, pad=0.04)
+                # cbarInst = plt.colorbar(cax = cax)
                 cbarInst.set_label(cbarLabel, fontsize = cbar_font_size)
         else: # nPlots == 3
             plt.subplot(*(plotShape + [1]))
@@ -282,6 +290,7 @@ def plot2Ds(planeLst, titleLst, filePath, cbarLabel = 'amount', plotShape = [3, 
                 img = plt.scatter(xCounterOriginal, yCounterOriginal, c = plotPlaneLst[0][xCounterOriginal, yCounterOriginal], marker = 'o')
             
             cbarInst = plt.colorbar(fraction=0.046, pad=0.04)
+            # cbarInst = plt.colorbar(cax = cax)
             cbarInst.set_label(cbarLabel, fontsize = cbar_font_size)
 
 
@@ -311,6 +320,7 @@ def plot2Ds(planeLst, titleLst, filePath, cbarLabel = 'amount', plotShape = [3, 
                 img = plt.scatter(xCounterOnlyRecovered, yCounterOnlyRecovered, c = plotPlaneLst[1][xCounterOnlyRecovered, yCounterOnlyRecovered], vmin=vmin_, vmax=vmax_, marker = '^', s = pointSize)
 
                 cbarInst = plt.colorbar(fraction=0.046, pad=0.04)
+                # cbarInst = plt.colorbar(cax = cax)
                 cbarInst.set_label(cbarLabel, fontsize = cbar_font_size)
             else:
                 img = plt.scatter(xZeroCounter, yZeroCounter, c = minArr[xZeroCounter, yZeroCounter], marker = 'x', s = pointSize)
@@ -318,6 +328,7 @@ def plot2Ds(planeLst, titleLst, filePath, cbarLabel = 'amount', plotShape = [3, 
                 img = plt.scatter(xCounterOnlyRecovered, yCounterOnlyRecovered, c = plotPlaneLst[1][xCounterOnlyRecovered, yCounterOnlyRecovered], marker = '^', s = pointSize)
 
                 cbarInst = plt.colorbar(fraction=0.046, pad=0.04)
+                # cbarInst = plt.colorbar(cax = cax)
                 cbarInst.set_label(cbarLabel, fontsize = cbar_font_size)
 
 
@@ -343,12 +354,14 @@ def plot2Ds(planeLst, titleLst, filePath, cbarLabel = 'amount', plotShape = [3, 
                 img = plt.scatter(xCounterSampled, yCounterSampled, c = plotPlaneLst[2][xCounterSampled, yCounterSampled], vmin=vmin_, vmax=vmax_, marker = 'o', s = pointSize)
 
                 cbarInst = plt.colorbar(fraction=0.046, pad=0.04)
+                # cbarInst = plt.colorbar(cax = cax)
                 cbarInst.set_label(cbarLabel, fontsize = cbar_font_size)
             else:
                 img = plt.scatter(xZeroCounter, yZeroCounter, c = minArr[xZeroCounter, yZeroCounter], marker = 'x', s = pointSize)
                 img = plt.scatter(xCounterSampled, yCounterSampled, c = plotPlaneLst[2][xCounterSampled, yCounterSampled], marker = 'o', s = pointSize)
 
                 cbarInst = plt.colorbar(fraction=0.046, pad=0.04)
+                # cbarInst = plt.colorbar(cax = cax)
                 cbarInst.set_label(cbarLabel, fontsize = cbar_font_size)
 
     # tikzplotlib.save(format_path_extension(filePath_))
@@ -359,7 +372,7 @@ def plot2Ds(planeLst, titleLst, filePath, cbarLabel = 'amount', plotShape = [3, 
     plt.close('all')
     
 
-def plot3DScatter(npArr, vmin = None, vmax = None, filename = None, axisInfo = None, highest_amount_proportion_threshod = None, small_delta = 1e-8, bar_label = 'gram/ton', default_point_size = 1.0, alpha_min = 0.2, view_angle = 0, transparent_cbar = False, cbar_font_size = 10, label_fontsize = 10, adjust_axis_ratio = True, save_tikz = True):
+def plot3DScatter(npArr, vmin = None, vmax = None, filename = None, axisInfo = None, highest_amount_proportion_threshod = None, small_delta = 1e-8, bar_label = 'gram/ton', default_point_size = 1.0, alpha_min = 0.2, view_angle = 90, transparent_cbar = False, cbar_font_size = 10, label_fontsize = 10, adjust_axis_ratio = True, save_tikz = True):
     """Plot the points with amounts of mineral in 3D numpy array.
 
     Color intensities indicate the amounts.
@@ -415,8 +428,7 @@ def plot3DScatter(npArr, vmin = None, vmax = None, filename = None, axisInfo = N
     else:
         ax.scatter(x, y, z, zdir='z', c= npArr_[x, y, z], alpha = max(1. - (num_obs / num_entries) ** (1/12), alpha_min), s = default_point_size * (100/avg_length))
     
-    ax.grid(b = None, which = 'minor') ## turn off grid lines
-    ax.view_init(30, view_angle) ## set angle
+    # ax.grid(b = None, which = 'major') ## turn off grid lines
     ## set background color as white
     ax.xaxis.set_pane_color((1.0, 1.0, 1.0, 0.0))
     ax.yaxis.set_pane_color((1.0, 1.0, 1.0, 0.0))
@@ -426,11 +438,11 @@ def plot3DScatter(npArr, vmin = None, vmax = None, filename = None, axisInfo = N
     # ax.yaxis._axinfo["grid"]['color'] =  (1,1,1,0)
     # ax.zaxis._axinfo["grid"]['color'] =  (1,1,1,0)
 
+    # ax.set_xlabel('East(m)', fontsize = label_fontsize, linespacing=6.5)
     ax.set_xlabel('East(m)', fontsize = label_fontsize)
-    ax.set_ylabel('North(m)', fontsize = label_fontsize, linespacing=8.5)
-    # ax.set_ylabel('North(m)', fontsize = label_fontsize)
-    ax.yaxis.labelpad=80 ## set label margin
+    ax.set_ylabel('North(m)', fontsize = label_fontsize)
     ax.set_zlabel('Elevation(m)', fontsize = label_fontsize)
+    # ax.xaxis.labelpad=60 ## set label margin
 
     if axisInfo != None:
         vertLabels = (0, shape[1]*1//4, shape[1]*2//4, shape[1]*3//4, shape[1])
@@ -452,6 +464,9 @@ def plot3DScatter(npArr, vmin = None, vmax = None, filename = None, axisInfo = N
                 round(axisInfo[2]["min"] + (axisInfo[2]["max"]-axisInfo[2]["min"])*2/4),
                 round(axisInfo[2]["min"] + (axisInfo[2]["max"]-axisInfo[2]["min"])*3/4),
                 round(axisInfo[2]["max"])), fontsize = label_fontsize)        
+
+    ax.view_init(30, view_angle) ## set angle, elev, azimuth angle
+    # plt.tight_layout()
 
     #%% colorbar plot
     axins = inset_axes(ax, width = "1%", height = "60%", loc = 'upper left')
@@ -933,6 +948,10 @@ def plot_xy_lines(x, y_dict_list : list, path_to_save : str, title = None, x_lab
     if save_tikz:
         tikzplotlib.save(utilsforminds.visualization.format_path_extension(path_to_save))
     plt.clf()
+
+def get_xy_axis_from_z(zaxis = 0):
+    assert(zaxis in [0, 1, 2])
+    return (zaxis + 2) % 3, (zaxis + 1) % 3
 
 if __name__ == '__main__':
     pass
