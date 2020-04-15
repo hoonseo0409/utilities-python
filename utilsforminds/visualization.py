@@ -30,6 +30,7 @@ from scipy import ndimage
 import moviepy.editor as mpy
 from copy import deepcopy
 import tikzplotlib
+from itertools import product, combinations
 
 axis_rotation_dict = {0: 90, 1: 0, 2: 0}
 axis_name_dict = {0: 'East', 1: 'North', 2: 'Elevation'}
@@ -369,7 +370,7 @@ def plot2Ds(planeLst, titleLst, filePath, cbarLabel = 'amount', plotShape = [3, 
     plt.close('all')
     
 
-def plot3DScatter(npArr, vmin = None, vmax = None, filename = None, axisInfo = None, highest_amount_proportion_threshod = None, small_delta = 1e-8, bar_label = 'gram/ton', default_point_size = 1.0, alpha_min = 0.2, view_angle = 90, transparent_cbar = False, cbar_font_size = 10, label_fontsize = 3, adjust_axis_ratio = True, save_tikz = True):
+def plot3DScatter(npArr, vmin = None, vmax = None, filename = None, axisInfo = None, highest_amount_proportion_threshod = None, small_delta = 1e-8, bar_label = 'gram/ton', default_point_size = 1.0, alpha_min = 0.2, view_angle = 270, transparent_cbar = False, cbar_font_size = 11, label_fontsize = 11, adjust_axis_ratio = True, save_tikz = True):
     """Plot the points with amounts of mineral in 3D numpy array.
 
     Color intensities indicate the amounts.
@@ -405,7 +406,7 @@ def plot3DScatter(npArr, vmin = None, vmax = None, filename = None, axisInfo = N
     if adjust_axis_ratio and axisInfo is not None: # https://stackoverflow.com/questions/8130823/set-matplotlib-3d-plot-aspect-ratio
         z_range = axisInfo[2]['max'] - axisInfo[2]['min']
         xy_range_avg = (axisInfo[0]['max'] - axisInfo[0]['min'] + axisInfo[1]['max'] - axisInfo[1]['min']) / 2.
-        fig = plt.figure(figsize=plt.figaspect(z_range / xy_range_avg))
+        fig = plt.figure(figsize= plt.figaspect(z_range / xy_range_avg))
         ## * xy_range_avg / z_range, multiply this to fig size if you want to enlarge
         ## If you wanna change font size of axis tickers
         # ax.xaxis.set_tick_params(labelsize = 12 * xy_range_avg / z_range)
@@ -425,34 +426,88 @@ def plot3DScatter(npArr, vmin = None, vmax = None, filename = None, axisInfo = N
     else:
         ax.scatter(x, y, z, zdir='z', c= npArr_[x, y, z], alpha = max(1. - (num_obs / num_entries) ** (1/12), alpha_min), s = default_point_size * (100/avg_length))
     
-    # ax.grid(b = None, which = 'major') ## turn off grid lines
-    ## set background color as white
+    # ax.grid(b = None, which = 'both') ## turn off grid lines
+    ## remove BORDER FRAME BOUNDARY line
     ax.xaxis.set_pane_color((1.0, 1.0, 1.0, 0.0))
     ax.yaxis.set_pane_color((1.0, 1.0, 1.0, 0.0))
     ax.zaxis.set_pane_color((1.0, 1.0, 1.0, 0.0))
-    # make the grid lines transparent
+    ## Make panes transparent
+    ax.xaxis.pane.fill = False # Left pane
+    ax.yaxis.pane.fill = False # Right pane
+    ax.zaxis.pane.fill = False
+    ## make the grid lines transparent
     # ax.xaxis._axinfo["grid"]['color'] =  (1,1,1,0)
     # ax.yaxis._axinfo["grid"]['color'] =  (1,1,1,0)
     # ax.zaxis._axinfo["grid"]['color'] =  (1,1,1,0)
-    ax.grid(False)
 
+    # draw cube
+    # x_minmax = [0.5, 30.5]
+    # y_minmax = [-1.0, 30.5]
+    # z_minmax = [0., 30.]
+
+    # x_minmax = [0.5, npArr.shape[0] + 0.5]
+    # y_minmax = [-1.1, npArr.shape[1] + 0.5]
+    # z_minmax = [0.1, npArr.shape[2] + 0.1]
+
+    x_minmax = [npArr.shape[0] / 60., npArr.shape[0] * (30.5 / 30.)]
+    y_minmax = [- npArr.shape[1] / 27.272727272727, npArr.shape[1] * (30.5 / 30.)]
+    z_minmax = [npArr.shape[2] / 300, npArr.shape[2] * (30.1 / 30.)]
+
+    # r = [-0.5, 30.5]
+    # for s, e in combinations(np.array(list(product(x_minmax, y_minmax, z_minmax))), 2): ## Combination of two points on the grid points of cube(the number of case = 8 * 8 = 64), starting-ending
+    #     if np.sum(np.abs(s-e)) == xr[1]-xr[0]:
+    #         ax.plot3D(*zip(s, e), color="black")
+
+    for edge in ([[x_minmax[0], y_minmax[0], z_minmax[0]], [x_minmax[0], y_minmax[1], z_minmax[0]]], [[x_minmax[0], y_minmax[0], z_minmax[0]], [x_minmax[0], y_minmax[0], z_minmax[1]]], [[x_minmax[0], y_minmax[1], z_minmax[0]], [x_minmax[1], y_minmax[1], z_minmax[0]]], [[x_minmax[0], y_minmax[1], z_minmax[0]], [x_minmax[0], y_minmax[1], z_minmax[1]]], [[x_minmax[0], y_minmax[1], z_minmax[1]], [x_minmax[0], y_minmax[0], z_minmax[1]]], [[x_minmax[0], y_minmax[1], z_minmax[1]], [x_minmax[1], y_minmax[1], z_minmax[1]]]):
+        ax.plot3D(*zip(edge[0], edge[1]), color = "black", linewidth= 1.0)
+
+    # [i.set_linewidth(10.0) for i in ax.spines.values()]
+    # ax.grid(False) ## Remove grid lines, while leaving border lines
+    ax.grid(b= False)
+    # ax.grid(b= False, which= 'major') ## Remove grid lines, while leaving border lines
+    # ax.grid(b= False, which= 'minor') ## Remove grid lines, while leaving border lines
+    # ax.grid(b= False, which= 'both') ## Remove grid lines, while leaving border lines
+    # ax.grid(b= True, which= 'major', linewidth= 8) ## Remove grid lines, while leaving border lines
+    # ax.set_frame_on(False)
+
+    ## Change the strength of border lines 
+    # ax.w_xaxis.line.set_color((0., 0., 0., 1.0))
+    # ax.w_yaxis.line.set_color((0., 0., 0., 1.0))
+    # ax.w_zaxis.line.set_color((0., 0., 0., 1.0))
+    # [i.set_linewidth(2.0) for i in ax.spines.itervalues()]
+    # for axis in ['top','bottom','left','right']:
+    #     ax.spines[axis].set_linewidth(5.0)
+    # plt.gca().xaxis.set_major_locator(MaxNLocator(prune='lower'))
+    # plt.gca().yaxis.set_major_locator(MaxNLocator(prune='lower'))
+    # plt.gca().zaxis.set_major_locator(MaxNLocator(prune='lower'))
+    # plt.setp(ax.spines.values(), linewidth=5)
+    # ax.axhline(linewidth=8, color="g")
+    # ax.axvline(linewidth=8, color="r")
+    # ax.xaxis._axinfo["grid"]['linewidth'] = 3.
+    # ax.yaxis._axinfo["grid"]['linewidth'] = 3.
+    # ax.zaxis._axinfo["grid"]['linewidth'] = 3.
+    
     # ax.set_xlabel('East(m)', fontsize = label_fontsize, linespacing=6.5)
     ax.set_xlabel('East(m)', fontsize = label_fontsize)
     ax.set_ylabel('North(m)', fontsize = label_fontsize)
     ax.set_zlabel('Elevation(m)', fontsize = label_fontsize)
-    # ax.xaxis.labelpad=60 ## set label margin
     ## set label margin
     ax.xaxis.labelpad= 20 * (label_fontsize / 10.)
     ax.yaxis.labelpad= 20 * (label_fontsize / 10.)
     ax.zaxis.labelpad= 8 * (label_fontsize / 10.)
+    ## Define plot space
     ax.set_xlim(0, npArr.shape[0])
     ax.set_ylim(0, npArr.shape[1])
     ax.set_zlim(0, npArr.shape[2])
 
     if axisInfo != None:
-        vertLabels = (0, shape[1]*1//4, shape[1]*2//4, shape[1]*3//4, shape[1] - 1)
-        horiLabels = (0, shape[0]*1//4, shape[0]*2//4, shape[0]*3//4, shape[0] - 1)
-        elevLabels = (0, shape[2]*1//4, shape[2]*2//4, shape[2]*3//4, shape[2] - 1)
+        horiLabels = (0, shape[0]*1//4, shape[0]*2//4, shape[0]*3//4, shape[0])
+        vertLabels = (0, shape[1]*1//4, shape[1]*2//4, shape[1]*3//4, shape[1])
+        elevLabels = (0, shape[2]*1//4, shape[2]*2//4, shape[2]*3//4, shape[2])
+
+        # horiLabels = (-5, shape[0]*1//4, shape[0]*2//4, shape[0]*3//4, shape[0] + 5)
+        # vertLabels = (-5, shape[1]*1//4, shape[1]*2//4, shape[1]*3//4, shape[1] + 5)
+        # elevLabels = (-5, shape[2]*1//4, shape[2]*2//4, shape[2]*3//4, shape[2] + 5)
 
         ax.set_xticks(horiLabels)
         ax.set_xticklabels((round(axisInfo[0]["min"]), round(axisInfo[0]["min"] + (axisInfo[0]["max"]-axisInfo[0]["min"])*1/4), 
@@ -479,6 +534,7 @@ def plot3DScatter(npArr, vmin = None, vmax = None, filename = None, axisInfo = N
     cbar = plt.colorbar(ax.get_children()[0], ax = ax, cax = axins)
     axins.yaxis.set_ticks_position("left")
     cbar.set_label(bar_label, fontsize = cbar_font_size)
+    cbar.ax.tick_params(labelsize= cbar_font_size)
     if not transparent_cbar:
         cbar.solids.set(alpha=1)
     plt.savefig(filename)
