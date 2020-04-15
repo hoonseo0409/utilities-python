@@ -16,6 +16,7 @@ from matplotlib.ticker import FormatStrFormatter, FuncFormatter, MaxNLocator
 from mpl_toolkits.axes_grid1 import AxesGrid
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 from mpl_toolkits.mplot3d import Axes3D
+from mpl_toolkits.mplot3d.axis3d import Axis
 
 import os
 import utilsforminds.helpers as helpers
@@ -31,6 +32,7 @@ from copy import deepcopy
 import tikzplotlib
 
 axis_rotation_dict = {0: 90, 1: 0, 2: 0}
+axis_name_dict = {0: 'East', 1: 'North', 2: 'Elevation'}
 
 def savePlotLstOfLsts(lstOfLsts, labelsLst, xlabel, ylabel, title, directory, save_tikz = True):
     '''
@@ -63,7 +65,7 @@ def plot2Ds(planeLst, titleLst, filePath, cbarLabel = 'amount', plotShape = [3, 
     else:
         filePath_ = filePath
     nPlots = len(planeLst)
-    whole_figure_size = [subplot_length * subplot_ratio[0] / (subplot_ratio[0] + subplot_ratio[1]), subplot_length * subplot_ratio[1] * nPlots / (subplot_ratio[0] + subplot_ratio[1])]
+    whole_figure_size = [subplot_length * subplot_ratio[0] / (subplot_ratio[0] + subplot_ratio[1]), subplot_length * subplot_ratio[1] / (subplot_ratio[0] + subplot_ratio[1])]
     whole_figure_size[1] *= nPlots ## increase horizontal length
     fig = plt.figure(figsize = whole_figure_size)
     
@@ -372,7 +374,7 @@ def plot2Ds(planeLst, titleLst, filePath, cbarLabel = 'amount', plotShape = [3, 
     plt.close('all')
     
 
-def plot3DScatter(npArr, vmin = None, vmax = None, filename = None, axisInfo = None, highest_amount_proportion_threshod = None, small_delta = 1e-8, bar_label = 'gram/ton', default_point_size = 1.0, alpha_min = 0.2, view_angle = 90, transparent_cbar = False, cbar_font_size = 10, label_fontsize = 10, adjust_axis_ratio = True, save_tikz = True):
+def plot3DScatter(npArr, vmin = None, vmax = None, filename = None, axisInfo = None, highest_amount_proportion_threshod = None, small_delta = 1e-8, bar_label = 'gram/ton', default_point_size = 1.0, alpha_min = 0.2, view_angle = 90, transparent_cbar = False, cbar_font_size = 10, label_fontsize = 3, adjust_axis_ratio = True, save_tikz = True):
     """Plot the points with amounts of mineral in 3D numpy array.
 
     Color intensities indicate the amounts.
@@ -445,9 +447,9 @@ def plot3DScatter(npArr, vmin = None, vmax = None, filename = None, axisInfo = N
     # ax.xaxis.labelpad=60 ## set label margin
 
     if axisInfo != None:
-        vertLabels = (0, shape[1]*1//4, shape[1]*2//4, shape[1]*3//4, shape[1])
-        horiLabels = (0, shape[0]*1//4, shape[0]*2//4, shape[0]*3//4, shape[0])
-        elevLabels = (0, shape[2]*1//4, shape[2]*2//4, shape[2]*3//4, shape[2])
+        vertLabels = (0, shape[1]*1//4, shape[1]*2//4, shape[1]*3//4, shape[1] - 1)
+        horiLabels = (0, shape[0]*1//4, shape[0]*2//4, shape[0]*3//4, shape[0] - 1)
+        elevLabels = (0, shape[2]*1//4, shape[2]*2//4, shape[2]*3//4, shape[2] - 1)
 
         ax.set_xticks(horiLabels)
         ax.set_xticklabels((round(axisInfo[0]["min"]), round(axisInfo[0]["min"] + (axisInfo[0]["max"]-axisInfo[0]["min"])*1/4), 
