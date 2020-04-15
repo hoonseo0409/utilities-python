@@ -186,9 +186,9 @@ def plot2Ds(planeLst, titleLst, filePath, cbarLabel = 'amount', plotShape = [3, 
                     img = plt.imshow(plotPlaneLst[i], vmin = vmin_, vmax = vmax_, aspect = 'auto')
                 else:
                     img = plt.imshow(plotPlaneLst[i], aspect = 'auto')
-                cbarInst = plt.colorbar(fraction=0.046, pad=0.04)
-                # cbarInst = plt.colorbar(cax = cax)
+                cbarInst = plt.colorbar(fraction=0.046 * subplot_ratio[1] * nPlots / subplot_ratio[0], pad=0.04, aspect= 10 * subplot_ratio[1] * nPlots / subplot_ratio[0])
                 cbarInst.set_label(cbarLabel, fontsize = cbar_font_size)
+                cbarInst.ax.tick_params(labelsize= cbar_font_size)
             elif method == 'contour':
                 if vmin_vmax is not None:
                     img = plt.contour(np.flipud(plotPlaneLst[i]), vmin = vmin_, vmax = vmax_, linewidths = 2.0, colors = 'black', levels = [vmin_, vmin_ + (vmax_ - vmin_) * 1/8, vmin_ + (vmax_ - vmin_) * 2/8, vmin_ + (vmax_ - vmin_) * 3/8, vmin_ + (vmax_ - vmin_) * 4/8, vmin_ + (vmax_ - vmin_) * 5/8, vmin_ + (vmax_ - vmin_) * 6/8, vmin_ + (vmax_ - vmin_) * 7/8, vmax_])
@@ -224,9 +224,10 @@ def plot2Ds(planeLst, titleLst, filePath, cbarLabel = 'amount', plotShape = [3, 
                 img = plt.scatter(xZeroCounter, yZeroCounter, c = minArr[xZeroCounter, yZeroCounter], marker = 'x') # param s = 5.0 sets size of dots for 150 * 150 * 150 mapping
                 img = plt.scatter(xCounterOriginal, yCounterOriginal, c = plotPlaneLst[0][xCounterOriginal, yCounterOriginal], marker = 'o', s = pointSize)
             
-            cbarInst = plt.colorbar(fraction=0.046, pad=0.04)
+            cbarInst = plt.colorbar(fraction=0.046 * subplot_ratio[1] * nPlots / subplot_ratio[0], pad=0.04, aspect= 10 * subplot_ratio[1] * nPlots / subplot_ratio[0])
             # cbarInst = plt.colorbar(cax = cax)
             cbarInst.set_label(cbarLabel, fontsize = cbar_font_size)
+            cbarInst.ax.tick_params(labelsize= cbar_font_size)
 
 
             plt.subplot(*(plotShape + [2]))
@@ -254,17 +255,16 @@ def plot2Ds(planeLst, titleLst, filePath, cbarLabel = 'amount', plotShape = [3, 
                 img = plt.scatter(xCounterOriginal, yCounterOriginal, c = plotPlaneLst[0][xCounterOriginal, yCounterOriginal], vmin=vmin_, vmax=vmax_, marker = 'o', s = pointSize)
                 img = plt.scatter(xCounterOnlyRecovered, yCounterOnlyRecovered, c = plotPlaneLst[1][xCounterOnlyRecovered, yCounterOnlyRecovered], vmin=vmin_, vmax=vmax_, marker = '^', s = pointSize)
 
-                cbarInst = plt.colorbar(fraction=0.046, pad=0.04)
-                # cbarInst = plt.colorbar(cax = cax)
-                cbarInst.set_label(cbarLabel, fontsize = cbar_font_size)
             else:
                 img = plt.scatter(xZeroCounter, yZeroCounter, c = minArr[xZeroCounter, yZeroCounter], marker = 'x')
                 img = plt.scatter(xCounterOriginal, yCounterOriginal, c = plotPlaneLst[0][xCounterOriginal, yCounterOriginal], marker = 'o')
                 img = plt.scatter(xCounterOnlyRecovered, yCounterOnlyRecovered, c = plotPlaneLst[1][xCounterOnlyRecovered, yCounterOnlyRecovered], marker = '^')
 
-                cbarInst = plt.colorbar(fraction=0.046, pad=0.04)
-                # cbarInst = plt.colorbar(cax = cax)
-                cbarInst.set_label(cbarLabel, fontsize = cbar_font_size)
+            cbarInst = plt.colorbar(fraction=0.046 * subplot_ratio[1] * nPlots / subplot_ratio[0], pad=0.04, aspect= 10 * subplot_ratio[1] * nPlots / subplot_ratio[0])
+            # cbarInst = plt.colorbar(cax = cax)
+            cbarInst.set_label(cbarLabel, fontsize = cbar_font_size)
+            cbarInst.ax.tick_params(labelsize= cbar_font_size)
+
         else: # nPlots == 3
             plt.subplot(*(plotShape + [1]))
             plt.title(titleLst[0], fontsize = title_font_size)
@@ -291,10 +291,10 @@ def plot2Ds(planeLst, titleLst, filePath, cbarLabel = 'amount', plotShape = [3, 
                 img = plt.scatter(xZeroCounter, yZeroCounter, c = minArr[xZeroCounter, yZeroCounter], marker = 'x') # param s = 5.0 sets size of dots for 150 * 150 * 150 mapping
                 img = plt.scatter(xCounterOriginal, yCounterOriginal, c = plotPlaneLst[0][xCounterOriginal, yCounterOriginal], marker = 'o')
             
-            cbarInst = plt.colorbar(fraction=0.046, pad=0.04)
+            cbarInst = plt.colorbar(fraction=0.046 * subplot_ratio[1] * nPlots / subplot_ratio[0], pad=0.04, aspect= 10 * subplot_ratio[1] * nPlots / subplot_ratio[0])
             # cbarInst = plt.colorbar(cax = cax)
             cbarInst.set_label(cbarLabel, fontsize = cbar_font_size)
-
+            cbarInst.ax.tick_params(labelsize= cbar_font_size)
 
             plt.subplot(*(plotShape + [2]))
             plt.title(titleLst[1], fontsize = title_font_size)
@@ -321,18 +321,15 @@ def plot2Ds(planeLst, titleLst, filePath, cbarLabel = 'amount', plotShape = [3, 
                 img = plt.scatter(xCounterOriginal, yCounterOriginal, c = plotPlaneLst[0][xCounterOriginal, yCounterOriginal], vmin=vmin_, vmax=vmax_, marker = 'o', s = pointSize)
                 img = plt.scatter(xCounterOnlyRecovered, yCounterOnlyRecovered, c = plotPlaneLst[1][xCounterOnlyRecovered, yCounterOnlyRecovered], vmin=vmin_, vmax=vmax_, marker = '^', s = pointSize)
 
-                cbarInst = plt.colorbar(fraction=0.046, pad=0.04)
-                # cbarInst = plt.colorbar(cax = cax)
-                cbarInst.set_label(cbarLabel, fontsize = cbar_font_size)
             else:
                 img = plt.scatter(xZeroCounter, yZeroCounter, c = minArr[xZeroCounter, yZeroCounter], marker = 'x', s = pointSize)
                 img = plt.scatter(xCounterOriginal, yCounterOriginal, c = plotPlaneLst[0][xCounterOriginal, yCounterOriginal], marker = 'o', s = pointSize)
                 img = plt.scatter(xCounterOnlyRecovered, yCounterOnlyRecovered, c = plotPlaneLst[1][xCounterOnlyRecovered, yCounterOnlyRecovered], marker = '^', s = pointSize)
 
-                cbarInst = plt.colorbar(fraction=0.046, pad=0.04)
-                # cbarInst = plt.colorbar(cax = cax)
-                cbarInst.set_label(cbarLabel, fontsize = cbar_font_size)
-
+            cbarInst = plt.colorbar(fraction=0.046 * subplot_ratio[1] * nPlots / subplot_ratio[0], pad=0.04, aspect= 10 * subplot_ratio[1] * nPlots / subplot_ratio[0])
+            # cbarInst = plt.colorbar(cax = cax)
+            cbarInst.set_label(cbarLabel, fontsize = cbar_font_size)
+            cbarInst.ax.tick_params(labelsize= cbar_font_size)
 
             plt.subplot(*(plotShape + [3]))
             plt.title(titleLst[2], fontsize = title_font_size)
@@ -355,16 +352,14 @@ def plot2Ds(planeLst, titleLst, filePath, cbarLabel = 'amount', plotShape = [3, 
                 img = plt.scatter(xZeroCounter, yZeroCounter, c = minArr[xZeroCounter, yZeroCounter], vmin=vmin_, vmax=vmax_, marker = 'x', s = pointSize)
                 img = plt.scatter(xCounterSampled, yCounterSampled, c = plotPlaneLst[2][xCounterSampled, yCounterSampled], vmin=vmin_, vmax=vmax_, marker = 'o', s = pointSize)
 
-                cbarInst = plt.colorbar(fraction=0.046, pad=0.04)
-                # cbarInst = plt.colorbar(cax = cax)
-                cbarInst.set_label(cbarLabel, fontsize = cbar_font_size)
             else:
                 img = plt.scatter(xZeroCounter, yZeroCounter, c = minArr[xZeroCounter, yZeroCounter], marker = 'x', s = pointSize)
                 img = plt.scatter(xCounterSampled, yCounterSampled, c = plotPlaneLst[2][xCounterSampled, yCounterSampled], marker = 'o', s = pointSize)
 
-                cbarInst = plt.colorbar(fraction=0.046, pad=0.04)
-                # cbarInst = plt.colorbar(cax = cax)
-                cbarInst.set_label(cbarLabel, fontsize = cbar_font_size)
+            cbarInst = plt.colorbar(fraction=0.046 * subplot_ratio[1] * nPlots / subplot_ratio[0], pad=0.04, aspect= 10 * subplot_ratio[1] * nPlots / subplot_ratio[0])
+            # cbarInst = plt.colorbar(cax = cax)
+            cbarInst.set_label(cbarLabel, fontsize = cbar_font_size)
+            cbarInst.ax.tick_params(labelsize= cbar_font_size)
 
     # tikzplotlib.save(format_path_extension(filePath_))
     plt.savefig(filePath_, bbox_inches='tight')
