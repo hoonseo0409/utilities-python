@@ -370,7 +370,7 @@ def plot2Ds(planeLst, titleLst, filePath, cbarLabel = 'amount', plotShape = [3, 
     plt.close('all')
     
 
-def plot3DScatter(npArr, vmin = None, vmax = None, filename = None, axisInfo = None, highest_amount_proportion_threshod = None, small_delta = 1e-8, bar_label = 'gram/ton', default_point_size = 1.0, alpha_min = 0.2, view_angle = 270, transparent_cbar = False, cbar_font_size = 11, label_fontsize = 11, adjust_axis_ratio = True, save_tikz = True):
+def plot3DScatter(npArr, vmin = None, vmax = None, filename = None, axisInfo = None, highest_amount_proportion_threshod = None, small_delta = 1e-8, bar_label = 'gram/ton', default_point_size = 1.0, alpha_min = 0.2, transparent_cbar = False, cbar_font_size = 9, label_fontsize = 9, adjust_axis_ratio = True, save_tikz = True):
     """Plot the points with amounts of mineral in 3D numpy array.
 
     Color intensities indicate the amounts.
@@ -416,7 +416,6 @@ def plot3DScatter(npArr, vmin = None, vmax = None, filename = None, axisInfo = N
         fig = plt.figure()
     ax = fig.add_subplot(111, projection='3d')
 
-    # ax.scatter(x, y, z, zdir='z', c= npArr[x, y, z], cmap = 'Reds', vmin = vmin, vmax = vmax, marker = '.')
     if vmin is not None and (vmax is not None or highest_amount_proportion_threshod is not None):
         if highest_amount_proportion_threshod is not None:
             assert(1.0 >= highest_amount_proportion_threshod and highest_amount_proportion_threshod >= 0.)
@@ -426,7 +425,6 @@ def plot3DScatter(npArr, vmin = None, vmax = None, filename = None, axisInfo = N
     else:
         ax.scatter(x, y, z, zdir='z', c= npArr_[x, y, z], alpha = max(1. - (num_obs / num_entries) ** (1/12), alpha_min), s = default_point_size * (100/avg_length))
     
-    # ax.grid(b = None, which = 'both') ## turn off grid lines
     ## remove BORDER FRAME BOUNDARY line
     ax.xaxis.set_pane_color((1.0, 1.0, 1.0, 0.0))
     ax.yaxis.set_pane_color((1.0, 1.0, 1.0, 0.0))
@@ -440,54 +438,21 @@ def plot3DScatter(npArr, vmin = None, vmax = None, filename = None, axisInfo = N
     # ax.yaxis._axinfo["grid"]['color'] =  (1,1,1,0)
     # ax.zaxis._axinfo["grid"]['color'] =  (1,1,1,0)
 
-    # draw cube
-    # x_minmax = [0.5, 30.5]
-    # y_minmax = [-1.0, 30.5]
-    # z_minmax = [0., 30.]
-
-    # x_minmax = [0.5, npArr.shape[0] + 0.5]
-    # y_minmax = [-1.1, npArr.shape[1] + 0.5]
-    # z_minmax = [0.1, npArr.shape[2] + 0.1]
-
-    x_minmax = [npArr.shape[0] / 60., npArr.shape[0] * (30.5 / 30.)]
-    y_minmax = [- npArr.shape[1] / 27.272727272727, npArr.shape[1] * (30.5 / 30.)]
-    z_minmax = [npArr.shape[2] / 300, npArr.shape[2] * (30.1 / 30.)]
-
+    ## draw cube
+    ## ref: https://stackoverflow.com/questions/11140163/plotting-a-3d-cube-a-sphere-and-a-vector-in-matplotlib
     # r = [-0.5, 30.5]
     # for s, e in combinations(np.array(list(product(x_minmax, y_minmax, z_minmax))), 2): ## Combination of two points on the grid points of cube(the number of case = 8 * 8 = 64), starting-ending
     #     if np.sum(np.abs(s-e)) == xr[1]-xr[0]:
     #         ax.plot3D(*zip(s, e), color="black")
+    x_minmax = [npArr.shape[0] / 60., npArr.shape[0] * (30.5 / 30.)]
+    y_minmax = [- npArr.shape[1] / 27.272727272727, npArr.shape[1] * (30.5 / 30.)]
+    z_minmax = [npArr.shape[2] / 300, npArr.shape[2] * (30.1 / 30.)]
 
     for edge in ([[x_minmax[0], y_minmax[0], z_minmax[0]], [x_minmax[0], y_minmax[1], z_minmax[0]]], [[x_minmax[0], y_minmax[0], z_minmax[0]], [x_minmax[0], y_minmax[0], z_minmax[1]]], [[x_minmax[0], y_minmax[1], z_minmax[0]], [x_minmax[1], y_minmax[1], z_minmax[0]]], [[x_minmax[0], y_minmax[1], z_minmax[0]], [x_minmax[0], y_minmax[1], z_minmax[1]]], [[x_minmax[0], y_minmax[1], z_minmax[1]], [x_minmax[0], y_minmax[0], z_minmax[1]]], [[x_minmax[0], y_minmax[1], z_minmax[1]], [x_minmax[1], y_minmax[1], z_minmax[1]]]):
         ax.plot3D(*zip(edge[0], edge[1]), color = "black", linewidth= 1.0)
 
-    # [i.set_linewidth(10.0) for i in ax.spines.values()]
-    # ax.grid(False) ## Remove grid lines, while leaving border lines
-    ax.grid(b= False)
-    # ax.grid(b= False, which= 'major') ## Remove grid lines, while leaving border lines
-    # ax.grid(b= False, which= 'minor') ## Remove grid lines, while leaving border lines
-    # ax.grid(b= False, which= 'both') ## Remove grid lines, while leaving border lines
-    # ax.grid(b= True, which= 'major', linewidth= 8) ## Remove grid lines, while leaving border lines
-    # ax.set_frame_on(False)
-
-    ## Change the strength of border lines 
-    # ax.w_xaxis.line.set_color((0., 0., 0., 1.0))
-    # ax.w_yaxis.line.set_color((0., 0., 0., 1.0))
-    # ax.w_zaxis.line.set_color((0., 0., 0., 1.0))
-    # [i.set_linewidth(2.0) for i in ax.spines.itervalues()]
-    # for axis in ['top','bottom','left','right']:
-    #     ax.spines[axis].set_linewidth(5.0)
-    # plt.gca().xaxis.set_major_locator(MaxNLocator(prune='lower'))
-    # plt.gca().yaxis.set_major_locator(MaxNLocator(prune='lower'))
-    # plt.gca().zaxis.set_major_locator(MaxNLocator(prune='lower'))
-    # plt.setp(ax.spines.values(), linewidth=5)
-    # ax.axhline(linewidth=8, color="g")
-    # ax.axvline(linewidth=8, color="r")
-    # ax.xaxis._axinfo["grid"]['linewidth'] = 3.
-    # ax.yaxis._axinfo["grid"]['linewidth'] = 3.
-    # ax.zaxis._axinfo["grid"]['linewidth'] = 3.
+    ax.grid(b= False) ## Turn off grid lines
     
-    # ax.set_xlabel('East(m)', fontsize = label_fontsize, linespacing=6.5)
     ax.set_xlabel('East(m)', fontsize = label_fontsize)
     ax.set_ylabel('North(m)', fontsize = label_fontsize)
     ax.set_zlabel('Elevation(m)', fontsize = label_fontsize)
