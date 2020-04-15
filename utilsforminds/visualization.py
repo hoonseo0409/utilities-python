@@ -439,6 +439,7 @@ def plot3DScatter(npArr, vmin = None, vmax = None, filename = None, axisInfo = N
     # ax.xaxis._axinfo["grid"]['color'] =  (1,1,1,0)
     # ax.yaxis._axinfo["grid"]['color'] =  (1,1,1,0)
     # ax.zaxis._axinfo["grid"]['color'] =  (1,1,1,0)
+    ax.grid(False)
 
     # ax.set_xlabel('East(m)', fontsize = label_fontsize, linespacing=6.5)
     ax.set_xlabel('East(m)', fontsize = label_fontsize)
