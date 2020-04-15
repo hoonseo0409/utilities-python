@@ -447,6 +447,9 @@ def plot3DScatter(npArr, vmin = None, vmax = None, filename = None, axisInfo = N
     ax.set_zlabel('Elevation(m)', fontsize = label_fontsize)
     # ax.xaxis.labelpad=60 ## set label margin
     ## set label margin
+    ax.xaxis.labelpad= 20 * (label_fontsize / 10.)
+    ax.yaxis.labelpad= 20 * (label_fontsize / 10.)
+    ax.zaxis.labelpad= 8 * (label_fontsize / 10.)
     ax.set_xlim(0, npArr.shape[0])
     ax.set_ylim(0, npArr.shape[1])
     ax.set_zlim(0, npArr.shape[2])
