@@ -877,7 +877,7 @@ def plot_group_scatter(group_df, path_to_save, group_column, y_column, color_col
         tikzplotlib.save(utilsforminds.visualization.format_path_extension(path_to_save))
     plt.cla()
 
-def plot_top_bars_with_rows(reordered_SNPs_info_df, path_to_save : str, color_column = None, order_by = "weights", num_bars = 10, num_rows = 2, bar_width = 'auto', opacity = 0.8, format = 'eps', xticks_fontsize = 6, diagonal_xtickers = False):
+def plot_top_bars_with_rows(data_df, path_to_save : str, color_column = None, colors_rotation = ["red", "navy", "lightgreen", "teal", "violet", "green", "orange", "blue", "coral", "yellowgreen", "sienna", "olive", "maroon", "goldenrod", "darkblue", "orchid", "crimson"], order_by = "weights", x_column = None, group_column = None, xticks_replace_dict = None, xlabel = None, ylabel = None, title = None, num_bars = 10, num_rows = 2, re_range_max_min_proportion = None, show_group_error = True, show_group_size = True, bar_width = 'auto', opacity = 0.8, xticks_fontsize = 6, diagonal_xtickers = False, format = 'eps', save_tikz = True):
     """
     
     Parameters
@@ -887,56 +887,115 @@ def plot_top_bars_with_rows(reordered_SNPs_info_df, path_to_save : str, color_co
         xlabels : list
             Name of groups, For example ['CNN', 'LR', 'SVR', ..]
     """
+    assert(order_by in data_df.columns and 'color_temp' not in data_df.columns)
 
-    reordered_SNPs_info_df_copied = reordered_SNPs_info_df.copy()
-    reordered_SNPs_info_df_copied = reordered_SNPs_info_df_copied.sort_values(by = 'weights', ascending = False, inplace = False)
-    top_20_SNPs_names = list(reordered_SNPs_info_df_copied.loc[:, "SNP"][:20])
-    top_20_SNPs_weights = list(reordered_SNPs_info_df_copied.loc[:, "weights"][:20])
-    top_20_SNPs_colors = list(reordered_SNPs_info_df_copied.loc[:, "color_chr"][:20])
-    fig = plt.figure(figsize = (7, 4))
-
-    n_groups = 10
-
-    if bar_width == 'auto':
-        bar_width_ = 0.1
-
-    ## create plot
-    ax_1 = plt.subplot(2, 1, 1)
-    index = np.arange(n_groups)
-
-    ## set range
-    min_, max_ = np.min(top_20_SNPs_weights), np.max(top_20_SNPs_weights)
-    plt.ylim([0.5 * min_, 1.2 * max_])
-
-    rects_list = []
-    plt.bar(np.arange(10), top_20_SNPs_weights[:10], alpha = opacity, color = top_20_SNPs_colors[:10])
-    plt.xlabel("")
-    plt.ylabel("Weights")
-    if diagonal_xtickers:
-        plt.xticks(index + (bar_width_/2) * (1-1), top_20_SNPs_names[:10], rotation = 45, ha = "right")
+    # total_num_elements = num_bars * num_rows
+    data_df_copied = data_df.copy()
+    if group_column is not None:
+        assert(x_column is None)
+        assert(group_column in data_df_copied.columns())
+        unique_group_names_list = list(data_df_copied[group_column].unique())
+        if show_group_size:
+            counts_groups_dict = {}
+            for group in unique_group_names_list:
+                series_obj = data_df_copied.apply(lambda x: True if x[group_column] == group else False, axis = 1)
+                counts_groups_dict[group] = len(series_obj[series_obj == True].index)
+        if color_column is not None:
+            assert(data_df_copied[[group_column, color_column]].groupby(group_column).agg(lambda x: len(set(x)) == 1).all(axis = None))
+            group_color_dict = dict(data_df_copied[[group_column, color_column]].groupby(group_column)[color_column].apply(lambda x: list(x)[0]))
+            data_df_copied = data_df_copied.groupby([group_column], as_index = False).agg({order_by: ['mean', lambda x: x.std(ddof=0)], color_column: 'first'})
+            data_df_copied.columns = [group_column, order_by, 'std', 'color_temp']
+        else:
+            group_color_dict = {}
+            for group, i in zip(unique_group_names_list, range(len(unique_group_names_list))):
+                group_color_dict[group] = colors_rotation[i % len(colors_rotation)]
+            data_df_copied['color_temp'] = data_df_copied[group_column].apply(lambda x: group_color_dict[x])
+            data_df_copied = data_df_copied.groupby([group_column], as_index = False).agg({order_by: ['mean', lambda x: x.std(ddof=0)], 'color_temp': 'first'})
+            data_df_copied.columns = [group_column, order_by, 'std']
+        # assert(len(data_df_copied) >= total_num_elements)
+        index_column = group_column
     else:
-        plt.xticks(index + (bar_width_/2) * (1-1), top_20_SNPs_names[:10])
-    # plt.legend()
-    plt.title('Top-20 SNPs')
-    for obj in ax_1.get_xticklabels():
-        obj.set_fontsize(xticks_fontsize)
+        assert(x_column is not None)
+        index_column = x_column
+        if color_column is not None:
+            data_df_copied.rename(columns= {color_column: 'color_temp'})
+        else:
+            data_df_copied['color_temp'] = data_df_copied[data_df_copied.index.name].apply(lambda x: color_column[x % len(color_column)])
     
-    ax_2 = plt.subplot(2, 1, 2)
-    plt.ylim([0.5 * min_, 1.2 * max_])
-    plt.bar(np.arange(10), top_20_SNPs_weights[10:], alpha = opacity, color = top_20_SNPs_colors[10:])
-    plt.xlabel("")
-    plt.ylabel("Weights")
-    if diagonal_xtickers:
-        plt.xticks(index + (bar_width_/2) * (1-1), top_20_SNPs_names[10:], rotation = 45, ha = "right")
-    else:
-        plt.xticks(index + (bar_width_/2) * (1-1), top_20_SNPs_names[10:])
-    for obj in ax_2.get_xticklabels():
-        obj.set_fontsize(xticks_fontsize)
-    # plt.legend()
+    data_df_copied = data_df_copied.sort_values(by = order_by, ascending = False, inplace = False)
 
-    # plt.tight_layout()
-    # plt.show()
+    total_num_elements = len(data_df_copied)
+    num_for_each_row_list = []
+    for i in range(num_rows):
+        if total_num_elements > num_bars:
+            num_for_each_row_list.append(num_bars)
+            total_num_elements -= num_bars
+        else:
+            num_for_each_row_list.append(total_num_elements)
+            break
+
+    fig = plt.figure(figsize = (7, 2 * len(num_for_each_row_list)))
+
+    axes = []
+    num_plots_accumulated = 0
+    for row_idx in range(len(num_for_each_row_list)):
+        top_names = list(data_df_copied.loc[:, index_column][num_plots_accumulated:(num_plots_accumulated + num_for_each_row_list[row_idx])])
+        if xticks_replace_dict is not None:
+            top_names_ = []
+            for name in top_names:
+                top_names_.append(xticks_replace_dict[name])
+        else:
+            top_names_ = top_names
+        if show_group_size:
+            assert(group_column is not None)
+            for idx, name in zip(range(len(top_names)), top_names):
+                top_names_[idx] = top_names_[idx] + f"({counts_groups_dict[name]})"
+        top_weights = list(data_df_copied.loc[:, order_by][num_plots_accumulated:(num_plots_accumulated + num_for_each_row_list[row_idx])])
+        top_colors = list(data_df_copied.loc[:, "color_temp"][num_plots_accumulated:(num_plots_accumulated + num_for_each_row_list[row_idx])])
+        num_plots_accumulated += num_for_each_row_list[row_idx]
+        if show_group_error:
+            top_errors = list(data_df_copied.loc[:, 'std'][num_plots_accumulated:(num_plots_accumulated + num_for_each_row_list[row_idx])])
+        if bar_width == 'auto':
+            bar_width_ = 1. / num_for_each_row_list[row_idx]
+        else:
+            bar_width_ = bar_width
+
+        ## create plot
+        axes.append(plt.subplot(num_for_each_row_list[row_idx], 1, i + 1))
+        index_ = np.arange(num_for_each_row_list[row_idx])
+
+        ## set range
+        if re_range_max_min_proportion is not None:
+            assert(re_range_max_min_proportion[0] < 1., re_range_max_min_proportion[1] >= 1.)
+            min_, max_ = np.min(top_weights), np.max(top_weights)
+            plt.ylim([re_range_max_min_proportion[0] * min_, re_range_max_min_proportion[1] * max_])
+
+        if show_group_error:
+            plt.bar(index_, top_weights, alpha = opacity, color = top_colors, yerr = top_errors)
+        else:
+            plt.bar(index_, top_weights, alpha = opacity, color = top_colors)
+        if xlabel is not None:
+            plt.xlabel(xlabel)
+        else:
+            plt.xlabel(index_column)
+        if ylabel is not None:
+            plt.ylabel(ylabel)
+        else:
+            plt.ylabel(order_by)
+        
+        if diagonal_xtickers:
+            plt.xticks(index + (bar_width_/2) * (1-1), top_names_, rotation = 45, ha = "right")
+        else:
+            plt.xticks(index + (bar_width_/2) * (1-1), top_names_)
+
+        for obj in ax_2.get_xticklabels():
+            obj.set_fontsize(xticks_fontsize)
+
+    if title is not None:
+        plt.title(title)
     plt.savefig(path_to_save, format = format)
+    if save_tikz:
+        tikzplotlib.save(utilsforminds.visualization.format_path_extension(path_to_save))
     plt.clf()
 
 def plot_xy_lines(x, y_dict_list : list, path_to_save : str, title = None, x_label = None, y_label = None, figsize= (17, 5), label_fontsize = 20, format = 'eps', save_tikz = True):
