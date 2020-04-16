@@ -877,7 +877,7 @@ def plot_group_scatter(group_df, path_to_save, group_column, y_column, color_col
         tikzplotlib.save(utilsforminds.visualization.format_path_extension(path_to_save))
     plt.cla()
 
-def plot_top_bars_with_rows(data_df, path_to_save : str, color_column = None, colors_rotation = ["red", "navy", "lightgreen", "teal", "violet", "green", "orange", "blue", "coral", "yellowgreen", "sienna", "olive", "maroon", "goldenrod", "darkblue", "orchid", "crimson"], order_by = "weights", x_column = None, group_column = None, xticks_replace_dict = None, xlabel = None, ylabel = None, title = None, num_bars = 10, num_rows = 2, re_range_max_min_proportion = None, show_group_error = True, show_group_size = True, bar_width = 'auto', opacity = 0.8, xticks_fontsize = 6, diagonal_xtickers = False, format = 'eps', save_tikz = True):
+def plot_top_bars_with_rows(data_df, path_to_save : str, color_column = None, colors_rotation = ["red", "navy", "lightgreen", "teal", "violet", "green", "orange", "blue", "coral", "yellowgreen", "sienna", "olive", "maroon", "goldenrod", "darkblue", "orchid", "crimson"], order_by = "weights", x_column = None, group_column = None, xticks_replace_dict = None, xlabel = None, ylabel = None, title = None, num_bars = 10, num_rows = 2, re_range_max_min_proportion = None, show_group_error = True, show_group_size = True, bar_width = 'auto', opacity = 0.8, xticks_fontsize = 10, diagonal_xtickers = False, format = 'eps', save_tikz = True):
     """
     
     Parameters
@@ -887,13 +887,14 @@ def plot_top_bars_with_rows(data_df, path_to_save : str, color_column = None, co
         xlabels : list
             Name of groups, For example ['CNN', 'LR', 'SVR', ..]
     """
-    assert(order_by in data_df.columns and 'color_temp' not in data_df.columns)
+    assert(order_by in data_df.columns and 'color_temp' not in data_df.columns and 'index_temp' not in data_df.columns)
 
     # total_num_elements = num_bars * num_rows
     data_df_copied = data_df.copy()
+    data_df_copied['index_temp'] = range(0, len(data_df_copied))
     if group_column is not None:
         assert(x_column is None)
-        assert(group_column in data_df_copied.columns())
+        assert(group_column in data_df_copied.columns)
         unique_group_names_list = list(data_df_copied[group_column].unique())
         if show_group_size:
             counts_groups_dict = {}
@@ -903,15 +904,14 @@ def plot_top_bars_with_rows(data_df, path_to_save : str, color_column = None, co
         if color_column is not None:
             assert(data_df_copied[[group_column, color_column]].groupby(group_column).agg(lambda x: len(set(x)) == 1).all(axis = None))
             group_color_dict = dict(data_df_copied[[group_column, color_column]].groupby(group_column)[color_column].apply(lambda x: list(x)[0]))
-            data_df_copied = data_df_copied.groupby([group_column], as_index = False).agg({order_by: ['mean', lambda x: x.std(ddof=0)], color_column: 'first'})
-            data_df_copied.columns = [group_column, order_by, 'std', 'color_temp']
+            data_df_copied = data_df_copied.groupby([group_column], as_index = False).agg({order_by: ['mean', lambda x: x.std(ddof=0)], color_column: 'first', 'index_temp': 'first'})
         else:
             group_color_dict = {}
             for group, i in zip(unique_group_names_list, range(len(unique_group_names_list))):
                 group_color_dict[group] = colors_rotation[i % len(colors_rotation)]
             data_df_copied['color_temp'] = data_df_copied[group_column].apply(lambda x: group_color_dict[x])
-            data_df_copied = data_df_copied.groupby([group_column], as_index = False).agg({order_by: ['mean', lambda x: x.std(ddof=0)], 'color_temp': 'first'})
-            data_df_copied.columns = [group_column, order_by, 'std']
+            data_df_copied = data_df_copied.groupby([group_column], as_index = False).agg({order_by: ['mean', lambda x: x.std(ddof=0)], 'color_temp': 'first', 'index_temp': 'first'})
+        data_df_copied.columns = [group_column, order_by, 'std', 'color_temp', 'index_temp']
         # assert(len(data_df_copied) >= total_num_elements)
         index_column = group_column
     else:
@@ -920,7 +920,7 @@ def plot_top_bars_with_rows(data_df, path_to_save : str, color_column = None, co
         if color_column is not None:
             data_df_copied.rename(columns= {color_column: 'color_temp'})
         else:
-            data_df_copied['color_temp'] = data_df_copied[data_df_copied.index.name].apply(lambda x: color_column[x % len(color_column)])
+            data_df_copied['color_temp'] = data_df_copied['index_temp'].apply(lambda x: colors_rotation[x % len(colors_rotation)])
     
     data_df_copied = data_df_copied.sort_values(by = order_by, ascending = False, inplace = False)
 
@@ -934,7 +934,8 @@ def plot_top_bars_with_rows(data_df, path_to_save : str, color_column = None, co
             num_for_each_row_list.append(total_num_elements)
             break
 
-    fig = plt.figure(figsize = (7, 2 * len(num_for_each_row_list)))
+    # fig = plt.figure(figsize = (7, 3 * len(num_for_each_row_list)))
+    fig = plt.figure()
 
     axes = []
     num_plots_accumulated = 0
@@ -945,32 +946,32 @@ def plot_top_bars_with_rows(data_df, path_to_save : str, color_column = None, co
             for name in top_names:
                 top_names_.append(xticks_replace_dict[name])
         else:
-            top_names_ = top_names
+            top_names_ = deepcopy(top_names)
         if show_group_size:
             assert(group_column is not None)
             for idx, name in zip(range(len(top_names)), top_names):
-                top_names_[idx] = top_names_[idx] + f"({counts_groups_dict[name]})"
+                top_names_[idx] = str(top_names_[idx]) + f"({counts_groups_dict[name]})"
         top_weights = list(data_df_copied.loc[:, order_by][num_plots_accumulated:(num_plots_accumulated + num_for_each_row_list[row_idx])])
         top_colors = list(data_df_copied.loc[:, "color_temp"][num_plots_accumulated:(num_plots_accumulated + num_for_each_row_list[row_idx])])
-        num_plots_accumulated += num_for_each_row_list[row_idx]
-        if show_group_error:
+        if show_group_error and group_column is not None:
             top_errors = list(data_df_copied.loc[:, 'std'][num_plots_accumulated:(num_plots_accumulated + num_for_each_row_list[row_idx])])
         if bar_width == 'auto':
             bar_width_ = 1. / num_for_each_row_list[row_idx]
         else:
             bar_width_ = bar_width
-
+        num_plots_accumulated += num_for_each_row_list[row_idx]
+        
         ## create plot
-        axes.append(plt.subplot(num_for_each_row_list[row_idx], 1, i + 1))
+        axes.append(plt.subplot(len(num_for_each_row_list), 1, row_idx + 1))
         index_ = np.arange(num_for_each_row_list[row_idx])
 
         ## set range
         if re_range_max_min_proportion is not None:
-            assert(re_range_max_min_proportion[0] < 1., re_range_max_min_proportion[1] >= 1.)
+            assert(re_range_max_min_proportion[0] < 1. and re_range_max_min_proportion[1] >= 1.)
             min_, max_ = np.min(top_weights), np.max(top_weights)
             plt.ylim([re_range_max_min_proportion[0] * min_, re_range_max_min_proportion[1] * max_])
 
-        if show_group_error:
+        if show_group_error and group_column is not None:
             plt.bar(index_, top_weights, alpha = opacity, color = top_colors, yerr = top_errors)
         else:
             plt.bar(index_, top_weights, alpha = opacity, color = top_colors)
@@ -984,15 +985,17 @@ def plot_top_bars_with_rows(data_df, path_to_save : str, color_column = None, co
             plt.ylabel(order_by)
         
         if diagonal_xtickers:
-            plt.xticks(index + (bar_width_/2) * (1-1), top_names_, rotation = 45, ha = "right")
+            plt.xticks(index_ + (bar_width_/2) * (1-1), top_names_, rotation = 45, ha = "right")
         else:
-            plt.xticks(index + (bar_width_/2) * (1-1), top_names_)
+            plt.xticks(index_ + (bar_width_/2) * (1-1), top_names_)
 
-        for obj in ax_2.get_xticklabels():
+        for obj in axes[row_idx].get_xticklabels():
             obj.set_fontsize(xticks_fontsize)
 
     if title is not None:
         plt.title(title)
+
+    fig.tight_layout()
     plt.savefig(path_to_save, format = format)
     if save_tikz:
         tikzplotlib.save(utilsforminds.visualization.format_path_extension(path_to_save))
