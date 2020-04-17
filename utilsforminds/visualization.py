@@ -635,7 +635,7 @@ def convert_3Darray_to_4DarrayRGB(arr_3D, vmin = None, vmax = None, cmap = plt.g
     arr_4D = np.delete(arr_4D, 3, 3)
     return arr_4D
 
-def plot_bar_charts(path_to_save : str, name_numbers : dict, xlabels : list, xtitle = None, ytitle = None, bar_width = 'auto', alpha = 0.8, colors_dict = None, format = 'eps', diagonal_xtickers = False, name_errors = None, name_to_show_percentage = None, fontsize = 10, title = None, fix_legend = True, save_tikz = True):
+def plot_bar_charts(path_to_save : str, name_numbers : dict, xlabels : list, xtitle = None, ytitle = None, bar_width = 'auto', alpha = 0.8, colors_dict = None, format = 'eps', diagonal_xtickers = 0, name_errors = None, name_to_show_percentage = None, fontsize = 10, title = None, figsize = None, fix_legend = True, plot_legend = True, save_tikz = True):
     """
     
     Parameters
@@ -672,13 +672,15 @@ def plot_bar_charts(path_to_save : str, name_numbers : dict, xlabels : list, xti
             mean = np.mean(scores_of_group)
             xlabels_copied[i] += f'({(mean - name_numbers[name_to_show_percentage][i]) * 100. / mean:.2f}%)'
     if bar_width == 'auto':
-        bar_width_ = 0.30 * (2 / len(name_numbers))   
+        bar_width_ = 0.30 * (2 / len(name_numbers))  
     else:
         bar_width_ = bar_width
-
-    # create plot
-    fig, ax = plt.subplots()
     index = np.arange(n_groups)
+    # create plot
+    if figsize is None:
+        fig, ax = plt.subplots()
+    else:
+        fig, ax = plt.subplots(figsize = figsize)
 
     rects_list = []
     index_copied = np.copy(index).astype(np.float)
@@ -687,22 +689,26 @@ def plot_bar_charts(path_to_save : str, name_numbers : dict, xlabels : list, xti
         index_copied += bar_width_
 
     if title is not None:
-        plt.title(title)
+        plt.title(title, fontsize = fontsize + 2)
     if xtitle is not None:
         plt.xlabel(xtitle, fontsize = fontsize)
     if ytitle is not None:
         plt.ylabel(ytitle, fontsize = fontsize)
     # plt.title('Scores by person')
-    if diagonal_xtickers:
+    if diagonal_xtickers == True:
         plt.xticks(index + (bar_width_/2) * (len(name_numbers)-1), xlabels_copied, fontsize = fontsize, rotation = 45, ha = "right")
-    else:
+    elif diagonal_xtickers == False:
         plt.xticks(index + (bar_width_/2) * (len(name_numbers)-1), xlabels_copied, fontsize = fontsize)
+    else:
+        plt.xticks(index + (bar_width_/2) * (len(name_numbers)-1), xlabels_copied, fontsize = fontsize, rotation = diagonal_xtickers, ha = "right")
     if fix_legend:
         numbers_tot = []
         for numbers in name_numbers.values():
             numbers_tot += numbers
         plt.ylim([0., np.max(numbers_tot) * (1. + 0.1 * len(name_numbers))])
-    plt.legend()
+    
+    if plot_legend:
+        plt.legend()
 
     plt.tight_layout()
     # plt.show()
@@ -773,7 +779,7 @@ def format_path_extension(path : str, extension : str = '.tex'):
     else:
         return path + extension
 
-def plot_group_scatter(group_df, path_to_save, group_column, y_column, color_column = None, colors_rotation = ["red", "navy", "lightgreen", "teal", "violet", "green", "orange", "blue", "coral", "yellowgreen", "sienna", "olive", "maroon", "goldenrod", "darkblue", "orchid", "crimson"], group_sequence = None, xlabel = None, ylabel = None, diagonal_xtickers = False, group_column_xtext_dict = None, order_by = None, num_truncate_small_groups = 0, save_tikz = True):
+def plot_group_scatter(group_df, path_to_save, group_column, y_column, color_column = None, colors_rotation = ["red", "navy", "lightgreen", "teal", "violet", "green", "orange", "blue", "coral", "yellowgreen", "sienna", "olive", "maroon", "goldenrod", "darkblue", "orchid", "crimson"], group_sequence = None, xlabel = None, ylabel = None, rotation_xtickers = 0, group_column_xtext_dict = None, order_by = None, num_truncate_small_groups = 0, save_tikz = True):
     group_df_copied = group_df.copy()
     assert("order" not in group_df_copied.columns and "color_temp" not in group_df_copied.columns and "index_temp" not in group_df_copied.columns)
     ## To get most common color : group_df_copied[[group_column, color_column]].groupby(group_column).agg(lambda x:x.value_counts().index[0])
@@ -850,8 +856,8 @@ def plot_group_scatter(group_df, path_to_save, group_column, y_column, color_col
     x_axis = ax.axes.get_xaxis()
     # x_axis.set_visible(False)
     ax.set_xticks(hori_labels)
-    if diagonal_xtickers:
-        ax.set_xticklabels(x_ticks_texts, rotation = 45, ha = "right")
+    if rotation_xtickers != 0:
+        ax.set_xticklabels(x_ticks_texts, rotation = rotation_xtickers, ha = "right")
     else:
         ax.set_xticklabels(x_ticks_texts)
     # ax.tick_params(axis = 'x', colors = x_ticks_colors)
@@ -877,15 +883,9 @@ def plot_group_scatter(group_df, path_to_save, group_column, y_column, color_col
         tikzplotlib.save(utilsforminds.visualization.format_path_extension(path_to_save))
     plt.cla()
 
-def plot_top_bars_with_rows(data_df, path_to_save : str, color_column = None, colors_rotation = ["red", "navy", "lightgreen", "teal", "violet", "green", "orange", "blue", "coral", "yellowgreen", "sienna", "olive", "maroon", "goldenrod", "darkblue", "orchid", "crimson"], order_by = "weights", x_column = None, group_column = None, xticks_replace_dict = None, xlabel = None, ylabel = None, title = None, num_bars = 10, num_rows = 2, re_range_max_min_proportion = None, show_group_error = True, show_group_size = True, bar_width = 'auto', opacity = 0.8, xticks_fontsize = 10, diagonal_xtickers = False, format = 'eps', save_tikz = True):
-    """
+def plot_top_bars_with_rows(data_df, path_to_save : str, color_column = None, colors_rotation = ["red", "navy", "lightgreen", "teal", "violet", "green", "orange", "blue", "coral", "yellowgreen", "sienna", "olive", "maroon", "goldenrod", "darkblue", "orchid", "crimson"], order_by = "weights", x_column = None, group_column = None, xticks_replace_dict = None, xlabel = None, ylabel = None, title = None, num_bars = 10, num_rows = 2, re_range_max_min_proportion = None, show_group_error = True, show_group_size = True, bar_width = 'auto', opacity = 0.8, xticks_fontsize = 10, rotation_xtickers = 0, format = 'eps', save_tikz = True):
+    """Plot the pandas df's rows of highest values.
     
-    Parameters
-    ----------
-        name_numbers : dict
-            For example, name_numbers['enriched'] == [0.12, 0.43, 0.12] for RMSE
-        xlabels : list
-            Name of groups, For example ['CNN', 'LR', 'SVR', ..]
     """
     assert(order_by in data_df.columns and 'color_temp' not in data_df.columns and 'index_temp' not in data_df.columns)
 
@@ -918,7 +918,7 @@ def plot_top_bars_with_rows(data_df, path_to_save : str, color_column = None, co
         assert(x_column is not None)
         index_column = x_column
         if color_column is not None:
-            data_df_copied.rename(columns= {color_column: 'color_temp'})
+            data_df_copied = data_df_copied.rename(columns= {color_column: 'color_temp'})
         else:
             data_df_copied['color_temp'] = data_df_copied['index_temp'].apply(lambda x: colors_rotation[x % len(colors_rotation)])
     
@@ -984,8 +984,8 @@ def plot_top_bars_with_rows(data_df, path_to_save : str, color_column = None, co
         else:
             plt.ylabel(order_by)
         
-        if diagonal_xtickers:
-            plt.xticks(index_ + (bar_width_/2) * (1-1), top_names_, rotation = 45, ha = "right")
+        if rotation_xtickers != 0:
+            plt.xticks(index_ + (bar_width_/2) * (1-1), top_names_, rotation = rotation_xtickers, ha = "right")
         else:
             plt.xticks(index_ + (bar_width_/2) * (1-1), top_names_)
 
