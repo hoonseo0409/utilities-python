@@ -1271,6 +1271,36 @@ def get_top_n_indices(array_like, n = 1, from_largest = True):
         ind = np.argpartition(array_input, n * factor_from_largest)[:n * factor_from_largest]
     return ind[np.argsort(factor_from_largest * array_input[ind])]
 
+def add_column_conditional(df, column_bemapped, mapping, new_column_name = 'added'):
+    """
+    
+    Parameters
+    ----------
+    mapping: dict, list, function
+        Condition about how to map the element to new value of new column. If list, unique elements of column_bemapped to the elements of list, and if the number of unique elements exceed the length of list, the elements of list is rotated.
+
+    Returns
+    -------
+    df_copied : pandas df
+        dataframe with added column
+    """
+
+    assert(new_column_name not in df.columns)
+    df_copied = df.copy()
+    if callable(mapping):
+        raise(Exception(NotImplementedError))
+        return 0
+    if isinstance(mapping, list):
+        unique_names_list = list(df_copied[column_bemapped].unique())
+        name_map_dict = {}
+        for name, idx in zip(unique_names_list, range(len(unique_names_list))):
+            name_map_dict[name] = mapping[idx % len(mapping)]
+    elif isinstance(mapping, dict):
+        name_map_dict = deepcopy(mapping)
+    ## Do mapping == list or dict case
+    df_copied[new_column_name] = df_copied[column_bemapped].map(name_map_dict)
+    return df_copied
+
 if __name__ == '__main__':
     pass
     print(get_top_n_indices(array_like = [3, 5, 1, 7, 3, 5], n = 3, from_largest = True))
