@@ -635,7 +635,7 @@ def convert_3Darray_to_4DarrayRGB(arr_3D, vmin = None, vmax = None, cmap = plt.g
     arr_4D = np.delete(arr_4D, 3, 3)
     return arr_4D
 
-def plot_bar_charts(path_to_save : str, name_numbers : dict, xlabels : list, xtitle = None, ytitle = None, bar_width = 'auto', alpha = 0.8, colors_dict = None, format = 'eps', diagonal_xtickers = 0, name_errors = None, name_to_show_percentage = None, fontsize = 10, title = None, figsize = None, fix_legend = True, plot_legend = True, save_tikz = True):
+def plot_bar_charts(path_to_save : str, name_numbers : dict, xlabels : list, xtitle = None, ytitle = None, bar_width = 'auto', alpha = 0.8, colors_dict = None, format = 'eps', diagonal_xtickers = 0, name_errors = None, name_to_show_percentage = None, fontsize = 10, title = None, figsize = None, ylim = None, fix_legend = True, plot_legend = True, save_tikz = True):
     """
     
     Parameters
@@ -707,6 +707,9 @@ def plot_bar_charts(path_to_save : str, name_numbers : dict, xlabels : list, xti
             numbers_tot += numbers
         plt.ylim([0., np.max(numbers_tot) * (1. + 0.1 * len(name_numbers))])
     
+    if ylim is not None:
+        plt.ylim(ylim)
+
     if plot_legend:
         plt.legend()
 
