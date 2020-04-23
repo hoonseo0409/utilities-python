@@ -370,7 +370,7 @@ def plot2Ds(planeLst, titleLst, filePath, cbarLabel = 'amount', plotShape = [3, 
     plt.close('all')
     
 
-def plot3DScatter(npArr, vmin = None, vmax = None, filename = None, axisInfo = None, highest_amount_proportion_threshod = None, small_delta = 1e-8, bar_label = 'gram/ton', default_point_size = 1.0, alpha_min = 0.2, transparent_cbar = False, cbar_font_size = 9, label_fontsize = 9, adjust_axis_ratio = True, save_tikz = True):
+def plot3DScatter(npArr, vmin = None, vmax = None, filename = None, axisInfo = None, label_position = [0., 1/4, 2/4, 3/4, 1.], highest_amount_proportion_threshod = None, small_delta = 1e-8, bar_label = 'gram/ton', default_point_size = 1.0, alpha_min = 0.2, transparent_cbar = False, cbar_font_size = 9, cbar_position = 'upper left', label_fontsize = 9, adjust_axis_ratio = True, save_tikz = True):
     """Plot the points with amounts of mineral in 3D numpy array.
 
     Color intensities indicate the amounts.
@@ -403,6 +403,7 @@ def plot3DScatter(npArr, vmin = None, vmax = None, filename = None, axisInfo = N
     avg_length = avg_length ** (1/3)
     num_obs = np.count_nonzero(npArr_)
 
+    ## Adjust width height ratio
     if adjust_axis_ratio and axisInfo is not None: # https://stackoverflow.com/questions/8130823/set-matplotlib-3d-plot-aspect-ratio
         z_range = axisInfo[2]['max'] - axisInfo[2]['min']
         xy_range_avg = (axisInfo[0]['max'] - axisInfo[0]['min'] + axisInfo[1]['max'] - axisInfo[1]['min']) / 2.
@@ -438,7 +439,7 @@ def plot3DScatter(npArr, vmin = None, vmax = None, filename = None, axisInfo = N
     # ax.yaxis._axinfo["grid"]['color'] =  (1,1,1,0)
     # ax.zaxis._axinfo["grid"]['color'] =  (1,1,1,0)
 
-    ## draw cube
+    ## draw frame
     ## ref: https://stackoverflow.com/questions/11140163/plotting-a-3d-cube-a-sphere-and-a-vector-in-matplotlib
     # r = [-0.5, 30.5]
     # for s, e in combinations(np.array(list(product(x_minmax, y_minmax, z_minmax))), 2): ## Combination of two points on the grid points of cube(the number of case = 8 * 8 = 64), starting-ending
@@ -447,7 +448,6 @@ def plot3DScatter(npArr, vmin = None, vmax = None, filename = None, axisInfo = N
     x_minmax = [npArr.shape[0] / 60., npArr.shape[0] * (30.5 / 30.)]
     y_minmax = [- npArr.shape[1] / 27.272727272727, npArr.shape[1] * (30.5 / 30.)]
     z_minmax = [npArr.shape[2] / 300, npArr.shape[2] * (30.1 / 30.)]
-
     for edge in ([[x_minmax[0], y_minmax[0], z_minmax[0]], [x_minmax[0], y_minmax[1], z_minmax[0]]], [[x_minmax[0], y_minmax[0], z_minmax[0]], [x_minmax[0], y_minmax[0], z_minmax[1]]], [[x_minmax[0], y_minmax[1], z_minmax[0]], [x_minmax[1], y_minmax[1], z_minmax[0]]], [[x_minmax[0], y_minmax[1], z_minmax[0]], [x_minmax[0], y_minmax[1], z_minmax[1]]], [[x_minmax[0], y_minmax[1], z_minmax[1]], [x_minmax[0], y_minmax[0], z_minmax[1]]], [[x_minmax[0], y_minmax[1], z_minmax[1]], [x_minmax[1], y_minmax[1], z_minmax[1]]]):
         ax.plot3D(*zip(edge[0], edge[1]), color = "black", linewidth= 1.0)
 
@@ -466,36 +466,42 @@ def plot3DScatter(npArr, vmin = None, vmax = None, filename = None, axisInfo = N
     ax.set_zlim(0, npArr.shape[2])
 
     if axisInfo != None:
-        horiLabels = (0, shape[0]*1//4, shape[0]*2//4, shape[0]*3//4, shape[0])
-        vertLabels = (0, shape[1]*1//4, shape[1]*2//4, shape[1]*3//4, shape[1])
-        elevLabels = (0, shape[2]*1//4, shape[2]*2//4, shape[2]*3//4, shape[2])
+        # horiLabels = (0, shape[0]*1//4, shape[0]*2//4, shape[0]*3//4, shape[0])
+        # vertLabels = (0, shape[1]*1//4, shape[1]*2//4, shape[1]*3//4, shape[1])
+        # elevLabels = (0, shape[2]*1//4, shape[2]*2//4, shape[2]*3//4, shape[2])
 
-        # horiLabels = (-5, shape[0]*1//4, shape[0]*2//4, shape[0]*3//4, shape[0] + 5)
-        # vertLabels = (-5, shape[1]*1//4, shape[1]*2//4, shape[1]*3//4, shape[1] + 5)
-        # elevLabels = (-5, shape[2]*1//4, shape[2]*2//4, shape[2]*3//4, shape[2] + 5)
+        horiLabels = [round(position_proportion * shape[0]) for position_proportion in label_position]
+        vertLabels = [round(position_proportion * shape[1]) for position_proportion in label_position]
+        elevLabels = [round(position_proportion * shape[2]) for position_proportion in label_position]
 
         ax.set_xticks(horiLabels)
-        ax.set_xticklabels((round(axisInfo[0]["min"]), round(axisInfo[0]["min"] + (axisInfo[0]["max"]-axisInfo[0]["min"])*1/4), 
-                round(axisInfo[0]["min"] + (axisInfo[0]["max"]-axisInfo[0]["min"])*2/4),
-                round(axisInfo[0]["min"] + (axisInfo[0]["max"]-axisInfo[0]["min"])*3/4),
-                round(axisInfo[0]["max"])), fontsize = label_fontsize)
+        # ax.set_xticklabels((round(axisInfo[0]["min"]), round(axisInfo[0]["min"] + (axisInfo[0]["max"]-axisInfo[0]["min"])*1/4), 
+        #         round(axisInfo[0]["min"] + (axisInfo[0]["max"]-axisInfo[0]["min"])*2/4),
+        #         round(axisInfo[0]["min"] + (axisInfo[0]["max"]-axisInfo[0]["min"])*3/4),
+        #         round(axisInfo[0]["max"])), fontsize = label_fontsize)
+        # ax.set_yticks(vertLabels)
+        # ax.set_yticklabels((round(axisInfo[1]["min"]), round(axisInfo[1]["min"] + (axisInfo[1]["max"]-axisInfo[1]["min"])*1/4), 
+        #         round(axisInfo[1]["min"] + (axisInfo[1]["max"]-axisInfo[1]["min"])*2/4),
+        #         round(axisInfo[1]["min"] + (axisInfo[1]["max"]-axisInfo[1]["min"])*3/4),
+        #         round(axisInfo[1]["max"])), fontsize = label_fontsize)
+        # ax.set_zticks(elevLabels)
+        # ax.set_zticklabels((round(axisInfo[2]["min"]), round(axisInfo[2]["min"] + (axisInfo[2]["max"]-axisInfo[2]["min"])*1/4), 
+        #         round(axisInfo[2]["min"] + (axisInfo[2]["max"]-axisInfo[2]["min"])*2/4),
+        #         round(axisInfo[2]["min"] + (axisInfo[2]["max"]-axisInfo[2]["min"])*3/4),
+        #         round(axisInfo[2]["max"])), fontsize = label_fontsize)  
+
+        ax.set_xticklabels([round(axisInfo[0]["min"] + (axisInfo[0]["max"] - axisInfo[0]["min"]) * position_proportion) for position_proportion in label_position], fontsize = label_fontsize)
         ax.set_yticks(vertLabels)
-        ax.set_yticklabels((round(axisInfo[1]["min"]), round(axisInfo[1]["min"] + (axisInfo[1]["max"]-axisInfo[1]["min"])*1/4), 
-                round(axisInfo[1]["min"] + (axisInfo[1]["max"]-axisInfo[1]["min"])*2/4),
-                round(axisInfo[1]["min"] + (axisInfo[1]["max"]-axisInfo[1]["min"])*3/4),
-                round(axisInfo[1]["max"])), fontsize = label_fontsize)
+        ax.set_yticklabels([round(axisInfo[1]["min"] + (axisInfo[1]["max"] - axisInfo[0]["min"]) * position_proportion) for position_proportion in label_position], fontsize = label_fontsize)
         ax.set_zticks(elevLabels)
-        ax.set_zticklabels((round(axisInfo[2]["min"]), round(axisInfo[2]["min"] + (axisInfo[2]["max"]-axisInfo[2]["min"])*1/4), 
-                round(axisInfo[2]["min"] + (axisInfo[2]["max"]-axisInfo[2]["min"])*2/4),
-                round(axisInfo[2]["min"] + (axisInfo[2]["max"]-axisInfo[2]["min"])*3/4),
-                round(axisInfo[2]["max"])), fontsize = label_fontsize)        
+        ax.set_zticklabels([round(axisInfo[2]["min"] + (axisInfo[2]["max"] - axisInfo[0]["min"]) * position_proportion) for position_proportion in label_position], fontsize = label_fontsize)       
 
     # ax.view_init(30, view_angle) ## set angle, elev, azimuth angle
     ax.set_proj_type('ortho') ## make z axis vertical: https://stackoverflow.com/questions/26796997/how-to-get-vertical-z-axis-in-3d-surface-plot-of-matplotlib
     # plt.tight_layout()
 
     #%% colorbar plot
-    axins = inset_axes(ax, width = "1%", height = "60%", loc = 'upper left')
+    axins = inset_axes(ax, width = "1%", height = "60%", loc = cbar_position)
     cbar = plt.colorbar(ax.get_children()[0], ax = ax, cax = axins)
     axins.yaxis.set_ticks_position("left")
     cbar.set_label(bar_label, fontsize = cbar_font_size)
