@@ -387,7 +387,9 @@ def plot2Ds(planeLst, titleLst, filePath, cbarLabel = 'amount', plotShape = [3, 
             cbarInst.ax.tick_params(labelsize= cbar_font_size)
 
     # tikzplotlib.save(format_path_extension(filePath_))
-    plt.savefig(filePath_, bbox_inches='tight')
+    # plt.savefig(filePath_, bbox_inches='tight')
+    plt.tight_layout()
+    plt.savefig(filePath)
     if save_tikz:
         tikzplotlib.save(format_path_extension(filePath_, '.tex'))
     # tikz_save('fig.tikz')
