@@ -117,10 +117,10 @@ def plot2Ds(planeLst, titleLst, filePath, cbarLabel = 'amount', plotShape = [3, 
                 plotPlaneMaskLst[i] = ndimage.rotate(plotPlaneMaskLst[i], rotate)
         shape_ = plotPlaneLst[0].shape
 
-
-    horiLabelIdc = [round(shape_[1] * position_proportion) for position_proportion in label_positions]
-    # vertLabelIdc = (0, shape_[0]*1//4, shape_[0]*2//4, shape_[0]*3//4, shape_[0] - 1)
-    vertLabelIdc = [round(shape_[0] * position_proportion) for position_proportion in label_positions]
+    horiLabelIdc = [min(round(shape_[0] * position_proportion), shape_[0] - 1) for position_proportion in label_positions]
+    vertLabelIdc = [min(round(shape_[1] - shape_[1] * position_proportion), shape_[1] - 1) for position_proportion in label_positions]
+    # horiLabelIdc = [round(shape_[1] * position_proportion) for position_proportion in label_positions]
+    # vertLabelIdc = [round(shape_[0] * position_proportion) for position_proportion in label_positions]
     if axisInfo is None:
         if method == 'imshow':
             horiLabels = utilsforminds.helpers.reverseLst(horiLabelIdc)
@@ -130,42 +130,70 @@ def plot2Ds(planeLst, titleLst, filePath, cbarLabel = 'amount', plotShape = [3, 
             vertLabels = vertLabelIdc
     else:
         horiAxis, vertAxis = get_xy_axis_from_z(axis)
-        if method == 'imshow':
-            # horiLabels = utilsforminds.helpers.reverseLst((round(axisInfo[horiAxis]["max"]), 
-            # round(axisInfo[horiAxis]["min"] + (axisInfo[horiAxis]["max"]-axisInfo[horiAxis]["min"])*3/4),
-            # round(axisInfo[horiAxis]["min"] + (axisInfo[horiAxis]["max"]-axisInfo[horiAxis]["min"])*2/4),
-            # round(axisInfo[horiAxis]["min"] + (axisInfo[horiAxis]["max"]-axisInfo[horiAxis]["min"])*1/4),
-            # round(axisInfo[horiAxis]["min"])))
-            horiLabels = utilsforminds.helpers.reverseLst([round(axisInfo[horiAxis]["min"] + (axisInfo[horiAxis]["max"] - axisInfo[horiAxis]["min"]) * position_proportion) for position_proportion in label_positions])
-        elif method == 'contour' or method == 'scatter':
-            horiLabels = [round(axisInfo[horiAxis]["min"] + (axisInfo[horiAxis]["max"] - axisInfo[horiAxis]["min"]) * position_proportion) for position_proportion in label_positions]
-        vertLabels = utilsforminds.helpers.reverseLst([round(axisInfo[vertAxis]["min"] + (axisInfo[vertAxis]["max"] - axisInfo[vertAxis]["min"]) * position_proportion) for position_proportion in label_positions])
+        horiLabels = [round(axisInfo[horiAxis]["min"] + (axisInfo[horiAxis]["max"] - axisInfo[horiAxis]["min"]) * position_proportion) for position_proportion in label_positions]
+        vertLabels = [round(axisInfo[vertAxis]["min"] + (axisInfo[vertAxis]["max"] - axisInfo[vertAxis]["min"]) * position_proportion) for position_proportion in label_positions]
+
+        # if method == 'imshow':
+        #     horiLabels = utilsforminds.helpers.reverseLst([round(axisInfo[horiAxis]["min"] + (axisInfo[horiAxis]["max"] - axisInfo[horiAxis]["min"]) * position_proportion) for position_proportion in label_positions])
+        # elif method == 'contour' or method == 'scatter':
+        #     horiLabels = [round(axisInfo[horiAxis]["min"] + (axisInfo[horiAxis]["max"] - axisInfo[horiAxis]["min"]) * position_proportion) for position_proportion in label_positions]
+        # vertLabels = utilsforminds.helpers.reverseLst([round(axisInfo[vertAxis]["min"] + (axisInfo[vertAxis]["max"] - axisInfo[vertAxis]["min"]) * position_proportion) for position_proportion in label_positions])
+    
+    # if axis == 0:
+    #     if convertXYaxis:
+    #         xlabel = 'Elevation(m)'
+    #         ylabel = 'North(m)'
+    #     else:
+    #         xlabel = 'Elevation(m)'
+    #         ylabel = 'North(m)'
+    # elif axis == 1:
+    #     if convertXYaxis:
+    #         xlabel = 'East(m)'
+    #         ylabel = 'Elevation(m)'
+    #     else:
+    #         xlabel = 'East(m)'
+    #         ylabel = 'Elevation(m)'
+    # elif axis == 2:
+    #     if convertXYaxis:
+    #         xlabel = 'North(m)'
+    #         ylabel = 'East(m)'
+    #     else:
+    #         xlabel = 'East(m)'
+    #         ylabel = 'North(m)'
+
+    # if axis == 0:
+    #     if convertXYaxis:
+    #         xlabel = 'North(m)'
+    #         ylabel = 'Elevation(m)'
+    #     else:
+    #         xlabel = 'Elevation(m)'
+    #         ylabel = 'North(m)'
+    # elif axis == 1:
+    #     if convertXYaxis:
+    #         xlabel = 'East(m)'
+    #         ylabel = 'Elevation(m)'
+    #     else:
+    #         xlabel = 'East(m)'
+    #         ylabel = 'Elevation(m)'
+    # elif axis == 2:
+    #     if convertXYaxis:
+    #         xlabel = 'North(m)'
+    #         ylabel = 'East(m)'
+    #     else:
+    #         xlabel = 'East(m)'
+    #         ylabel = 'North(m)'
+
+    axis_label_names_dict = {0: "East(m)", 1: "North(m)", 2: "Elevation(m)"}
+    xlabel = axis_label_names_dict[get_xy_axis_from_z(axis)[0]]
+    ylabel = axis_label_names_dict[get_xy_axis_from_z(axis)[1]]
+
     if convertXYaxis:
         tmp = vertLabels
         vertLabels = horiLabels
         horiLabels = tmp
-    
-    if axis == 0:
-        if convertXYaxis:
-            xlabel = 'Elevation(m)'
-            ylabel = 'North(m)'
-        else:
-            xlabel = 'Elevation(m)'
-            ylabel = 'North(m)'
-    elif axis == 1:
-        if convertXYaxis:
-            xlabel = 'East(m)'
-            ylabel = 'Elevation(m)'
-        else:
-            xlabel = 'East(m)'
-            ylabel = 'Elevation(m)'
-    elif axis == 2:
-        if convertXYaxis:
-            xlabel = 'North(m)'
-            ylabel = 'East(m)'
-        else:
-            xlabel = 'East(m)'
-            ylabel = 'North(m)'
+        tmp = xlabel
+        xlabel = ylabel
+        ylabel = tmp
     
     if method == 'imshow' or method == 'contour':
         for i in range(nPlots):
@@ -497,7 +525,8 @@ def plot3DScatter(npArr, vmin = None, vmax = None, filename = None, axisInfo = N
     # plt.tight_layout()
 
     #%% colorbar plot
-    axins = inset_axes(ax, width = "2%", height = "60%", loc = cbar_position)
+    (1.4, 1.6, 1.0, 1.0)
+    axins = inset_axes(ax, width = "2%", height = "60%", loc = cbar_position, bbox_to_anchor = (1.4, 2.4, 1.0, 1.0))
     cbar = plt.colorbar(ax.get_children()[0], ax = ax, cax = axins)
     axins.yaxis.set_ticks_position("left")
     cbar.set_label(bar_label, fontsize = cbar_font_size)
@@ -1046,7 +1075,15 @@ def plot_xy_lines(x, y_dict_list : list, path_to_save : str, title = None, x_lab
 
 def get_xy_axis_from_z(zaxis = 0):
     assert(zaxis in [0, 1, 2])
-    return (zaxis + 2) % 3, (zaxis + 1) % 3
+    # return (zaxis + 1) % 3, (zaxis + 2) % 3
+    if zaxis == 0:
+        return 1, 2
+    elif zaxis == 1:
+        return 0, 2
+    elif zaxis == 2:
+        return 0, 1
+    else:
+        raise Exception(ValueError)
 
 if __name__ == '__main__':
     pass
