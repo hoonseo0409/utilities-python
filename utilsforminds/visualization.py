@@ -51,7 +51,7 @@ def savePlotLstOfLsts(lstOfLsts, labelsLst, xlabel, ylabel, title, directory, sa
     if save_tikz:
         tikzplotlib.save(format_path_extension(directory, '.tex'))
 
-def plot2Ds(planeLst, titleLst, filePath, cbarLabel = 'amount', plotShape = [3, 1], subplot_length = 16., subplot_ratio = (1., 1.), planeMaskLst = None, axis = 2, axisInfo = None, vmin_vmax = None, method = 'imshow', convertXYaxis = False, rotate = 0, label_font_size = 15, label_positions = [0/4, 1/4, 2/4, 3/4, 4/4], title_font_size = 15, cbar_font_size = 15, save_tikz = True):
+def plot2Ds(planeLst, titleLst, filePath, cbarLabel = 'amount', plotShape = [3, 1], subplot_length = 16., subplot_ratio = (1., 1.), planeMaskLst = None, axis = 2, axisInfo = None, vmin_vmax = None, method = 'imshow', convertXYaxis = False, rotate = 0, label_font_size = 25, label_positions = [0., 0.3, 0.6, 0.9], title_font_size = 25, cbar_font_size = 25, save_tikz = True):
     '''
         If you want to provide mask matrix for scatter visualization, sequence should be (original matrix, recovered matrix) or (original matrix, recovered matrix, sparse matrix)
 
@@ -65,11 +65,14 @@ def plot2Ds(planeLst, titleLst, filePath, cbarLabel = 'amount', plotShape = [3, 
         filePath_ = utilsforminds.helpers.getExecPath() + '/current_results/' + filePath
     else:
         filePath_ = filePath
+    
+    # label_positions = [0/4, 1/4, 2/4, 3/4, 4/4]
+    labels_colorbar_margin_size = 2.5 * (label_font_size / 25.)
     nPlots = len(planeLst)
-    whole_figure_size = [subplot_length * subplot_ratio[0] / (subplot_ratio[0] + subplot_ratio[1]), subplot_length * subplot_ratio[1] / (subplot_ratio[0] + subplot_ratio[1])]
+    whole_figure_size = [subplot_length * subplot_ratio[0] / (subplot_ratio[0] + subplot_ratio[1]) + labels_colorbar_margin_size, subplot_length * subplot_ratio[1] / (subplot_ratio[0] + subplot_ratio[1])]
     whole_figure_size[1] *= nPlots ## increase horizontal length
     fig = plt.figure(figsize = whole_figure_size)
-    
+
     ## adjust colorbar
     ax = plt.gca()
     divider = make_axes_locatable(ax)
@@ -119,8 +122,6 @@ def plot2Ds(planeLst, titleLst, filePath, cbarLabel = 'amount', plotShape = [3, 
 
     horiLabelIdc = [min(round(shape_[0] * position_proportion), shape_[0] - 1) for position_proportion in label_positions]
     vertLabelIdc = [min(round(shape_[1] - shape_[1] * position_proportion), shape_[1] - 1) for position_proportion in label_positions]
-    # horiLabelIdc = [round(shape_[1] * position_proportion) for position_proportion in label_positions]
-    # vertLabelIdc = [round(shape_[0] * position_proportion) for position_proportion in label_positions]
     if axisInfo is None:
         if method == 'imshow':
             horiLabels = utilsforminds.helpers.reverseLst(horiLabelIdc)
@@ -132,57 +133,7 @@ def plot2Ds(planeLst, titleLst, filePath, cbarLabel = 'amount', plotShape = [3, 
         horiAxis, vertAxis = get_xy_axis_from_z(axis)
         horiLabels = [round(axisInfo[horiAxis]["min"] + (axisInfo[horiAxis]["max"] - axisInfo[horiAxis]["min"]) * position_proportion) for position_proportion in label_positions]
         vertLabels = [round(axisInfo[vertAxis]["min"] + (axisInfo[vertAxis]["max"] - axisInfo[vertAxis]["min"]) * position_proportion) for position_proportion in label_positions]
-
-        # if method == 'imshow':
-        #     horiLabels = utilsforminds.helpers.reverseLst([round(axisInfo[horiAxis]["min"] + (axisInfo[horiAxis]["max"] - axisInfo[horiAxis]["min"]) * position_proportion) for position_proportion in label_positions])
-        # elif method == 'contour' or method == 'scatter':
-        #     horiLabels = [round(axisInfo[horiAxis]["min"] + (axisInfo[horiAxis]["max"] - axisInfo[horiAxis]["min"]) * position_proportion) for position_proportion in label_positions]
-        # vertLabels = utilsforminds.helpers.reverseLst([round(axisInfo[vertAxis]["min"] + (axisInfo[vertAxis]["max"] - axisInfo[vertAxis]["min"]) * position_proportion) for position_proportion in label_positions])
     
-    # if axis == 0:
-    #     if convertXYaxis:
-    #         xlabel = 'Elevation(m)'
-    #         ylabel = 'North(m)'
-    #     else:
-    #         xlabel = 'Elevation(m)'
-    #         ylabel = 'North(m)'
-    # elif axis == 1:
-    #     if convertXYaxis:
-    #         xlabel = 'East(m)'
-    #         ylabel = 'Elevation(m)'
-    #     else:
-    #         xlabel = 'East(m)'
-    #         ylabel = 'Elevation(m)'
-    # elif axis == 2:
-    #     if convertXYaxis:
-    #         xlabel = 'North(m)'
-    #         ylabel = 'East(m)'
-    #     else:
-    #         xlabel = 'East(m)'
-    #         ylabel = 'North(m)'
-
-    # if axis == 0:
-    #     if convertXYaxis:
-    #         xlabel = 'North(m)'
-    #         ylabel = 'Elevation(m)'
-    #     else:
-    #         xlabel = 'Elevation(m)'
-    #         ylabel = 'North(m)'
-    # elif axis == 1:
-    #     if convertXYaxis:
-    #         xlabel = 'East(m)'
-    #         ylabel = 'Elevation(m)'
-    #     else:
-    #         xlabel = 'East(m)'
-    #         ylabel = 'Elevation(m)'
-    # elif axis == 2:
-    #     if convertXYaxis:
-    #         xlabel = 'North(m)'
-    #         ylabel = 'East(m)'
-    #     else:
-    #         xlabel = 'East(m)'
-    #         ylabel = 'North(m)'
-
     axis_label_names_dict = {0: "East(m)", 1: "North(m)", 2: "Elevation(m)"}
     xlabel = axis_label_names_dict[get_xy_axis_from_z(axis)[0]]
     ylabel = axis_label_names_dict[get_xy_axis_from_z(axis)[1]]
@@ -392,11 +343,10 @@ def plot2Ds(planeLst, titleLst, filePath, cbarLabel = 'amount', plotShape = [3, 
     plt.savefig(filePath)
     if save_tikz:
         tikzplotlib.save(format_path_extension(filePath_, '.tex'))
-    # tikz_save('fig.tikz')
     plt.close('all')
     
 
-def plot3DScatter(npArr, vmin = None, vmax = None, filename = None, axisInfo = None, label_positions = [0., 1/4, 2/4, 3/4, 1.], highest_amount_proportion_threshod = None, small_delta = 1e-8, bar_label = 'gram/ton', default_point_size = 1.0, alpha_min = 0.2, transparent_cbar = False, cbar_font_size = 12, cbar_position = 'upper left', label_fontsize = 12, adjust_axis_ratio = True, save_tikz = True):
+def plot3DScatter(npArr, vmin = None, vmax = None, filename = None, axisInfo = None, label_positions = [0., 0.3, 0.6, 0.9], highest_amount_proportion_threshod = None, small_delta = 1e-8, bar_label = 'gram/ton', default_point_size = 1.0, alpha_min = 0.2, transparent_cbar = False, cbar_font_size = 15, cbar_position = 'center left', label_fontsize = 15, adjust_axis_ratio = True, save_tikz = True):
     """Plot the points with amounts of mineral in 3D numpy array.
 
     Color intensities indicate the amounts.
@@ -417,6 +367,7 @@ def plot3DScatter(npArr, vmin = None, vmax = None, filename = None, axisInfo = N
         The rank corresponding the mineral amount of a point which will be plotted as highest color intensity. For example, if maxNth is 50 and you have 1,000 points to plot, 50 points will be plotted with same color indicating highest mineral amount. This will set the highest color range.
     """
 
+    # label_positions = [0., 1/4, 2/4, 3/4, 1.]
     npArr_ = np.where(npArr >= 1e-8, npArr, 0.)
     x, y, z = npArr_.nonzero()
 
@@ -492,30 +443,12 @@ def plot3DScatter(npArr, vmin = None, vmax = None, filename = None, axisInfo = N
     ax.set_zlim(0, npArr.shape[2])
 
     if axisInfo != None:
-        # horiLabels = (0, shape[0]*1//4, shape[0]*2//4, shape[0]*3//4, shape[0])
-        # vertLabels = (0, shape[1]*1//4, shape[1]*2//4, shape[1]*3//4, shape[1])
-        # elevLabels = (0, shape[2]*1//4, shape[2]*2//4, shape[2]*3//4, shape[2])
 
         horiLabels = [round(position_proportion * shape[0]) for position_proportion in label_positions]
         vertLabels = [round(position_proportion * shape[1]) for position_proportion in label_positions]
         elevLabels = [round(position_proportion * shape[2]) for position_proportion in label_positions]
 
         ax.set_xticks(horiLabels)
-        # ax.set_xticklabels((round(axisInfo[0]["min"]), round(axisInfo[0]["min"] + (axisInfo[0]["max"]-axisInfo[0]["min"])*1/4), 
-        #         round(axisInfo[0]["min"] + (axisInfo[0]["max"]-axisInfo[0]["min"])*2/4),
-        #         round(axisInfo[0]["min"] + (axisInfo[0]["max"]-axisInfo[0]["min"])*3/4),
-        #         round(axisInfo[0]["max"])), fontsize = label_fontsize)
-        # ax.set_yticks(vertLabels)
-        # ax.set_yticklabels((round(axisInfo[1]["min"]), round(axisInfo[1]["min"] + (axisInfo[1]["max"]-axisInfo[1]["min"])*1/4), 
-        #         round(axisInfo[1]["min"] + (axisInfo[1]["max"]-axisInfo[1]["min"])*2/4),
-        #         round(axisInfo[1]["min"] + (axisInfo[1]["max"]-axisInfo[1]["min"])*3/4),
-        #         round(axisInfo[1]["max"])), fontsize = label_fontsize)
-        # ax.set_zticks(elevLabels)
-        # ax.set_zticklabels((round(axisInfo[2]["min"]), round(axisInfo[2]["min"] + (axisInfo[2]["max"]-axisInfo[2]["min"])*1/4), 
-        #         round(axisInfo[2]["min"] + (axisInfo[2]["max"]-axisInfo[2]["min"])*2/4),
-        #         round(axisInfo[2]["min"] + (axisInfo[2]["max"]-axisInfo[2]["min"])*3/4),
-        #         round(axisInfo[2]["max"])), fontsize = label_fontsize)  
-
         ax.set_xticklabels([round(axisInfo[0]["min"] + (axisInfo[0]["max"] - axisInfo[0]["min"]) * position_proportion) for position_proportion in label_positions], fontsize = label_fontsize)
         ax.set_yticks(vertLabels)
         ax.set_yticklabels([round(axisInfo[1]["min"] + (axisInfo[1]["max"] - axisInfo[0]["min"]) * position_proportion) for position_proportion in label_positions], fontsize = label_fontsize)
@@ -527,10 +460,10 @@ def plot3DScatter(npArr, vmin = None, vmax = None, filename = None, axisInfo = N
     # plt.tight_layout()
 
     #%% colorbar plot
-    (1.4, 1.6, 1.0, 1.0)
-    axins = inset_axes(ax, width = "2%", height = "60%", loc = cbar_position, bbox_to_anchor = (1.4, 2.4, 1.0, 1.0))
+    # bbox_to_anchor = (0.7, 2.4, 1.0, 1.0)
+    axins = inset_axes(ax, width = "2%", height = "60%", loc = cbar_position)
     cbar = plt.colorbar(ax.get_children()[0], ax = ax, cax = axins)
-    axins.yaxis.set_ticks_position("left")
+    axins.yaxis.set_ticks_position("right")
     cbar.set_label(bar_label, fontsize = cbar_font_size)
     cbar.ax.tick_params(labelsize= cbar_font_size)
     if not transparent_cbar:
