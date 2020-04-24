@@ -122,9 +122,13 @@ def plot2Ds(planeLst, titleLst, filePath, cbarLabel = 'amount', plotShape = [3, 
 
     horiLabelIdc = [min(round(shape_[0] * position_proportion), shape_[0] - 1) for position_proportion in label_positions]
     vertLabelIdc = [min(round(shape_[1] - shape_[1] * position_proportion), shape_[1] - 1) for position_proportion in label_positions]
+    # print("-------------")
+    # print(shape_)
+    # print(horiLabelIdc)
+    # print(vertLabelIdc)
     if axisInfo is None:
         if method == 'imshow':
-            horiLabels = utilsforminds.helpers.reverseLst(horiLabelIdc)
+            horiLabels = utilsforminds.helpers.reverseLst(horiLabelIdc) ## ??????????????????
             vertLabels = vertLabelIdc
         elif method == 'contour' or method == 'scatter':
             horiLabels = horiLabelIdc
@@ -346,7 +350,7 @@ def plot2Ds(planeLst, titleLst, filePath, cbarLabel = 'amount', plotShape = [3, 
     plt.close('all')
     
 
-def plot3DScatter(npArr, vmin = None, vmax = None, filename = None, axisInfo = None, label_positions = [0., 0.3, 0.6, 0.9], highest_amount_proportion_threshod = None, small_delta = 1e-8, bar_label = 'gram/ton', default_point_size = 1.0, alpha_min = 0.2, transparent_cbar = False, cbar_font_size = 15, cbar_position = 'center left', label_fontsize = 15, adjust_axis_ratio = True, save_tikz = True):
+def plot3DScatter(npArr, vmin = None, vmax = None, filename = None, axisInfo = None, label_positions = [0., 0.3, 0.6, 0.9], highest_amount_proportion_threshod = None, small_delta = 1e-8, bar_label = 'gram/ton', default_point_size = 1.0, alpha_min = 0.2, transparent_cbar = False, cbar_font_size = 13, cbar_position = 'center left', label_fontsize = 13, adjust_axis_ratio = True, save_tikz = True):
     """Plot the points with amounts of mineral in 3D numpy array.
 
     Color intensities indicate the amounts.
@@ -463,12 +467,14 @@ def plot3DScatter(npArr, vmin = None, vmax = None, filename = None, axisInfo = N
     # bbox_to_anchor = (0.7, 2.4, 1.0, 1.0)
     axins = inset_axes(ax, width = "2%", height = "60%", loc = cbar_position)
     cbar = plt.colorbar(ax.get_children()[0], ax = ax, cax = axins)
-    axins.yaxis.set_ticks_position("right")
+    axins.yaxis.set_ticks_position("left")
     cbar.set_label(bar_label, fontsize = cbar_font_size)
     cbar.ax.tick_params(labelsize= cbar_font_size)
     if not transparent_cbar:
         cbar.solids.set(alpha=1)
-    plt.tight_layout()
+    # plt.tight_layout()
+    # plt.autoscale()
+    # plt.savefig(filename, bbox_inches = "tight")
     plt.savefig(filename)
     if save_tikz:
         tikzplotlib.save(filepath = format_path_extension(filename, '.tex'))
