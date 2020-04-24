@@ -51,7 +51,7 @@ def savePlotLstOfLsts(lstOfLsts, labelsLst, xlabel, ylabel, title, directory, sa
     if save_tikz:
         tikzplotlib.save(format_path_extension(directory, '.tex'))
 
-def plot2Ds(planeLst, titleLst, filePath, cbarLabel = 'amount', plotShape = [3, 1], subplot_length = 16., subplot_ratio = (1., 1.), planeMaskLst = None, axis = 2, axisInfo = None, vmin_vmax = None, method = 'imshow', convertXYaxis = False, rotate = 0, label_font_size = 15, title_font_size = 15, cbar_font_size = 15, save_tikz = True):
+def plot2Ds(planeLst, titleLst, filePath, cbarLabel = 'amount', plotShape = [3, 1], subplot_length = 16., subplot_ratio = (1., 1.), planeMaskLst = None, axis = 2, axisInfo = None, vmin_vmax = None, method = 'imshow', convertXYaxis = False, rotate = 0, label_font_size = 15, label_positions = [0/4, 1/4, 2/4, 3/4, 4/4], title_font_size = 15, cbar_font_size = 15, save_tikz = True):
     '''
         If you want to provide mask matrix for scatter visualization, sequence should be (original matrix, recovered matrix) or (original matrix, recovered matrix, sparse matrix)
 
@@ -118,8 +118,9 @@ def plot2Ds(planeLst, titleLst, filePath, cbarLabel = 'amount', plotShape = [3, 
         shape_ = plotPlaneLst[0].shape
 
 
-    horiLabelIdc = (0, shape_[1]*1//4, shape_[1]*2//4, shape_[1]*3//4, shape_[1] - 1)
-    vertLabelIdc = (0, shape_[0]*1//4, shape_[0]*2//4, shape_[0]*3//4, shape_[0] - 1)
+    horiLabelIdc = [round(shape_[1] * position_proportion) for position_proportion in label_positions]
+    # vertLabelIdc = (0, shape_[0]*1//4, shape_[0]*2//4, shape_[0]*3//4, shape_[0] - 1)
+    vertLabelIdc = [round(shape_[0] * position_proportion) for position_proportion in label_positions]
     if axisInfo is None:
         if method == 'imshow':
             horiLabels = utilsforminds.helpers.reverseLst(horiLabelIdc)
@@ -130,20 +131,15 @@ def plot2Ds(planeLst, titleLst, filePath, cbarLabel = 'amount', plotShape = [3, 
     else:
         horiAxis, vertAxis = get_xy_axis_from_z(axis)
         if method == 'imshow':
-            horiLabels = utilsforminds.helpers.reverseLst((round(axisInfo[horiAxis]["max"]), 
-            round(axisInfo[horiAxis]["min"] + (axisInfo[horiAxis]["max"]-axisInfo[horiAxis]["min"])*3/4),
-            round(axisInfo[horiAxis]["min"] + (axisInfo[horiAxis]["max"]-axisInfo[horiAxis]["min"])*2/4),
-            round(axisInfo[horiAxis]["min"] + (axisInfo[horiAxis]["max"]-axisInfo[horiAxis]["min"])*1/4),
-            round(axisInfo[horiAxis]["min"])))
+            # horiLabels = utilsforminds.helpers.reverseLst((round(axisInfo[horiAxis]["max"]), 
+            # round(axisInfo[horiAxis]["min"] + (axisInfo[horiAxis]["max"]-axisInfo[horiAxis]["min"])*3/4),
+            # round(axisInfo[horiAxis]["min"] + (axisInfo[horiAxis]["max"]-axisInfo[horiAxis]["min"])*2/4),
+            # round(axisInfo[horiAxis]["min"] + (axisInfo[horiAxis]["max"]-axisInfo[horiAxis]["min"])*1/4),
+            # round(axisInfo[horiAxis]["min"])))
+            horiLabels = utilsforminds.helpers.reverseLst([round(axisInfo[horiAxis]["min"] + (axisInfo[horiAxis]["max"] - axisInfo[horiAxis]["min"]) * position_proportion) for position_proportion in label_positions])
         elif method == 'contour' or method == 'scatter':
-            horiLabels = (round(axisInfo[horiAxis]["min"]), round(axisInfo[horiAxis]["min"] + (axisInfo[horiAxis]["max"]-axisInfo[horiAxis]["min"])*1/4), 
-                    round(axisInfo[horiAxis]["min"] + (axisInfo[horiAxis]["max"]-axisInfo[horiAxis]["min"])*2/4),
-                    round(axisInfo[horiAxis]["min"] + (axisInfo[horiAxis]["max"]-axisInfo[horiAxis]["min"])*3/4),
-                    round(axisInfo[horiAxis]["max"]))
-        vertLabels = utilsforminds.helpers.reverseLst((round(axisInfo[vertAxis]["min"]), round(axisInfo[vertAxis]["min"] + (axisInfo[vertAxis]["max"]-axisInfo[vertAxis]["min"])*1/4), 
-            round(axisInfo[vertAxis]["min"] + (axisInfo[vertAxis]["max"]-axisInfo[vertAxis]["min"])*2/4),
-            round(axisInfo[vertAxis]["min"] + (axisInfo[vertAxis]["max"]-axisInfo[vertAxis]["min"])*3/4),
-            round(axisInfo[vertAxis]["max"])))
+            horiLabels = [round(axisInfo[horiAxis]["min"] + (axisInfo[horiAxis]["max"] - axisInfo[horiAxis]["min"]) * position_proportion) for position_proportion in label_positions]
+        vertLabels = utilsforminds.helpers.reverseLst([round(axisInfo[vertAxis]["min"] + (axisInfo[vertAxis]["max"] - axisInfo[vertAxis]["min"]) * position_proportion) for position_proportion in label_positions])
     if convertXYaxis:
         tmp = vertLabels
         vertLabels = horiLabels
@@ -370,7 +366,7 @@ def plot2Ds(planeLst, titleLst, filePath, cbarLabel = 'amount', plotShape = [3, 
     plt.close('all')
     
 
-def plot3DScatter(npArr, vmin = None, vmax = None, filename = None, axisInfo = None, label_position = [0., 1/4, 2/4, 3/4, 1.], highest_amount_proportion_threshod = None, small_delta = 1e-8, bar_label = 'gram/ton', default_point_size = 1.0, alpha_min = 0.2, transparent_cbar = False, cbar_font_size = 12, cbar_position = 'upper left', label_fontsize = 12, adjust_axis_ratio = True, save_tikz = True):
+def plot3DScatter(npArr, vmin = None, vmax = None, filename = None, axisInfo = None, label_positions = [0., 1/4, 2/4, 3/4, 1.], highest_amount_proportion_threshod = None, small_delta = 1e-8, bar_label = 'gram/ton', default_point_size = 1.0, alpha_min = 0.2, transparent_cbar = False, cbar_font_size = 12, cbar_position = 'upper left', label_fontsize = 12, adjust_axis_ratio = True, save_tikz = True):
     """Plot the points with amounts of mineral in 3D numpy array.
 
     Color intensities indicate the amounts.
@@ -470,9 +466,9 @@ def plot3DScatter(npArr, vmin = None, vmax = None, filename = None, axisInfo = N
         # vertLabels = (0, shape[1]*1//4, shape[1]*2//4, shape[1]*3//4, shape[1])
         # elevLabels = (0, shape[2]*1//4, shape[2]*2//4, shape[2]*3//4, shape[2])
 
-        horiLabels = [round(position_proportion * shape[0]) for position_proportion in label_position]
-        vertLabels = [round(position_proportion * shape[1]) for position_proportion in label_position]
-        elevLabels = [round(position_proportion * shape[2]) for position_proportion in label_position]
+        horiLabels = [round(position_proportion * shape[0]) for position_proportion in label_positions]
+        vertLabels = [round(position_proportion * shape[1]) for position_proportion in label_positions]
+        elevLabels = [round(position_proportion * shape[2]) for position_proportion in label_positions]
 
         ax.set_xticks(horiLabels)
         # ax.set_xticklabels((round(axisInfo[0]["min"]), round(axisInfo[0]["min"] + (axisInfo[0]["max"]-axisInfo[0]["min"])*1/4), 
@@ -490,24 +486,25 @@ def plot3DScatter(npArr, vmin = None, vmax = None, filename = None, axisInfo = N
         #         round(axisInfo[2]["min"] + (axisInfo[2]["max"]-axisInfo[2]["min"])*3/4),
         #         round(axisInfo[2]["max"])), fontsize = label_fontsize)  
 
-        ax.set_xticklabels([round(axisInfo[0]["min"] + (axisInfo[0]["max"] - axisInfo[0]["min"]) * position_proportion) for position_proportion in label_position], fontsize = label_fontsize)
+        ax.set_xticklabels([round(axisInfo[0]["min"] + (axisInfo[0]["max"] - axisInfo[0]["min"]) * position_proportion) for position_proportion in label_positions], fontsize = label_fontsize)
         ax.set_yticks(vertLabels)
-        ax.set_yticklabels([round(axisInfo[1]["min"] + (axisInfo[1]["max"] - axisInfo[0]["min"]) * position_proportion) for position_proportion in label_position], fontsize = label_fontsize)
+        ax.set_yticklabels([round(axisInfo[1]["min"] + (axisInfo[1]["max"] - axisInfo[0]["min"]) * position_proportion) for position_proportion in label_positions], fontsize = label_fontsize)
         ax.set_zticks(elevLabels)
-        ax.set_zticklabels([round(axisInfo[2]["min"] + (axisInfo[2]["max"] - axisInfo[0]["min"]) * position_proportion) for position_proportion in label_position], fontsize = label_fontsize)       
+        ax.set_zticklabels([round(axisInfo[2]["min"] + (axisInfo[2]["max"] - axisInfo[0]["min"]) * position_proportion) for position_proportion in label_positions], fontsize = label_fontsize)       
 
     # ax.view_init(30, view_angle) ## set angle, elev, azimuth angle
     ax.set_proj_type('ortho') ## make z axis vertical: https://stackoverflow.com/questions/26796997/how-to-get-vertical-z-axis-in-3d-surface-plot-of-matplotlib
     # plt.tight_layout()
 
     #%% colorbar plot
-    axins = inset_axes(ax, width = "1%", height = "60%", loc = cbar_position)
+    axins = inset_axes(ax, width = "2%", height = "60%", loc = cbar_position)
     cbar = plt.colorbar(ax.get_children()[0], ax = ax, cax = axins)
     axins.yaxis.set_ticks_position("left")
     cbar.set_label(bar_label, fontsize = cbar_font_size)
     cbar.ax.tick_params(labelsize= cbar_font_size)
     if not transparent_cbar:
         cbar.solids.set(alpha=1)
+    plt.tight_layout()
     plt.savefig(filename)
     if save_tikz:
         tikzplotlib.save(filepath = format_path_extension(filename, '.tex'))
