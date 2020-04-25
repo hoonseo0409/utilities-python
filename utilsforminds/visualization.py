@@ -10,7 +10,9 @@ else:
     matplotlib.use("MacOSX")
 # matplotlib.pyplot.set_cmap('Paired')
 import matplotlib.pyplot as plt
-plt.set_cmap('Paired')
+
+# plt.set_cmap('Paired')
+
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from matplotlib.ticker import FormatStrFormatter, FuncFormatter, MaxNLocator
 from mpl_toolkits.axes_grid1 import AxesGrid
@@ -51,7 +53,7 @@ def savePlotLstOfLsts(lstOfLsts, labelsLst, xlabel, ylabel, title, directory, sa
     if save_tikz:
         tikzplotlib.save(format_path_extension(directory, '.tex'))
 
-def plot2Ds(planeLst, titleLst, filePath, cbarLabel = 'amount', plotShape = [3, 1], subplot_length = 16., subplot_ratio = (1., 1.), planeMaskLst = None, axis = 2, axisInfo = None, vmin_vmax = None, method = 'imshow', convertXYaxis = False, rotate = 0, label_font_size = 25, label_positions = [0., 0.3, 0.6, 0.9], title_font_size = 25, cbar_font_size = 25, save_tikz = True):
+def plot2Ds(planeLst, titleLst, filePath, cbarLabel = 'amount', plotShape = [3, 1], subplot_length = 16., subplot_ratio = (1., 1.), planeMaskLst = None, axis = 2, axisInfo = None, vmin_vmax = None, method = 'imshow', convertXYaxis = False, rotate = 0, specific_value_color_dict = {"value": 0., "color": "white"}, label_font_size = 25, label_positions = [0., 1/3, 2/3], title_font_size = 25, cbar_font_size = 25, save_tikz = True):
     '''
         If you want to provide mask matrix for scatter visualization, sequence should be (original matrix, recovered matrix) or (original matrix, recovered matrix, sparse matrix)
 
@@ -88,10 +90,6 @@ def plot2Ds(planeLst, titleLst, filePath, cbarLabel = 'amount', plotShape = [3, 
 
     assert(axis in (0, 1, 2) and method in ('imshow', 'contour', 'scatter'))
 
-    # Set White color for unobserved points
-    # current_cmap = matplotlib.cm.get_cmap()
-    # current_cmap.set_bad(color='white')
-
     shape_ = planeLst[0].shape
     for i in range(nPlots):
         assert(planeLst[i].shape == shape_)
@@ -105,6 +103,14 @@ def plot2Ds(planeLst, titleLst, filePath, cbarLabel = 'amount', plotShape = [3, 
         for i in range(len(planeMaskLst)):
             # plotPlaneMaskLst.append(np.copy(planeMaskLst[i]))
             plotPlaneMaskLst.append(np.transpose(planeMaskLst[i]))
+    
+    # Set White color for unobserved points
+    if specific_value_color_dict is not None:
+        current_cmap = plt.get_cmap()
+        current_cmap_copied = deepcopy(plt.get_cmap())
+        current_cmap.set_bad(color= specific_value_color_dict["color"])
+        for i in range(nPlots):
+            plotPlaneLst[i] = np.ma.masked_equal(plotPlaneLst[i], specific_value_color_dict["value"])
     
     # if planeMaskLst is not None:
     #     for i in range(len(plotPlaneMaskLst)):
@@ -346,10 +352,13 @@ def plot2Ds(planeLst, titleLst, filePath, cbarLabel = 'amount', plotShape = [3, 
     plt.savefig(filePath)
     if save_tikz:
         tikzplotlib.save(format_path_extension(filePath_, '.tex'))
+    
+    if specific_value_color_dict is not None:
+        plt.set_cmap(current_cmap_copied)
     plt.close('all')
     
 
-def plot3DScatter(npArr, vmin = None, vmax = None, filename = None, axisInfo = None, label_positions = [0., 0.3, 0.6, 0.9], highest_amount_proportion_threshod = None, small_delta = 1e-8, bar_label = 'gram/ton', default_point_size = 1.0, alpha_min = 0.2, transparent_cbar = False, cbar_font_size = 13, cbar_position = 'center left', label_fontsize = 13, adjust_axis_ratio = True, save_tikz = True):
+def plot3DScatter(npArr, vmin = None, vmax = None, filename = None, axisInfo = None, label_positions = [0., 1/3, 2/3], highest_amount_proportion_threshod = None, small_delta = 1e-8, bar_label = 'gram/ton', default_point_size = 1.0, alpha_min = 0.2, transparent_cbar = False, cbar_font_size = 13, cbar_position = 'center left', label_fontsize = 13, adjust_axis_ratio = True, save_tikz = True):
     """Plot the points with amounts of mineral in 3D numpy array.
 
     Color intensities indicate the amounts.
