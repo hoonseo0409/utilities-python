@@ -32,7 +32,7 @@ from copy import deepcopy
 import tikzplotlib
 from itertools import product, combinations
 
-axis_rotation_dict = {0: 90, 1: 0, 2: 0}
+axis_rotation_dict = {0: 0, 1: 0, 2: 0}
 axis_name_dict = {0: 'East', 1: 'North', 2: 'Elevation'}
 
 def savePlotLstOfLsts(lstOfLsts, labelsLst, xlabel, ylabel, title, directory, save_tikz = True):
@@ -85,10 +85,6 @@ def plot2Ds(planeLst, titleLst, filePath, cbarLabel = 'amount', plotShape = [3, 
         assert(len(vmin_vmax) == 2)
         vmax_ = vmin_vmax[1]
         vmin_ = vmin_vmax[0]
-    
-    shape_ = planeLst[0].shape
-    for i in range(nPlots):
-        assert(planeLst[i].shape == shape_)
 
     assert(axis in (0, 1, 2) and method in ('imshow', 'contour', 'scatter'))
 
@@ -96,14 +92,20 @@ def plot2Ds(planeLst, titleLst, filePath, cbarLabel = 'amount', plotShape = [3, 
     # current_cmap = matplotlib.cm.get_cmap()
     # current_cmap.set_bad(color='white')
 
+    shape_ = planeLst[0].shape
+    for i in range(nPlots):
+        assert(planeLst[i].shape == shape_)
+    
     plotPlaneLst = []
     plotPlaneMaskLst = []
     for i in range(nPlots):
-        plotPlaneLst.append(np.copy(planeLst[i]))
+        # plotPlaneLst.append(np.copy(planeLst[i]))
+        plotPlaneLst.append(np.transpose(planeLst[i]))
     if planeMaskLst is not None:
         for i in range(len(planeMaskLst)):
-            plotPlaneMaskLst.append(np.copy(planeMaskLst[i]))
-
+            # plotPlaneMaskLst.append(np.copy(planeMaskLst[i]))
+            plotPlaneMaskLst.append(np.transpose(planeMaskLst[i]))
+    
     # if planeMaskLst is not None:
     #     for i in range(len(plotPlaneMaskLst)):
     #         plotPlaneLst[i] = plotPlaneLst[i] * np.where(plotPlaneMaskLst[i] >= 1., 1., 0.)
@@ -122,10 +124,7 @@ def plot2Ds(planeLst, titleLst, filePath, cbarLabel = 'amount', plotShape = [3, 
 
     horiLabelIdc = [min(round(shape_[0] * position_proportion), shape_[0] - 1) for position_proportion in label_positions]
     vertLabelIdc = [min(round(shape_[1] - shape_[1] * position_proportion), shape_[1] - 1) for position_proportion in label_positions]
-    # print("-------------")
-    # print(shape_)
-    # print(horiLabelIdc)
-    # print(vertLabelIdc)
+
     if axisInfo is None:
         if method == 'imshow':
             horiLabels = utilsforminds.helpers.reverseLst(horiLabelIdc) ## ??????????????????
@@ -455,9 +454,9 @@ def plot3DScatter(npArr, vmin = None, vmax = None, filename = None, axisInfo = N
         ax.set_xticks(horiLabels)
         ax.set_xticklabels([round(axisInfo[0]["min"] + (axisInfo[0]["max"] - axisInfo[0]["min"]) * position_proportion) for position_proportion in label_positions], fontsize = label_fontsize)
         ax.set_yticks(vertLabels)
-        ax.set_yticklabels([round(axisInfo[1]["min"] + (axisInfo[1]["max"] - axisInfo[0]["min"]) * position_proportion) for position_proportion in label_positions], fontsize = label_fontsize)
+        ax.set_yticklabels([round(axisInfo[1]["min"] + (axisInfo[1]["max"] - axisInfo[1]["min"]) * position_proportion) for position_proportion in label_positions], fontsize = label_fontsize)
         ax.set_zticks(elevLabels)
-        ax.set_zticklabels([round(axisInfo[2]["min"] + (axisInfo[2]["max"] - axisInfo[0]["min"]) * position_proportion) for position_proportion in label_positions], fontsize = label_fontsize)       
+        ax.set_zticklabels([round(axisInfo[2]["min"] + (axisInfo[2]["max"] - axisInfo[2]["min"]) * position_proportion) for position_proportion in label_positions], fontsize = label_fontsize)       
 
     # ax.view_init(30, view_angle) ## set angle, elev, azimuth angle
     ax.set_proj_type('ortho') ## make z axis vertical: https://stackoverflow.com/questions/26796997/how-to-get-vertical-z-axis-in-3d-surface-plot-of-matplotlib
