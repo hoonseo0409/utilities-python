@@ -30,20 +30,22 @@ def getExecPath():
         sFile = sys.executable
     return os.path.dirname(sFile)
 
-def getNewDirectoryName(parentDir, newDir):
+def getNewDirectoryName(parentDir, newDir, root_dir = None):
     '''
         To get new directory name to save results while avoiding duplication
     '''
 
+    if root_dir is None:
+        root_dir = getExecPath()
     if parentDir[0] != '/':
         parentDir = '/' + parentDir
     if parentDir[-1] != '/':
         parentDir = parentDir + '/'
 
-    assert(getExecPath() + parentDir)
+    assert(root_dir + parentDir)
 
     duplicatedNameNum = 0
-    while(os.path.isdir(getExecPath() + parentDir + newDir + str(duplicatedNameNum))):
+    while(os.path.isdir(root_dir + parentDir + newDir + str(duplicatedNameNum))):
         duplicatedNameNum = duplicatedNameNum + 1
     newDir = newDir + str(duplicatedNameNum)
 

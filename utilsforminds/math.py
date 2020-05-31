@@ -155,6 +155,35 @@ def to_precision(x,p):
 
     return "".join(out)
 
+def is_converged(loss_lst, consecutive_trends = 4, comparison_ratio = 1.0, check_start = 1, debug = False):
+    """Check whether the list of loss given is converged or not.
+    
+    The smaller comparison_ratio and the larger consecutive_trends result the stricter checking.
+
+    """
+
+    #%% For debugging
+    if debug and len(loss_lst) > 1:
+        return True
+
+    if check_start is not None:
+        if len(loss_lst) < consecutive_trends + check_start + 1:
+            return False
+        else:
+            gradient_avg = 0
+            for i in range(check_start, len(loss_lst) - consecutive_trends):
+                gradient_avg += abs(loss_lst[i + 1] - loss_lst[i])
+            gradient_avg = gradient_avg / (len(loss_lst) - consecutive_trends - check_start)
+            for past in range(1, consecutive_trends):
+                if (abs(loss_lst[- past] - loss_lst[- past - 1]) > gradient_avg * comparison_ratio):
+                    return False
+            return True
+    # else:
+    #     if len(loss_lst) < consecutive_trends + 1:
+    #         return False
+    #     else:
+    #         for past in range(1, consecutive_trends):
+    #             if loss_lst[- past] < loss_lst[- past - 1] - (loss_lst[- past - 1] * (1 - comparison_ratio))
 if __name__ == '__main__':
     pass
     # test_containers_list = [{'a': [1, 2.5, 3], 'b': {'c': [2, 4], 'd': 5}}, {'a': [2, 3.5, 4], 'b': {'c': [3, 5], 'd': 6}}]
