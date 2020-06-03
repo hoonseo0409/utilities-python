@@ -616,7 +616,7 @@ def convert_3Darray_to_4DarrayRGB(arr_3D, vmin = None, vmax = None, cmap = plt.g
     arr_4D = np.delete(arr_4D, 3, 3)
     return arr_4D
 
-def plot_bar_charts(path_to_save : str, name_numbers : dict, xlabels : list, xtitle = None, ytitle = None, bar_width = 'auto', alpha = 0.8, colors_dict = None, format = 'eps', diagonal_xtickers = 0, name_errors = None, name_to_show_percentage = None, fontsize = 10, title = None, figsize = None, ylim = None, fix_legend = True, plot_legend = True, save_tikz = True):
+def plot_bar_charts(path_to_save : str, name_numbers : dict, xlabels : list, xtitle = None, ytitle = None, bar_width = 'auto', alpha = 0.8, colors_dict = None, format = 'eps', diagonal_xtickers = 0, name_errors = None, name_to_show_percentage = None, name_not_to_show_percentage_legend = None, fontsize = 10, title = None, figsize = None, ylim = None, fix_legend = True, plot_legend = True, save_tikz = True):
     """
     
     Parameters
@@ -642,6 +642,7 @@ def plot_bar_charts(path_to_save : str, name_numbers : dict, xlabels : list, xti
         assert(len(numbers) == n_groups)
     assert(len(xlabels) == n_groups)
     xlabels_copied = deepcopy(xlabels)
+
     if name_to_show_percentage is not None:
         assert(name_to_show_percentage in name_numbers.keys())
         assert(len(name_numbers) >= 2)
@@ -652,6 +653,22 @@ def plot_bar_charts(path_to_save : str, name_numbers : dict, xlabels : list, xti
                     scores_of_group.append(name_numbers[name][i])
             mean = np.mean(scores_of_group)
             xlabels_copied[i] += f'({(mean - name_numbers[name_to_show_percentage][i]) * 100. / mean:.2f}%)'
+
+    legend_prefix_dict = {name: '' for name in name_numbers.keys()}
+    if name_not_to_show_percentage_legend is not None:
+        if not isinstance(name_not_to_show_percentage_legend, (list, tuple)):
+            name_not_to_show_percentage_legend_copied = [name_not_to_show_percentage_legend]
+        else:
+            name_not_to_show_percentage_legend_copied = deepcopy(name_not_to_show_percentage_legend)
+        avg_number = 0.
+        for name in name_not_to_show_percentage_legend_copied:
+            assert(name in name_numbers.keys())
+            avg_number += sum(name_numbers[name])
+        avg_number /= len(name_not_to_show_percentage_legend_copied)
+        for name in name_numbers.keys():
+            if name not in name_not_to_show_percentage_legend_copied:
+                legend_prefix_dict[name] = f" ({round(100. * ((avg_number - sum(name_numbers[name])) / sum(name_numbers[name])))}%)"
+
     if bar_width == 'auto':
         bar_width_ = 0.30 * (2 / len(name_numbers))  
     else:
@@ -666,7 +683,7 @@ def plot_bar_charts(path_to_save : str, name_numbers : dict, xlabels : list, xti
     rects_list = []
     index_copied = np.copy(index).astype(np.float)
     for name, numbers in name_numbers.items():
-        rects_list.append(plt.bar(index_copied, numbers, bar_width_, alpha = alpha, label = name, **plt_bars_kwargs_dict[name]))
+        rects_list.append(plt.bar(index_copied, numbers, bar_width_, alpha = alpha, label = name + legend_prefix_dict[name], **plt_bars_kwargs_dict[name])) ## label will be label in legend
         index_copied += bar_width_
 
     if title is not None:
@@ -690,7 +707,7 @@ def plot_bar_charts(path_to_save : str, name_numbers : dict, xlabels : list, xti
     
     if ylim is not None:
         plt.ylim(ylim)
-
+        
     if plot_legend:
         plt.legend()
 
