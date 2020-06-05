@@ -4,8 +4,13 @@ import numpy as np
 import utilsforminds.helpers as helpers
 from inspect import signature
 
-def signature_multi_binding():
-    raise Exception(NotImplementedError)
+def signature_multi_binding(new_old_signature_dict):
+    def decorator(func):
+        @functools.wraps(func)
+        def decorator_inner(*args, **kwargs):
+            processed_news = []
+            for new, old in new_old_signature_dict.items():
+                raise Exception(NotImplementedError)
 
 def redirect_function(module, func_name = None):
     """Redirect the function to another function in another module"""
