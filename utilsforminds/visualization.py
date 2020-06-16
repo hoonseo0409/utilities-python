@@ -706,7 +706,13 @@ def plot_bar_charts(path_to_save : str, name_numbers : dict, xlabels : list, xti
         plt.ylim([0., np.max(numbers_tot) * (1. + 0.1 * len(name_numbers))])
     
     if ylim is not None:
-        plt.ylim(ylim)
+        assert(len(ylim) == 2)
+        if ylim[1] == None:
+            plt.ylim(bottom = ylim[0])
+        elif ylim[0] == None:
+            plt.ylim(top = ylim[1])
+        else:
+            plt.ylim(ylim)
         
     if plot_legend:
         plt.legend()
