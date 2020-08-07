@@ -4,6 +4,7 @@ from copy import deepcopy
 import numbers
 import math
 from keras import backend as K
+import tensorflow as tf
 
 def p_exponent_matrix(arr, p):
     """
@@ -184,6 +185,20 @@ def is_converged(loss_lst, consecutive_trends = 4, comparison_ratio = 1.0, check
     #     else:
     #         for past in range(1, consecutive_trends):
     #             if loss_lst[- past] < loss_lst[- past - 1] - (loss_lst[- past - 1] * (1 - comparison_ratio))
+
+def sparse_group_lasso_function_object(reg_factor = 1e5):
+    """Noor's code for defining the regularizer"""
+
+    def sparse_group_lasso(weights):
+        include_group_norm = True
+        if not include_group_norm:
+            return tf.constant(0.0)
+        vector_of_l2_norms = tf.norm(weights, ord=2, axis=1)
+        group_norm = tf.norm(vector_of_l2_norms, ord=1)
+        lasso = tf.norm(weights, ord=1)
+        return reg_factor * (group_norm + lasso)
+    return sparse_group_lasso
+
 if __name__ == '__main__':
     pass
     # test_containers_list = [{'a': [1, 2.5, 3], 'b': {'c': [2, 4], 'd': 5}}, {'a': [2, 3.5, 4], 'b': {'c': [3, 5], 'd': 6}}]
