@@ -1091,13 +1091,13 @@ def plot_alpha_shape_3D(nparr_3D, path_to_save : str, alphahull = 1.0, points_de
             assert(len(xyz_tickers[axis]["tickvals"]) == len(xyz_tickers[axis]["ticktext"]))
         xyz_tickers_copied = deepcopy(xyz_tickers)
     figsize_copied = {"width": 1200, "height": 1200} if figsize is None else deepcopy(figsize)
-    if camera is None:
-        camera_copied = dict(
-            up=dict(x=0, y=0, z=1),
-            center=dict(x=0, y=0, z=0),
-            eye=dict(x=1.25, y=1.25, z=1.25)
-        ) ## default setting
-    else:
+
+    camera_copied = dict(
+        up=dict(x=0, y=0, z=1),
+        center=dict(x=0, y=0, z=0),
+        eye=dict(x=1.25, y=1.25, z=1.25)
+    ) ## default setting
+    if camera is not None:
         camera_copied.update(camera)
 
     nparr_3D_filtered = np.where(points_decider(nparr_3D), 1., 0.)
