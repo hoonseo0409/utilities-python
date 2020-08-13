@@ -63,8 +63,9 @@ def plot2Ds(planeLst, titleLst, filePath, cbarLabel = 'amount', plotShape = [3, 
             horizontal, vertical size ration of each subplot.
     '''
 
+    assert(len(planeLst) == plotShape[0])
     if filePath.count('/') <= 2:
-        filePath_ = utilsforminds.helpers.getExecPath() + '/current_results/' + filePath
+        print(f"Warning: May be wrong file path: {filePath}")
     else:
         filePath_ = filePath
     
@@ -358,7 +359,7 @@ def plot2Ds(planeLst, titleLst, filePath, cbarLabel = 'amount', plotShape = [3, 
     plt.close('all')
     
 
-def plot3DScatter(npArr, vmin = None, vmax = None, filename = None, axisInfo = None, label_positions = [0., 1/3, 2/3], highest_amount_proportion_threshod = None, small_delta = 1e-8, bar_label = 'gram/ton', default_point_size = 1.0, alpha_min = 0.2, transparent_cbar = False, cbar_font_size = 13, cbar_position = 'center left', label_fontsize = 13, adjust_axis_ratio = True, save_tikz = True):
+def plot3DScatter(npArr, vmin = None, vmax = None, filename = None, axisInfo = None, label_positions = [0., 1/3, 2/3], highest_amount_proportion_threshod = None, small_delta = 1e-8, bar_label = 'gram/ton', default_point_size = 1.0, alpha_min = 0.2, transparent_cbar = False, cbar_font_size = 11, cbar_position = 'center left', label_fontsize = 12, adjust_axis_ratio = True, figsize_default = None, save_tikz = True):
     """Plot the points with amounts of mineral in 3D numpy array.
 
     Color intensities indicate the amounts.
@@ -396,14 +397,22 @@ def plot3DScatter(npArr, vmin = None, vmax = None, filename = None, axisInfo = N
     if adjust_axis_ratio and axisInfo is not None: # https://stackoverflow.com/questions/8130823/set-matplotlib-3d-plot-aspect-ratio
         z_range = axisInfo[2]['max'] - axisInfo[2]['min']
         xy_range_avg = (axisInfo[0]['max'] - axisInfo[0]['min'] + axisInfo[1]['max'] - axisInfo[1]['min']) / 2.
-        fig = plt.figure(figsize= plt.figaspect(z_range / xy_range_avg))
+        height_by_width_ratio = (z_range / xy_range_avg) ** 0.5
+        # fig = plt.figure(figsize= plt.figaspect(z_range / xy_range_avg))
+        if figsize_default is None:
+            fig = plt.figure(figsize= (8 / height_by_width_ratio, 8 * height_by_width_ratio))
+        else:
+            fig = plt.figure(figsize= (figsize_default / height_by_width_ratio, figsize_default * height_by_width_ratio))
         ## * xy_range_avg / z_range, multiply this to fig size if you want to enlarge
         ## If you wanna change font size of axis tickers
         # ax.xaxis.set_tick_params(labelsize = 12 * xy_range_avg / z_range)
         # ax.yaxis.set_tick_params(labelsize = 12 * xy_range_avg / z_range)
         # ax.zaxis.set_tick_params(labelsize = 12 * xy_range_avg / z_range)
     else:
-        fig = plt.figure()
+        if figsize_default is None:
+            fig = plt.figure()
+        else:
+            fig = plt.figure(figsize = (figsize_default, figsize_default))
     ax = fig.add_subplot(111, projection='3d')
 
     if vmin is not None and (vmax is not None or highest_amount_proportion_threshod is not None):
@@ -1056,6 +1065,10 @@ def get_xy_axis_from_z(zaxis = 0):
         return 0, 1
     else:
         raise Exception(ValueError)
+
+def plot_alpha_shape_3D(nparr_3D, alpha = 0.1, point_decider = lambda x: x > 1e-8):
+    nparr_3D_filtered = np.where(point_decider(nparr_3D), 1., 0.)
+
 
 if __name__ == '__main__':
     pass
