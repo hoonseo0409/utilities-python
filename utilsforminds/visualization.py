@@ -1,6 +1,3 @@
-# import plotly.plotly as py
-# import plotly.graph_objs as go
-# import plotly
 import matplotlib
 import pandas as pd
 from sys import platform
@@ -33,6 +30,9 @@ import moviepy.editor as mpy
 from copy import deepcopy
 import tikzplotlib
 from itertools import product, combinations
+
+import plotly.graph_objs as graph_objs
+import plotly.tools as tls
 
 axis_rotation_dict = {0: 0, 1: 0, 2: 0}
 axis_name_dict = {0: 'East', 1: 'North', 2: 'Elevation'}
@@ -1066,8 +1066,55 @@ def get_xy_axis_from_z(zaxis = 0):
     else:
         raise Exception(ValueError)
 
-def plot_alpha_shape_3D(nparr_3D, alpha = 0.1, point_decider = lambda x: x > 1e-8):
-    nparr_3D_filtered = np.where(point_decider(nparr_3D), 1., 0.)
+def plot_alpha_shape_3D(nparr_3D, path_to_save : str, alphahull = 1.0, points_decider = lambda x: x > 1e-8, title= None, points_size = 2.0, points_color = "black", points_legend = "", alpha_shape_color = "green", alpha_shape_opacity = 0.15, alpha_shape_legend = "", xyz_tickers = None, figsize = None, camera = None):
+    """
+    
+    Parameters
+    ----------
+    alphahull : float
+        The larger alphahull results the more sharp(shrinked) alpha-shape. alpha = 1 / alphahull
+    """
+
+    assert(len(nparr_3D.shape) == 3)
+    input_shape = deepcopy(nparr_3D.shape)
+    
+    ## assign default values
+    title_copied = f"Alpha shape of a set of 3D points. Alphahull= {alphahull}" if title is None else title
+    if xyz_tickers is None:
+        xyz_tickers_copied = {
+            "x": {"tickvals": range(input_shape[0] // 5, input_shape[0], input_shape[0] // 5), "ticktext": range(input_shape[0] // 5, input_shape[0], input_shape[0] // 5)},
+            "y": {"tickvals": range(input_shape[1] // 5, input_shape[1], input_shape[1] // 5), "ticktext": range(input_shape[1] // 5, input_shape[1], input_shape[1] // 5)},
+            "z": {"tickvals": range(input_shape[2] // 5, input_shape[2], input_shape[2] // 5), "ticktext": range(input_shape[2] // 5, input_shape[2], input_shape[2] // 5)}
+        }
+    else:
+        for axis in ["x", "y", "z"]:
+            assert(len(xyz_tickers[axis]["tickvals"]) == len(xyz_tickers[axis]["ticktext"]))
+        xyz_tickers_copied = deepcopy(xyz_tickers)
+    figsize_copied = {"width": 1200, "height": 1200} if figsize is None else deepcopy(figsize)
+    if camera is None:
+        camera_copied = dict(
+            up=dict(x=0, y=0, z=1),
+            center=dict(x=0, y=0, z=0),
+            eye=dict(x=1.25, y=1.25, z=1.25)
+        ) ## default setting
+    else:
+        camera_copied.update(camera)
+
+    nparr_3D_filtered = np.where(points_decider(nparr_3D), 1., 0.)
+    x, y, z = nparr_3D_filtered.nonzero()
+
+    points = graph_objs.Scatter3d(mode = 'markers', name = points_legend, x = x, y = y, z = z, marker = graph_objs.Marker(size = points_size, color = points_color))
+
+    simplexes = graph_objs.Mesh3d(alphahull = alphahull, name = alpha_shape_legend, x = x, y = y, z = z, color = alpha_shape_color, opacity = alpha_shape_opacity)
+
+    scene = graph_objs.Scene(xaxis = {"zeroline": False, "range": [0, input_shape[0]], "tickvals": xyz_tickers_copied["x"]["tickvals"], "ticktext": xyz_tickers_copied["x"]["ticktext"]},
+    yaxis = {"zeroline": False, "range": [0, input_shape[1]], "tickvals": xyz_tickers_copied["y"]["tickvals"], "ticktext":  xyz_tickers_copied["y"]["ticktext"]},
+    zaxis = {"zeroline": False, "range": [0, input_shape[2]], "tickvals": xyz_tickers_copied["z"]["tickvals"], "ticktext":  xyz_tickers_copied["z"]["ticktext"]}, xaxis_title = "East", yaxis_title = "North", zaxis_title = "Elevation")
+
+    layout = graph_objs.Layout(title = title_copied, width = figsize_copied["width"], height = figsize_copied["height"], scene = scene, scene_camera = camera_copied)
+
+    fig = graph_objs.Figure(data = graph_objs.Data([points, simplexes]), layout = layout)
+    fig.write_image(path_to_save)
 
 
 if __name__ == '__main__':
