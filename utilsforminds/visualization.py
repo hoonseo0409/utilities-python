@@ -1066,7 +1066,7 @@ def get_xy_axis_from_z(zaxis = 0):
     else:
         raise Exception(ValueError)
 
-def plot_alpha_shape_3D(nparr_3D, path_to_save : str, alphahull = 1.0, points_decider = lambda x: x > 1e-8, title= None, points_size = 2.0, points_color = "black", points_legend = "", alpha_shape_color = "green", alpha_shape_opacity = 0.15, alpha_shape_legend = "", xyz_tickers = None, figsize = None, camera = None):
+def plot_3D_plotly(nparr_3D, path_to_save_static : str, do_save_html : bool = True, kinds_to_plot : list = None, marker_kwargs : dict = None, vmin = None, vmax = None, alpha_shape_kwargs : dict = None, points_decider = lambda x: x > 1e-8, mask_nparr_3D = None, title= None, points_legends : dict = None, alpha_shape_legend = "", scene_kwargs : dict = None, xyz_tickers = None, figsize = None, figsize_ratio : dict = None, camera = None, showgrid = False, zeroline = False):
     """
     
     Parameters
@@ -1079,7 +1079,17 @@ def plot_alpha_shape_3D(nparr_3D, path_to_save : str, alphahull = 1.0, points_de
     input_shape = deepcopy(nparr_3D.shape)
     
     ## assign default values
-    title_copied = f"Alpha shape of a set of 3D points. Alphahull= {alphahull}" if title is None else title
+    title_copied = "" if title is None else title
+    if kinds_to_plot is None:
+        kinds_to_plot = ["scatter"]
+    else:
+        for kind in kinds_to_plot:
+            assert(kind in ["scatter", "alphashape"])
+        kinds_to_plot = deepcopy(kinds_to_plot)
+    marker_kwargs = utilsforminds.containers.merge_dictionaries([{"colorscale": 'Viridis'}, marker_kwargs])
+    alpha_shape_kwargs = utilsforminds.containers.merge_dictionaries([{"color": "gray", "opacity": 0.15}, alpha_shape_kwargs])
+    points_legends = utilsforminds.containers.merge_lists([["Added to Mask", "Mask"], points_legends])
+    scene_kwargs = utilsforminds.containers.merge_dictionaries([{"xaxis_title": "Easting", "yaxis_title": "Northing", "zaxis_title": "Elevation"}, scene_kwargs])
     if xyz_tickers is None:
         xyz_tickers_copied = {
             "x": {"tickvals": range(input_shape[0] // 5, input_shape[0], input_shape[0] // 5), "ticktext": range(input_shape[0] // 5, input_shape[0], input_shape[0] // 5)},
@@ -1096,25 +1106,47 @@ def plot_alpha_shape_3D(nparr_3D, path_to_save : str, alphahull = 1.0, points_de
         up=dict(x=0, y=0, z=1),
         center=dict(x=0, y=0, z=0),
         eye=dict(x=1.25, y=1.25, z=1.25)
-    ) ## default setting
+    ) ## default camera setting
     if camera is not None:
         camera_copied.update(camera)
-
+    
+    ## Generates objects to plot
+    plot_objects = []
     nparr_3D_filtered = np.where(points_decider(nparr_3D), 1., 0.)
-    x, y, z = nparr_3D_filtered.nonzero()
+    if mask_nparr_3D is None:
+        mask_nparr_3D_added = np.zeros(input_shape)
+    else:
+        mask_nparr_3D_added = np.where(nparr_3D_filtered == 0., np.where(points_decider(mask_nparr_3D), 1., 0.), 0.)
+    if "scatter" in kinds_to_plot:
+        for mask_to_plot, marker_symbol, points_legend in zip([nparr_3D_filtered, mask_nparr_3D_added], ["circle", "square"], [points_legends[1], points_legends[0]]):
+            x, y, z = mask_to_plot.nonzero()
+            colors_arr = utilsforminds.numpy_array.push_arr_to_range(nparr_3D[x, y, z], vmin = vmin, vmax = vmax)
+            plot_objects.append(graph_objs.Scatter3d(mode = 'markers', name = points_legend, x = x, y = y, z = z, marker = graph_objs.Marker(color = colors_arr, symbol = marker_symbol, **marker_kwargs)))
+    if "alphashape" in kinds_to_plot:
+        mask_nparr_3D_alphashape = nparr_3D_filtered
+        x, y, z = mask_nparr_3D_alphashape.nonzero()
+        plot_objects.append(graph_objs.Mesh3d(name = alpha_shape_legend, x = x, y = y, z = z, **alpha_shape_kwargs))
 
-    points = graph_objs.Scatter3d(mode = 'markers', name = points_legend, x = x, y = y, z = z, marker = graph_objs.Marker(size = points_size, color = points_color))
-
-    simplexes = graph_objs.Mesh3d(alphahull = alphahull, name = alpha_shape_legend, x = x, y = y, z = z, color = alpha_shape_color, opacity = alpha_shape_opacity)
-
-    scene = graph_objs.Scene(xaxis = {"zeroline": False, "range": [0, input_shape[0]], "tickvals": xyz_tickers_copied["x"]["tickvals"], "ticktext": xyz_tickers_copied["x"]["ticktext"]},
-    yaxis = {"zeroline": False, "range": [0, input_shape[1]], "tickvals": xyz_tickers_copied["y"]["tickvals"], "ticktext":  xyz_tickers_copied["y"]["ticktext"]},
-    zaxis = {"zeroline": False, "range": [0, input_shape[2]], "tickvals": xyz_tickers_copied["z"]["tickvals"], "ticktext":  xyz_tickers_copied["z"]["ticktext"]}, xaxis_title = "East", yaxis_title = "North", zaxis_title = "Elevation")
+    scene = graph_objs.Scene(xaxis = {"range": [0, input_shape[0]], "tickvals": xyz_tickers_copied["x"]["tickvals"], "ticktext": xyz_tickers_copied["x"]["ticktext"]},
+    yaxis = {"range": [0, input_shape[1]], "tickvals": xyz_tickers_copied["y"]["tickvals"], "ticktext":  xyz_tickers_copied["y"]["ticktext"]},
+    zaxis = {"range": [0, input_shape[2]], "tickvals": xyz_tickers_copied["z"]["tickvals"], "ticktext":  xyz_tickers_copied["z"]["ticktext"]}, **scene_kwargs)
 
     layout = graph_objs.Layout(title = title_copied, width = figsize_copied["width"], height = figsize_copied["height"], scene = scene, scene_camera = camera_copied)
 
-    fig = graph_objs.Figure(data = graph_objs.Data([points, simplexes]), layout = layout)
+    fig = graph_objs.Figure(data = graph_objs.Data(plot_objects), layout = layout)
+
+    ## Set grid line and zero line
+    if figsize_ratio is not None:
+        fig.update_layout(scene_aspectmode='manual', scene_aspectratio=figsize_ratio) ## scene_aspectmode='auto' is default argument
+    fig.update_layout(
+        xaxis=dict(showgrid=showgrid, zeroline=zeroline),
+        yaxis=dict(showgrid=showgrid, zeroline=zeroline),
+        zaxis=dict(showgrid=showgrid, zeroline=zeroline)
+    )
+
     fig.write_image(path_to_save)
+    if path_to_save_html is not None:
+        fig.write_html(path_to_save_html)
 
 
 if __name__ == '__main__':

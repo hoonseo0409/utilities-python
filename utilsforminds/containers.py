@@ -36,12 +36,35 @@ def merge_dictionaries(list_of_dicts : list, use_last_when_overlapped = True):
     else:
         range_to_iter = range(len(list_of_dicts) -1, -1, -1)
     for dict_idx in range_to_iter:
-        assert(type(list_of_dicts[dict_idx]) == type({}))
-        merged_dict.update(list_of_dicts[dict_idx])
+        if list_of_dicts[dict_idx] is not None:
+            assert(type(list_of_dicts[dict_idx]) == type({}))
+            merged_dict.update(list_of_dicts[dict_idx])
     return merged_dict
 
-if __name__ == "__main__":
-    test_list = [{'a':1, 'b':2}, {'a':3, 'b':2}, {'a':2, 'b':4, 'c':9}]
-    print(get_items_from_list_conditionally(test_list, lambda x: True if x['a'] >= 2 else False))
+def merge_lists(list_of_lists : list, use_last_when_overlapped = True):
+    """Merge lists through deepcopy
 
-    print(merge_dictionaries(test_list, use_last_when_overlapped = False))
+    Examples
+    --------
+    test_list = [["a", "b", "c"], ["d", "e", "f", "g"], ["h", "i"]]
+    print(merge_lists(test_list, use_last_when_overlapped = True))
+        == ['h', 'i', 'f', 'g']
+    print(merge_lists(test_list, use_last_when_overlapped = False))
+        == ['a', 'b', 'c', 'g']
+    """
+
+    merged_list = []
+    if use_last_when_overlapped:
+        range_to_iter = range(len(list_of_lists) -1, -1, -1)
+    else:
+        range_to_iter = range(len(list_of_lists))
+    for list_idx in range_to_iter:
+        if list_of_lists[list_idx] is not None:
+            assert(type(list_of_lists[list_idx]) == type([]))
+            for list_idx_idx in range(len(merged_list), len(list_of_lists[list_idx])): ## append only when there are more elements in list_of_lists[list_idx].
+                merged_list.append(list_of_lists[list_idx][list_idx_idx])
+    return merged_list
+
+if __name__ == "__main__":
+    test_list = [["a", "b", "c"], ["d", "e", "f", "g"], ["h", "i"]]
+    print(merge_lists(test_list, use_last_when_overlapped = False))
