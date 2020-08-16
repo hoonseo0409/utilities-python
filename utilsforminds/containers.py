@@ -65,6 +65,21 @@ def merge_lists(list_of_lists : list, use_last_when_overlapped = True):
                 merged_list.append(list_of_lists[list_idx][list_idx_idx])
     return merged_list
 
+def copy_dict_and_delete_element(dict_to_copy, list_of_keys_to_delete):
+    """
+    
+    Examples
+    --------
+    test_dict = {"n": ["a", "b", "c"], "m": ["d", "e", "f", "g"], 1: ["h", "i"]}
+    print(copy_dict_and_delete_element(dict_to_copy = test_dict, list_of_keys_to_delete = ["n", 1]))
+        == {'m': ['d', 'e', 'f', 'g']}
+    """
+    result = deepcopy(dict_to_copy)
+    for key in list_of_keys_to_delete:
+        if key in result.keys():
+            del result[key]
+    return result
+
 if __name__ == "__main__":
-    test_list = [["a", "b", "c"], ["d", "e", "f", "g"], ["h", "i"]]
-    print(merge_lists(test_list, use_last_when_overlapped = False))
+    test_dict = {"n": ["a", "b", "c"], "m": ["d", "e", "f", "g"], 1: ["h", "i"]}
+    print(copy_dict_and_delete_element(dict_to_copy = test_dict, list_of_keys_to_delete = ["n", 1]))
