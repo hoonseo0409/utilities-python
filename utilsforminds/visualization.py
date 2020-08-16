@@ -1066,7 +1066,7 @@ def get_xy_axis_from_z(zaxis = 0):
     else:
         raise Exception(ValueError)
 
-def plot_3D_plotly(nparr_3D, path_to_save_static : str, do_save_html : bool = True, kinds_to_plot : list = None, marker_kwargs : dict = None, vmin = None, vmax = None, alpha_shape_kwargs : dict = None, points_decider = lambda x: x > 1e-8, mask_nparr_3D = None, title= None, points_legends : dict = None, alpha_shape_legend = "", scene_kwargs : dict = None, xyz_tickers = None, figsize = None, figsize_ratio : dict = None, camera = None, showgrid = False, zeroline = False, showline = True, transparent_bacground = True, colorbar_kwargs = None):
+def plot_3D_plotly(nparr_3D, path_to_save_static : str, do_save_html : bool = True, kinds_to_plot : list = None, marker_kwargs : dict = None, vmin = None, vmax = None, alpha_shape_kwargs : dict = None, points_decider = lambda x: x > 1e-8, mask_nparr_3D = None, title= None, points_legends : dict = None, alpha_shape_legend = "", scene_kwargs : dict = None, xyz_tickers = None, layout_kwargs : dict = None, figsize_ratio : dict = None, camera = None, showgrid = False, zeroline = True, showline = False, transparent_bacground = True, colorbar_kwargs = None):
     """
     
     Parameters
@@ -1087,28 +1087,20 @@ def plot_3D_plotly(nparr_3D, path_to_save_static : str, do_save_html : bool = Tr
             assert(kind in ["scatter", "alphashape"])
         kinds_to_plot = deepcopy(kinds_to_plot)
 
-    # if vmin is not None:
-    #     colorbar_kwargs_local["cmin"] = vmin
-    # if vmax is not None:
-    #     colorbar_kwargs_local["cmax"] = vmax
-    colorbar_kwargs_local = {"title": "colorbar", "len": 0.6, "thickness": 3.0}
-    # colorbar_kwargs_local["len"] = 3.0
-    # colorbar_kwargs_local["thickness"] = 3.0
-    colorbar_kwargs_local = utilsforminds.containers.merge_dictionaries([colorbar_kwargs_local, colorbar_kwargs])
     marker_kwargs_local = {"colorscale": 'Viridis', "size": 2.}
     if vmin is not None:
         marker_kwargs_local["cmin"] = vmin
     if vmax is not None:
         marker_kwargs_local["cmax"] = vmax
 
-    marker_kwargs = utilsforminds.containers.merge_dictionaries([marker_kwargs_local, marker_kwargs])
-    marker_kwargs["colorbar"] = colorbar_kwargs_local
-    alpha_shape_kwargs = utilsforminds.containers.merge_dictionaries([{"color": "gray", "opacity": 0.15}, alpha_shape_kwargs])
-    points_legends = utilsforminds.containers.merge_lists([["Added to Mask", "Mask"], points_legends])
-    scene_kwargs = utilsforminds.containers.merge_dictionaries([{"xaxis_title": "Easting", "yaxis_title": "Northing", "zaxis_title": "Elevation"}, scene_kwargs])
+    marker_kwargs_local = utilsforminds.containers.merge_dictionaries([marker_kwargs_local, marker_kwargs])
+    marker_kwargs_local["colorbar"] = utilsforminds.containers.merge_dictionaries([{"title": "colorbar"}, colorbar_kwargs])
+    alpha_shape_kwargs_local = utilsforminds.containers.merge_dictionaries([{"color": "gray", "opacity": 0.15}, alpha_shape_kwargs])
+    points_legends_local = utilsforminds.containers.merge_lists([["Added to Mask", "Mask"], points_legends])
+    scene_kwargs_local = utilsforminds.containers.merge_dictionaries([{"xaxis_title": "x", "yaxis_title": "y", "zaxis_title": "z"}, scene_kwargs])
 
-    print(f"marker_kwargs: {marker_kwargs}")
-    print(f"colorbar_kwargs_local: {colorbar_kwargs_local}")
+    # print(f"marker_kwargs: {marker_kwargs}")
+    # print(f"colorbar_kwargs_local: {colorbar_kwargs_local}")
     if xyz_tickers is None:
         xyz_tickers_copied = {
             "x": {"tickvals": range(input_shape[0] // 5, input_shape[0], input_shape[0] // 5), "ticktext": range(input_shape[0] // 5, input_shape[0], input_shape[0] // 5)},
@@ -1119,7 +1111,7 @@ def plot_3D_plotly(nparr_3D, path_to_save_static : str, do_save_html : bool = Tr
         for axis in ["x", "y", "z"]:
             assert(len(xyz_tickers[axis]["tickvals"]) == len(xyz_tickers[axis]["ticktext"]))
         xyz_tickers_copied = deepcopy(xyz_tickers)
-    figsize_copied = {"width": 800, "height": 800} if figsize is None else deepcopy(figsize)
+    layout_kwargs_local = {} if layout_kwargs is None else deepcopy(layout_kwargs)
 
     camera_copied = dict(
         up=dict(x=0, y=0, z=1),
@@ -1137,25 +1129,25 @@ def plot_3D_plotly(nparr_3D, path_to_save_static : str, do_save_html : bool = Tr
     else:
         mask_nparr_3D_added = np.where(nparr_3D_filtered == 0., np.where(points_decider(mask_nparr_3D), 1., 0.), 0.)
     if "scatter" in kinds_to_plot:
-        for is_main, mask_to_plot, marker_symbol, points_legend in zip([True, False], [nparr_3D_filtered, mask_nparr_3D_added], ["circle", "square"], [points_legends[1], points_legends[0]]):
+        for is_main, mask_to_plot, marker_symbol, points_legend in zip([True, False], [nparr_3D_filtered, mask_nparr_3D_added], ["circle", "square"], [points_legends_local[1], points_legends_local[0]]):
             x, y, z = mask_to_plot.nonzero()
-            colors_arr = utilsforminds.numpy_array.push_arr_to_range(nparr_3D[x, y, z], vmin = vmin, vmax = vmax)
+            colors_arr = utilsforminds.numpy_array.push_arr_to_range(nparr_3D[x, y, z], vmin = vmin, vmax = vmax) ## don't need maybe, because of cmin and cmax.
             if is_main: ## Only plot one colorbar.
-                marker_kwargs_copied = marker_kwargs
+                marker_kwargs_copied = marker_kwargs_local
             else:
-                marker_kwargs_copied = utilsforminds.containers.copy_dict_and_delete_element(marker_kwargs, ["colorbar"])
+                marker_kwargs_copied = utilsforminds.containers.copy_dict_and_delete_element(marker_kwargs_local, ["colorbar"])
             plot_objects.append(graph_objs.Scatter3d(mode = 'markers', name = points_legend, x = x, y = y, z = z, marker = graph_objs.Marker(color = colors_arr, symbol = marker_symbol, **marker_kwargs_copied)))
     if "alphashape" in kinds_to_plot:
         mask_nparr_3D_alphashape = nparr_3D_filtered
         x, y, z = mask_nparr_3D_alphashape.nonzero()
-        plot_objects.append(graph_objs.Mesh3d(name = alpha_shape_legend, x = x, y = y, z = z, **alpha_shape_kwargs))
+        plot_objects.append(graph_objs.Mesh3d(name = alpha_shape_legend, x = x, y = y, z = z, **alpha_shape_kwargs_local))
 
     scene = graph_objs.Scene(xaxis = {"range": [0, input_shape[0]], "tickvals": xyz_tickers_copied["x"]["tickvals"], "ticktext": xyz_tickers_copied["x"]["ticktext"], "showgrid": showgrid, "zeroline": zeroline, "showline": showline},
     yaxis = {"range": [0, input_shape[1]], "tickvals": xyz_tickers_copied["y"]["tickvals"], "ticktext":  xyz_tickers_copied["y"]["ticktext"], "showgrid": showgrid, "zeroline": zeroline, "showline": showline},
-    zaxis = {"range": [0, input_shape[2]], "tickvals": xyz_tickers_copied["z"]["tickvals"], "ticktext":  xyz_tickers_copied["z"]["ticktext"], "showgrid": showgrid, "zeroline": zeroline, "showline": showline}, **scene_kwargs)
+    zaxis = {"range": [0, input_shape[2]], "tickvals": xyz_tickers_copied["z"]["tickvals"], "ticktext":  xyz_tickers_copied["z"]["ticktext"], "showgrid": showgrid, "zeroline": zeroline, "showline": showline}, **scene_kwargs_local)
 
     # layout = graph_objs.Layout(title = title_copied, width = figsize_copied["width"], height = figsize_copied["height"], scene = scene, scene_camera = camera_copied)
-    layout = graph_objs.Layout(title = title_copied, scene = scene, scene_camera = camera_copied)
+    layout = graph_objs.Layout(title = title_copied, scene = scene, scene_camera = camera_copied, **layout_kwargs_local)
 
     fig = graph_objs.Figure(data = graph_objs.Data(plot_objects), layout = layout)
 
