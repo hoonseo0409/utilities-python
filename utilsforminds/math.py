@@ -199,8 +199,46 @@ def sparse_group_lasso_function_object(reg_factor = 1e5):
         return reg_factor * (group_norm + lasso)
     return sparse_group_lasso
 
+def mean(numbers):
+    assert(len(numbers) > 0)
+    return sum(numbers) / len(numbers)
+
+def get_new_weight_based_loss_trends(losses, current_weight, mean_before_losses_step_backwards = 4, mean_after_losses_step_backwards = 2, factor_weight_change_to_loss_change = +0.1, kind = 'arithmetic', max_weight = None, min_weight = None, do_nothing = False):
+    """
+    
+    Parameters
+    ----------
+    factor_weight_change_to_loss_change : float
+        If factor_weight_change_to_loss_change is positive, then weight IS INCREASED as loss IS INCREASED.
+
+    Examples
+    --------
+    print(get_new_weight_based_loss_trends([1, 2, 1, 2, 1, 2, 3, 4, 5], 0.1))
+        == 0.20714285714285716
+    """
+    if do_nothing or len(losses) < mean_before_losses_step_backwards + mean_after_losses_step_backwards:
+        return current_weight
+    
+    loss_mean = mean(losses)
+    loss_before_local_mean = mean(losses[-(mean_before_losses_step_backwards + mean_after_losses_step_backwards):-mean_after_losses_step_backwards])
+    loss_after_local_mean = mean(losses[-mean_after_losses_step_backwards:])
+    loss_change = (loss_after_local_mean - loss_before_local_mean) / abs(loss_mean)
+
+    if kind == "arithmetic":
+        new_weight = current_weight + loss_change * factor_weight_change_to_loss_change
+        if max_weight is not None:
+            new_weight = min(new_weight, max_weight)
+        if min_weight is not None:
+            new_weight = max(min_weight, new_weight)
+    else:
+        raise Exception(f"Unsupported kind: {kind}")
+    return new_weight
+
+
+
 if __name__ == '__main__':
     pass
     # test_containers_list = [{'a': [1, 2.5, 3], 'b': {'c': [2, 4], 'd': 5}}, {'a': [2, 3.5, 4], 'b': {'c': [3, 5], 'd': 6}}]
     # print(statistics_across_containers(test_containers_list, kind_of_stat = 'mean'))
     # print(to_precision(1.23,4))
+    print(get_new_weight_based_loss_trends([1, 2, 1, 2, 1, 2, 3, 4, 5], 0.1))
