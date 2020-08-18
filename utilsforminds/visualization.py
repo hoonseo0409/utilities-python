@@ -1094,8 +1094,9 @@ def plot_3D_plotly(nparr_3D, path_to_save_static : str, do_save_html : bool = Tr
         marker_kwargs_local["cmax"] = vmax
 
     marker_kwargs_local = utilsforminds.containers.merge_dictionaries([marker_kwargs_local, marker_kwargs])
+    # marker_kwargs_local["colorbar"] = utilsforminds.containers.merge_dictionaries([{"title": "colorbar", "xpad": 0.0}, colorbar_kwargs])
     marker_kwargs_local["colorbar"] = utilsforminds.containers.merge_dictionaries([{"title": "colorbar"}, colorbar_kwargs])
-    alpha_shape_kwargs_local = utilsforminds.containers.merge_dictionaries([{"color": "gray", "opacity": 0.15}, alpha_shape_kwargs])
+    alpha_shape_kwargs_local = utilsforminds.containers.merge_dictionaries([{"color": "orange", "opacity": 0.3}, alpha_shape_kwargs])
     points_legends_local = utilsforminds.containers.merge_lists([["Added to Mask", "Mask"], points_legends])
     scene_kwargs_local = utilsforminds.containers.merge_dictionaries([{"xaxis_title": "x", "yaxis_title": "y", "zaxis_title": "z"}, scene_kwargs])
 
@@ -1129,7 +1130,7 @@ def plot_3D_plotly(nparr_3D, path_to_save_static : str, do_save_html : bool = Tr
     else:
         mask_nparr_3D_added = np.where(nparr_3D_filtered == 0., np.where(points_decider(mask_nparr_3D), 1., 0.), 0.)
     if "scatter" in kinds_to_plot:
-        for is_main, mask_to_plot, marker_symbol, points_legend in zip([True, False], [nparr_3D_filtered, mask_nparr_3D_added], ["circle", "square"], [points_legends_local[1], points_legends_local[0]]):
+        for is_main, mask_to_plot, marker_symbol, points_legend in zip([True, False], [nparr_3D_filtered, mask_nparr_3D_added], ["circle", "cross"], [points_legends_local[1], points_legends_local[0]]):
             x, y, z = mask_to_plot.nonzero()
             colors_arr = utilsforminds.numpy_array.push_arr_to_range(nparr_3D[x, y, z], vmin = vmin, vmax = vmax) ## don't need maybe, because of cmin and cmax.
             if is_main: ## Only plot one colorbar.
@@ -1142,9 +1143,9 @@ def plot_3D_plotly(nparr_3D, path_to_save_static : str, do_save_html : bool = Tr
         x, y, z = mask_nparr_3D_alphashape.nonzero()
         plot_objects.append(graph_objs.Mesh3d(name = alpha_shape_legend, x = x, y = y, z = z, **alpha_shape_kwargs_local))
 
-    scene = graph_objs.Scene(xaxis = {"range": [0, input_shape[0]], "tickvals": xyz_tickers_copied["x"]["tickvals"], "ticktext": xyz_tickers_copied["x"]["ticktext"], "showgrid": showgrid, "zeroline": zeroline, "showline": showline},
-    yaxis = {"range": [0, input_shape[1]], "tickvals": xyz_tickers_copied["y"]["tickvals"], "ticktext":  xyz_tickers_copied["y"]["ticktext"], "showgrid": showgrid, "zeroline": zeroline, "showline": showline},
-    zaxis = {"range": [0, input_shape[2]], "tickvals": xyz_tickers_copied["z"]["tickvals"], "ticktext":  xyz_tickers_copied["z"]["ticktext"], "showgrid": showgrid, "zeroline": zeroline, "showline": showline}, **scene_kwargs_local)
+    scene = graph_objs.Scene(xaxis = {"range": [0, input_shape[0]], "tickvals": xyz_tickers_copied["x"]["tickvals"], "ticktext": xyz_tickers_copied["x"]["ticktext"], "showgrid": showgrid, "zeroline": zeroline, "showline": showline, "zerolinecolor": "black", "backgroundcolor": "rgb(255, 255, 255)"},
+    yaxis = {"range": [0, input_shape[1]], "tickvals": xyz_tickers_copied["y"]["tickvals"], "ticktext":  xyz_tickers_copied["y"]["ticktext"], "showgrid": showgrid, "zeroline": zeroline, "showline": showline, "zerolinecolor": "black", "backgroundcolor": "rgb(255, 255, 255)"},
+    zaxis = {"range": [0, input_shape[2]], "tickvals": xyz_tickers_copied["z"]["tickvals"], "ticktext":  xyz_tickers_copied["z"]["ticktext"], "showgrid": showgrid, "zeroline": zeroline, "showline": showline, "zerolinecolor": "black", "backgroundcolor": "rgb(255, 255, 255)"}, **scene_kwargs_local)
 
     # layout = graph_objs.Layout(title = title_copied, width = figsize_copied["width"], height = figsize_copied["height"], scene = scene, scene_camera = camera_copied)
     layout = graph_objs.Layout(title = title_copied, scene = scene, scene_camera = camera_copied, **layout_kwargs_local)
@@ -1157,7 +1158,7 @@ def plot_3D_plotly(nparr_3D, path_to_save_static : str, do_save_html : bool = Tr
     if transparent_bacground:
         fig.update_layout(paper_bgcolor = 'rgba(0,0,0,0)', plot_bgcolor = 'rgba(0,0,0,0)')
 
-
+    ## Save the result
     fig.write_image(path_to_save_static)
     if do_save_html:
         fig.write_html(utilsforminds.strings.format_extension(path_to_save_static, "html"))

@@ -203,7 +203,7 @@ def mean(numbers):
     assert(len(numbers) > 0)
     return sum(numbers) / len(numbers)
 
-def get_new_weight_based_loss_trends(losses, current_weight, mean_before_losses_step_backwards = 4, mean_after_losses_step_backwards = 2, factor_weight_change_to_loss_change = +0.1, kind = 'arithmetic', max_weight = None, min_weight = None, do_nothing = False):
+def get_new_weight_based_loss_trends(losses, current_weight, mean_before_losses_step_backwards = 6, mean_after_losses_step_backwards = 3, factor_weight_change_to_loss_change = +0.1, kind = 'arithmetic', max_weight = None, min_weight = None, do_nothing = False, verbose = False):
     """
     
     Parameters
@@ -232,7 +232,14 @@ def get_new_weight_based_loss_trends(losses, current_weight, mean_before_losses_
             new_weight = max(min_weight, new_weight)
     else:
         raise Exception(f"Unsupported kind: {kind}")
-    return new_weight
+    if verbose:
+        print(f"Weight changes from {current_weight} to {new_weight}")
+    
+    ## keep the sign
+    if current_weight * new_weight < 0:
+        return current_weight
+    else:
+        return new_weight
 
 
 
