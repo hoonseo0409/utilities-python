@@ -679,7 +679,8 @@ def plot_bar_charts(path_to_save : str, name_numbers : dict, xlabels : list, xti
                 legend_prefix_dict[name] = f" ({round(100. * ((avg_number - sum(name_numbers[name])) / sum(name_numbers[name])))}%)"
 
     if bar_width == 'auto':
-        bar_width_ = 0.30 * (2 / len(name_numbers))  
+        # bar_width_ = 0.30 * (2 / len(name_numbers))  
+        bar_width_ = 0.20 * (2 / len(name_numbers))  
     else:
         bar_width_ = bar_width
     index = np.arange(n_groups)
@@ -972,7 +973,8 @@ def plot_top_bars_with_rows(data_df, path_to_save : str, color_column = None, co
         if show_group_error and group_column is not None:
             top_errors = list(data_df_copied.loc[:, 'std'][num_plots_accumulated:(num_plots_accumulated + num_for_each_row_list[row_idx])])
         if bar_width == 'auto':
-            bar_width_ = 1. / num_for_each_row_list[row_idx]
+            # bar_width_ = 1. / num_for_each_row_list[row_idx]
+            bar_width_ = 0.6 / num_for_each_row_list[row_idx]
         else:
             bar_width_ = bar_width
         num_plots_accumulated += num_for_each_row_list[row_idx]
