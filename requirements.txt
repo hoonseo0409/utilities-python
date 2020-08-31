@@ -3,7 +3,6 @@ sphinx
 sphinx_rtd_theme
 nose
 coverage
-mayavi
 moviepy
 pandas
 pytest

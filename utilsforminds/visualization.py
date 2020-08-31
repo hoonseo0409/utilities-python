@@ -22,9 +22,9 @@ import utilsforminds.helpers as helpers
 import random
 import numpy as np
 import utilsforminds
-from mayavi import mlab # see install manual + brew install vtk
-from mayavi.api import Engine
-import mayavi.tools.pipeline
+# from mayavi import mlab # see install manual + brew install vtk
+# from mayavi.api import Engine
+# import mayavi.tools.pipeline
 from scipy import ndimage
 import moviepy.editor as mpy
 from copy import deepcopy
