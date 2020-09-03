@@ -1139,7 +1139,7 @@ def plot_3D_plotly(nparr_3D, path_to_save_static : str, do_save_html : bool = Tr
                 marker_kwargs_copied = marker_kwargs_local
             else:
                 marker_kwargs_copied = utilsforminds.containers.copy_dict_and_delete_element(marker_kwargs_local, ["colorbar"])
-            plot_objects.append(graph_objs.Scatter3d(mode = 'markers', name = points_legend, x = x, y = y, z = z, marker = graph_objs.Marker(color = colors_arr, symbol = marker_symbol, **marker_kwargs_copied)))
+            plot_objects.append(graph_objs.Scatter3d(mode = 'markers', name = points_legend, x = x, y = y, z = z, marker = graph_objs.Marker(color = colors_arr, symbol = marker_symbol, **marker_kwargs_copied), text = np.round(colors_arr, 2)))
     if "alphashape" in kinds_to_plot:
         mask_nparr_3D_alphashape = nparr_3D_filtered
         x, y, z = mask_nparr_3D_alphashape.nonzero()
