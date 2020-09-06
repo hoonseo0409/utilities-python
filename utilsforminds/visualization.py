@@ -1068,7 +1068,7 @@ def get_xy_axis_from_z(zaxis = 0):
     else:
         raise Exception(ValueError)
 
-def plot_3D_plotly(nparr_3D, path_to_save_static : str, do_save_html : bool = True, kinds_to_plot : list = None, marker_kwargs : dict = None, vmin = None, vmax = None, alpha_shape_kwargs : dict = None, points_decider = lambda x: x > 1e-8, mask_nparr_3D = None, title= None, points_legends : dict = None, alpha_shape_legend = "", scene_kwargs : dict = None, xyz_tickers = None, layout_kwargs : dict = None, figsize_ratio : dict = None, camera = None, showgrid = False, zeroline = True, showline = False, transparent_bacground = True, colorbar_kwargs = None):
+def plot_3D_plotly(nparr_3D, path_to_save_static : str, do_save_html : bool = True, kinds_to_plot : list = None, marker_kwargs : dict = None, vmin = None, vmax = None, alpha_shape_kwargs : dict = None, points_decider = lambda x: x > 1e-8, observation_mask_nparr_3D = None, title= None, points_legends : dict = None, alpha_shape_legend = "", scene_kwargs : dict = None, xyz_tickers = None, axis_kwargs : dict = None, layout_kwargs : dict = None, figsize_ratio : dict = None, camera = None, showgrid = False, zeroline = True, showline = False, transparent_bacground = True, colorbar_kwargs = None, get_hovertext = None):
     """
     
     Parameters
@@ -1101,9 +1101,8 @@ def plot_3D_plotly(nparr_3D, path_to_save_static : str, do_save_html : bool = Tr
     alpha_shape_kwargs_local = utilsforminds.containers.merge_dictionaries([{"color": "orange", "opacity": 0.3}, alpha_shape_kwargs])
     points_legends_local = utilsforminds.containers.merge_lists([["Added to Mask", "Mask"], points_legends])
     scene_kwargs_local = utilsforminds.containers.merge_dictionaries([{"xaxis_title": "x", "yaxis_title": "y", "zaxis_title": "z"}, scene_kwargs])
+    axis_kwargs_local = utilsforminds.containers.merge_dictionaries([{"showgrid": showgrid, "zeroline": zeroline, "showline": showline, "zerolinecolor": "black", "backgroundcolor": "rgb(255, 255, 255)"}, axis_kwargs])
 
-    # print(f"marker_kwargs: {marker_kwargs}")
-    # print(f"colorbar_kwargs_local: {colorbar_kwargs_local}")
     if xyz_tickers is None:
         xyz_tickers_copied = {
             "x": {"tickvals": range(input_shape[0] // 5, input_shape[0], input_shape[0] // 5), "ticktext": range(input_shape[0] // 5, input_shape[0], input_shape[0] // 5)},
@@ -1127,27 +1126,39 @@ def plot_3D_plotly(nparr_3D, path_to_save_static : str, do_save_html : bool = Tr
     ## Generates objects to plot
     plot_objects = []
     nparr_3D_filtered = np.where(points_decider(nparr_3D), 1., 0.)
-    if mask_nparr_3D is None:
-        mask_nparr_3D_added = np.zeros(input_shape)
+    if observation_mask_nparr_3D is None:
+        observation_mask_nparr_3D_added = np.zeros(input_shape)
     else:
-        mask_nparr_3D_added = np.where(nparr_3D_filtered == 0., np.where(points_decider(mask_nparr_3D), 1., 0.), 0.)
+        observation_mask_nparr_3D_added = np.where(nparr_3D_filtered == 1., np.where(points_decider(observation_mask_nparr_3D), 0., 1.), 0.)
     if "scatter" in kinds_to_plot:
-        for is_main, mask_to_plot, marker_symbol, points_legend in zip([True, False], [nparr_3D_filtered, mask_nparr_3D_added], ["circle", "cross"], [points_legends_local[1], points_legends_local[0]]):
+        for is_main, mask_to_plot, marker_symbol, points_legend in zip([True, False], [nparr_3D_filtered, observation_mask_nparr_3D_added], ["circle", "cross"], [points_legends_local[1], points_legends_local[0]]):
             x, y, z = mask_to_plot.nonzero()
             colors_arr = utilsforminds.numpy_array.push_arr_to_range(nparr_3D[x, y, z], vmin = vmin, vmax = vmax) ## don't need maybe, because of cmin and cmax.
+            if get_hovertext is not None:
+                hovertext = get_hovertext(x = x, y = y, z = z, value = colors_arr)
+                hoverinfo = "text"
+            else:
+                hovertext = None
+                hoverinfo = None
             if is_main: ## Only plot one colorbar.
                 marker_kwargs_copied = marker_kwargs_local
             else:
                 marker_kwargs_copied = utilsforminds.containers.copy_dict_and_delete_element(marker_kwargs_local, ["colorbar"])
-            plot_objects.append(graph_objs.Scatter3d(mode = 'markers', name = points_legend, x = x, y = y, z = z, marker = graph_objs.Marker(color = colors_arr, symbol = marker_symbol, **marker_kwargs_copied), text = np.round(colors_arr, 2)))
+            plot_objects.append(graph_objs.Scatter3d(mode = 'markers', name = points_legend, x = x, y = y, z = z, marker = graph_objs.Marker(color = colors_arr, symbol = marker_symbol, **marker_kwargs_copied), hovertext = hovertext, hoverinfo = hoverinfo)) ## parameter, e.g. x, y, .. can be used in hovertemplate.
     if "alphashape" in kinds_to_plot:
         mask_nparr_3D_alphashape = nparr_3D_filtered
         x, y, z = mask_nparr_3D_alphashape.nonzero()
-        plot_objects.append(graph_objs.Mesh3d(name = alpha_shape_legend, x = x, y = y, z = z, **alpha_shape_kwargs_local))
+        if get_hovertext is not None:
+            hovertext = get_hovertext(x = x, y = y, z = z, value = nparr_3D[x, y, z])
+            hoverinfo = "text"
+        else:
+            hovertext = None
+            hoverinfo = None
+        plot_objects.append(graph_objs.Mesh3d(name = alpha_shape_legend, x = x, y = y, z = z, hovertext = hovertext, hoverinfo = hoverinfo, **alpha_shape_kwargs_local))
 
-    scene = graph_objs.Scene(xaxis = {"range": [0, input_shape[0]], "tickvals": xyz_tickers_copied["x"]["tickvals"], "ticktext": xyz_tickers_copied["x"]["ticktext"], "showgrid": showgrid, "zeroline": zeroline, "showline": showline, "zerolinecolor": "black", "backgroundcolor": "rgb(255, 255, 255)"},
-    yaxis = {"range": [0, input_shape[1]], "tickvals": xyz_tickers_copied["y"]["tickvals"], "ticktext":  xyz_tickers_copied["y"]["ticktext"], "showgrid": showgrid, "zeroline": zeroline, "showline": showline, "zerolinecolor": "black", "backgroundcolor": "rgb(255, 255, 255)"},
-    zaxis = {"range": [0, input_shape[2]], "tickvals": xyz_tickers_copied["z"]["tickvals"], "ticktext":  xyz_tickers_copied["z"]["ticktext"], "showgrid": showgrid, "zeroline": zeroline, "showline": showline, "zerolinecolor": "black", "backgroundcolor": "rgb(255, 255, 255)"}, **scene_kwargs_local)
+    scene = graph_objs.Scene(xaxis = {"range": [0, input_shape[0]], "tickvals": xyz_tickers_copied["x"]["tickvals"], "ticktext": xyz_tickers_copied["x"]["ticktext"],**axis_kwargs_local},
+    yaxis = {"range": [0, input_shape[1]], "tickvals": xyz_tickers_copied["y"]["tickvals"], "ticktext":  xyz_tickers_copied["y"]["ticktext"], **axis_kwargs_local},
+    zaxis = {"range": [0, input_shape[2]], "tickvals": xyz_tickers_copied["z"]["tickvals"], "ticktext":  xyz_tickers_copied["z"]["ticktext"], **axis_kwargs_local}, **scene_kwargs_local)
 
     # layout = graph_objs.Layout(title = title_copied, width = figsize_copied["width"], height = figsize_copied["height"], scene = scene, scene_camera = camera_copied)
     layout = graph_objs.Layout(title = title_copied, scene = scene, scene_camera = camera_copied, **layout_kwargs_local)
