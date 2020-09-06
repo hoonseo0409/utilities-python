@@ -200,21 +200,22 @@ def getSparsedDataCounterCuvicHole(npArrData, npArrCounter, lstOfProportions):
     
 #     return scaled, min, max
 
-def min_max_scale(arr, vmin = None, vmax = None):
-    """Apply min-max scaling
+def min_max_scale(arr, vmin = None, vmax = None, arr_min = None, arr_max = None):
+    """Apply min-max scaling. This changes close to the given range, e.g. [vmin, vmax] but not exactly if arr_min and arr_max is given differently from min and max of arr. If you changes vmin <-> arr_min, vmax <-> arr_max, then this becomes reverse scaling to original exactly same arr.
     
-    The range becomes [vmin, vmax] if vmin and vmax are both given, 
-    [vmin, vmin + 1] if only vmin is given, 
-    [vmax - 1, vmax] if only vmax is given,
-    [0, 1] if vmin and vmax are both not given.
+    The range changes from [arr_min, arr_max],
+    to [vmin, vmax] if vmin and vmax are both given, 
+    to [vmin, vmin + 1] if only vmin is given, 
+    to [vmax - 1, vmax] if only vmax is given,
+    to [0, 1] if vmin and vmax are both not given.
     """
 
-    max_ = np.max(arr)
-    min_ = np.min(arr)
+    max_ = np.max(arr) if arr_max is None else arr_max
+    min_ = np.min(arr) if arr_min is None else arr_min
     if max_ == min_:
         arr_01_scaled = np.ones(arr.shape) * 0.5
     else:
-        arr_01_scaled = (arr - min_) / (max_ - min_)
+        arr_01_scaled = (arr - min_) / (max_ - min_) ## [0, 1] scaled.
     if vmax is not None and vmin is not None:
         assert(vmax >= vmin)
         return arr_01_scaled * (vmax - vmin) + vmin
@@ -227,6 +228,7 @@ def min_max_scale(arr, vmin = None, vmax = None):
     
 
 def reverseMinMaxScale(arr, min_, max_, onlyPositive = False):
+    raise Exception("Deprecated Function, use utilsforminds.helpers.min_max_scale instead.")
     if max_ > min_:
         reversedScaled = arr * (max_ - min_) + min_
         if onlyPositive:
