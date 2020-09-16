@@ -32,10 +32,13 @@ import tikzplotlib
 from itertools import product, combinations
 
 import plotly.graph_objs as graph_objs
+import plotly.graph_objs as go
 import plotly.tools as tls
+import plotly
+from utilsforminds.containers import merge_dictionaries
 
 axis_rotation_dict = {0: 0, 1: 0, 2: 0}
-axis_name_dict = {0: 'East', 1: 'North', 2: 'Elevation'}
+axis_name_dict = {0: 'Easting', 1: 'Northing', 2: 'Elevation'}
 
 def savePlotLstOfLsts(lstOfLsts, labelsLst, xlabel, ylabel, title, directory, save_tikz = True):
     '''
@@ -625,7 +628,7 @@ def convert_3Darray_to_4DarrayRGB(arr_3D, vmin = None, vmax = None, cmap = plt.g
     arr_4D = np.delete(arr_4D, 3, 3)
     return arr_4D
 
-def plot_bar_charts(path_to_save : str, name_numbers : dict, xlabels : list, xtitle = None, ytitle = None, bar_width = 'auto', alpha = 0.8, colors_dict = None, format = 'eps', diagonal_xtickers = 0, name_errors = None, name_to_show_percentage = None, name_not_to_show_percentage_legend = None, fontsize = 10, title = None, figsize = None, ylim = None, fix_legend = True, plot_legend = True, save_tikz = True):
+def plot_bar_charts(path_to_save : str, name_numbers : dict, xlabels : list = None, xlabels_for_names : dict = None, xtitle = None, ytitle = None, bar_width = 'auto', alpha = 0.8, colors_dict = None, format = 'eps', diagonal_xtickers = 0, name_errors = None, name_to_show_percentage = None, name_not_to_show_percentage_legend = None, fontsize = 10, title = None, figsize = None, ylim = None, fix_legend = True, plot_legend = True, save_tikz = True):
     """
     
     Parameters
@@ -636,9 +639,10 @@ def plot_bar_charts(path_to_save : str, name_numbers : dict, xlabels : list, xti
             Name of groups, For example ['CNN', 'LR', 'SVR', ..]
     """
 
+    names = list(name_numbers.keys())
     ## Set kwargs parameters
     plt_bars_kwargs_dict = {}
-    for name in name_numbers.keys():
+    for name in names:
         plt_bars_kwargs_dict[name] = {}
         if name_errors is not None and name in name_errors.keys():
             plt_bars_kwargs_dict[name]['yerr'] = name_errors[name]
@@ -649,21 +653,26 @@ def plot_bar_charts(path_to_save : str, name_numbers : dict, xlabels : list, xti
     n_groups = len(name_numbers[single_key])
     for numbers in name_numbers.values():
         assert(len(numbers) == n_groups)
-    assert(len(xlabels) == n_groups)
+    if xlabels is not None:
+        assert(len(xlabels) == n_groups)
     xlabels_copied = deepcopy(xlabels)
 
-    if name_to_show_percentage is not None:
-        assert(name_to_show_percentage in name_numbers.keys())
+    if xlabels_for_names is not None:
+        assert(len(xlabels_for_names) == len(name_numbers))
+    xlabels_for_names_list = [xlabels_for_names[name] for name in names] if xlabels_for_names is not None else None
+
+    if name_to_show_percentage is not None and xlabels is not None:
+        assert(name_to_show_percentage in names)
         assert(len(name_numbers) >= 2)
         for i in range(len(xlabels_copied)):
             scores_of_group = []
-            for name in name_numbers.keys():
+            for name in names:
                 if name != name_to_show_percentage:
                     scores_of_group.append(name_numbers[name][i])
             mean = np.mean(scores_of_group)
             xlabels_copied[i] += f'({(mean - name_numbers[name_to_show_percentage][i]) * 100. / mean:.2f}%)'
 
-    legend_prefix_dict = {name: '' for name in name_numbers.keys()}
+    legend_prefix_dict = {name: '' for name in names}
     if name_not_to_show_percentage_legend is not None:
         if not isinstance(name_not_to_show_percentage_legend, (list, tuple)):
             name_not_to_show_percentage_legend_copied = [name_not_to_show_percentage_legend]
@@ -671,10 +680,10 @@ def plot_bar_charts(path_to_save : str, name_numbers : dict, xlabels : list, xti
             name_not_to_show_percentage_legend_copied = deepcopy(name_not_to_show_percentage_legend)
         avg_number = 0.
         for name in name_not_to_show_percentage_legend_copied:
-            assert(name in name_numbers.keys())
+            assert(name in names)
             avg_number += sum(name_numbers[name])
         avg_number /= len(name_not_to_show_percentage_legend_copied)
-        for name in name_numbers.keys():
+        for name in names:
             if name not in name_not_to_show_percentage_legend_copied:
                 legend_prefix_dict[name] = f" ({round(100. * ((avg_number - sum(name_numbers[name])) / sum(name_numbers[name])))}%)"
 
@@ -692,28 +701,41 @@ def plot_bar_charts(path_to_save : str, name_numbers : dict, xlabels : list, xti
 
     rects_list = []
     index_copied = np.copy(index).astype(np.float)
-    for name, numbers in name_numbers.items():
-        rects_list.append(plt.bar(index_copied, numbers, bar_width_, alpha = alpha, label = name + legend_prefix_dict[name], **plt_bars_kwargs_dict[name])) ## label will be label in legend
+    for name in names:
+        rects_list.append(plt.bar(index_copied, name_numbers[name], bar_width_, alpha = alpha, label = name + legend_prefix_dict[name], **plt_bars_kwargs_dict[name])) ## label will be label in legend
         index_copied += bar_width_
 
     if title is not None:
-        plt.title(title, fontsize = fontsize + 2)
+        plt.title(title, fontsize = fontsize)
     if xtitle is not None:
         plt.xlabel(xtitle, fontsize = fontsize)
     if ytitle is not None:
         plt.ylabel(ytitle, fontsize = fontsize)
     # plt.title('Scores by person')
-    if diagonal_xtickers == True:
-        plt.xticks(index + (bar_width_/2) * (len(name_numbers)-1), xlabels_copied, fontsize = fontsize, rotation = 45, ha = "right")
-    elif diagonal_xtickers == False:
-        plt.xticks(index + (bar_width_/2) * (len(name_numbers)-1), xlabels_copied, fontsize = fontsize)
-    else:
-        plt.xticks(index + (bar_width_/2) * (len(name_numbers)-1), xlabels_copied, fontsize = fontsize, rotation = diagonal_xtickers, ha = "right")
-    if fix_legend:
-        numbers_tot = []
-        for numbers in name_numbers.values():
-            numbers_tot += numbers
-        plt.ylim([0., np.max(numbers_tot) * (1. + 0.1 * len(name_numbers))])
+
+    if xlabels_copied is not None:
+        if diagonal_xtickers == True:
+            plt.xticks(index + (bar_width_/2) * (len(name_numbers)-1), xlabels_copied, fontsize = fontsize, rotation = 45, ha = "right")
+        elif diagonal_xtickers == False:
+            plt.xticks(index + (bar_width_/2) * (len(name_numbers)-1), xlabels_copied, fontsize = fontsize)
+        else:
+            plt.xticks(index + (bar_width_/2) * (len(name_numbers)-1), xlabels_copied, fontsize = fontsize, rotation = diagonal_xtickers, ha = "right")
+        if fix_legend:
+            numbers_tot = []
+            for numbers in name_numbers.values():
+                numbers_tot += numbers
+            plt.ylim([0., np.max(numbers_tot) * (1. + 0.1 * len(name_numbers))])
+    
+    if xlabels_for_names is not None:
+        local_index = np.arange(len(name_numbers)) * bar_width_
+        for i in range(0, n_groups):
+            if diagonal_xtickers == True:
+                plt.xticks(local_index + bar_width_ * 0. + i, xlabels_for_names_list, fontsize = fontsize, rotation = 45, ha = "right")
+            elif diagonal_xtickers == False:
+                plt.xticks(local_index + bar_width_ * 0. + i, xlabels_for_names_list, fontsize = fontsize)
+            else:
+                plt.xticks(local_index + bar_width_ * 0. + i, xlabels_for_names_list, fontsize = fontsize, rotation = diagonal_xtickers, ha = "right")
+
     
     if ylim is not None:
         assert(len(ylim) == 2)
@@ -723,9 +745,11 @@ def plot_bar_charts(path_to_save : str, name_numbers : dict, xlabels : list, xti
             plt.ylim(top = ylim[1])
         else:
             plt.ylim(ylim)
+    
+    plt.yticks(fontsize = fontsize * 0.6)
         
     if plot_legend:
-        plt.legend()
+        plt.legend(fontsize = fontsize * 0.6)
 
     plt.tight_layout()
     # plt.show()
@@ -733,7 +757,7 @@ def plot_bar_charts(path_to_save : str, name_numbers : dict, xlabels : list, xti
     if save_tikz:
         tikzplotlib.save(filepath = format_path_extension(path_to_save, '.tex'))
 
-def plot_multiple_lists(lists_dict: dict, path_to_save: str, labels : dict = {'x': 'Iteration', 'y': 'Loss'}, format = 'eps', save_tikz = True):
+def plot_multiple_lists(lists_dict: dict, path_to_save: str, labels : dict = {'x': 'Iteration', 'y': 'Loss'}, format = 'eps', fontsize = 15, save_tikz = True):
     """
     
     Parameters
@@ -766,8 +790,8 @@ def plot_multiple_lists(lists_dict: dict, path_to_save: str, labels : dict = {'x
     ax.xaxis.set_major_locator(MaxNLocator(integer=True))
 
     # plt.gca().xaxis.set_major_locator(mticker.MultipleLocator(1))
-    plt.xlabel(labels['x'])
-    plt.ylabel(labels['y'])
+    plt.xlabel(labels['x'], fontsize = fontsize)
+    plt.ylabel(labels['y'], fontsize = fontsize)
     plt.savefig(path_to_save, format = format)
     if save_tikz:
         tikzplotlib.save(filepath = format_path_extension(path_to_save, '.tex'))
@@ -1089,7 +1113,7 @@ def plot_3D_plotly(nparr_3D, path_to_save_static : str, do_save_html : bool = Tr
             assert(kind in ["scatter", "alphashape"])
         kinds_to_plot = deepcopy(kinds_to_plot)
 
-    marker_kwargs_local = {"colorscale": 'Viridis', "size": 2.}
+    marker_kwargs_local = {"colorscale": 'Rainbow', "size": 2.}
     if vmin is not None:
         marker_kwargs_local["cmin"] = vmin
     if vmax is not None:
@@ -1156,7 +1180,7 @@ def plot_3D_plotly(nparr_3D, path_to_save_static : str, do_save_html : bool = Tr
             hoverinfo = None
         plot_objects.append(graph_objs.Mesh3d(name = alpha_shape_legend, x = x, y = y, z = z, hovertext = hovertext, hoverinfo = hoverinfo, **alpha_shape_kwargs_local))
 
-    scene = graph_objs.Scene(xaxis = {"range": [0, input_shape[0]], "tickvals": xyz_tickers_copied["x"]["tickvals"], "ticktext": xyz_tickers_copied["x"]["ticktext"],**axis_kwargs_local},
+    scene = graph_objs.Scene(xaxis = {"range": [0, input_shape[0]], "tickvals": xyz_tickers_copied["x"]["tickvals"], "ticktext": xyz_tickers_copied["x"]["ticktext"], **axis_kwargs_local},
     yaxis = {"range": [0, input_shape[1]], "tickvals": xyz_tickers_copied["y"]["tickvals"], "ticktext":  xyz_tickers_copied["y"]["ticktext"], **axis_kwargs_local},
     zaxis = {"range": [0, input_shape[2]], "tickvals": xyz_tickers_copied["z"]["tickvals"], "ticktext":  xyz_tickers_copied["z"]["ticktext"], **axis_kwargs_local}, **scene_kwargs_local)
 
@@ -1176,6 +1200,42 @@ def plot_3D_plotly(nparr_3D, path_to_save_static : str, do_save_html : bool = Tr
     if do_save_html:
         fig.write_html(utilsforminds.strings.format_extension(path_to_save_static, "html"))
 
+def deconv_smoothness_3D(nparr, deconv_list_position_value, points_decider = lambda x: x > 1e-8):
+    nparr_deconv = np.zeros(nparr.shape)
+    nparr_filtered = np.where(points_decider(nparr), nparr, 0.)
+    x, y, z = nparr_filtered.nonzero()
+
+def plotly_2D_contour(nparr, path_to_save, arr_filter = lambda x: x, vmin = None, vmax = None, layout_kwargs = None, figsize_ratio = None, contour_kwargs = None, scene_kwargs = None, axis_kwargs = None, colorbar_kwargs = None):
+    """Plot contours from nparr.
+
+    Parameters
+    ----------
+    figsize_ratio : array-like = None
+        This looks not work.
+    """
+    colorscale = deepcopy(plotly.colors.sequential.Rainbow)
+    colorscale[0] = 'rgb(255,255,255)' ## Set white color for zero value.
+
+    nparr_local = arr_filter(nparr)
+    vmin = max(0., nparr_local.min()) if vmin is None else vmin
+    vmax = max(0., nparr_local.max()) if vmax is None else vmax
+    ## Set local keywords arguments
+    axis_kwargs_local = {} if axis_kwargs is None else deepcopy(axis_kwargs)
+    # scene_kwargs_local = merge_dictionaries([{"xaxis": {"title": "x", "range": [0, nparr.shape[0]], "tickvals": range(nparr.shape[0] // 5, nparr.shape[0], nparr.shape[0] // 5), "ticktext": range(nparr.shape[0] // 5, nparr.shape[0], nparr.shape[0] // 5), **axis_kwargs_local}, "yaxis": {"title": "y", "range": [0, nparr.shape[1]], "tickvals": range(nparr.shape[1] // 5, nparr.shape[1], nparr.shape[1] // 5), "ticktext": range(nparr.shape[1] // 5, nparr.shape[1], nparr.shape[1] // 5), **axis_kwargs_local}}, scene_kwargs])
+    scene_kwargs_local = merge_dictionaries([{}, scene_kwargs])
+    colorbar_kwargs_local = merge_dictionaries([{"titlefont": {"size": 30}}, colorbar_kwargs])
+    contour_kwargs_local = merge_dictionaries([{"colorscale": colorscale, "colorbar": colorbar_kwargs_local}, contour_kwargs]) ## "contours": {"start": vmin, "end": vmax},
+    layout_kwargs_local = merge_dictionaries([{"title": None, "xaxis": {"title": "x", "range": [0, nparr.shape[1]], "tickvals" : [i * (nparr.shape[1] // 5) for i in range(1, 5)], "ticktext": [i * (nparr.shape[1] // 5) for i in range(1, 5)]}, "yaxis": {"title": "y", "range": [0, nparr.shape[0]], "tickvals" : [i * (nparr.shape[0] // 5) for i in range(1, 5)], "ticktext": [i * (nparr.shape[0] // 5) for i in range(1, 5)]}}, layout_kwargs]) ## 0 axis goes to vertical, 1 axis goes to horizontal
+
+    contour = go.Contour(z = nparr_local, **contour_kwargs_local)
+    scene = go.Scene(**scene_kwargs_local)
+    layout = go.Layout(scene = scene, **layout_kwargs_local)
+    fig = go.Figure(data = contour, layout = layout)
+
+    if figsize_ratio is not None:
+        fig.update_layout(scene_aspectmode= 'manual', scene_aspectratio= figsize_ratio)
+    
+    fig.write_image(path_to_save)
 
 if __name__ == '__main__':
     pass
