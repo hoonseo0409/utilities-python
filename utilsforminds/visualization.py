@@ -1196,9 +1196,9 @@ def plot_3D_plotly(nparr_3D, path_to_save_static : str, do_save_html : bool = Tr
         fig.update_layout(paper_bgcolor = 'rgba(0,0,0,0)', plot_bgcolor = 'rgba(0,0,0,0)')
 
     ## Save the result
-    fig.write_image(path_to_save_static)
     if do_save_html:
         fig.write_html(utilsforminds.strings.format_extension(path_to_save_static, "html"))
+    fig.write_image(path_to_save_static)
 
 def deconv_smoothness_3D(nparr, deconv_list_position_value, points_decider = lambda x: x > 1e-8):
     nparr_deconv = np.zeros(nparr.shape)

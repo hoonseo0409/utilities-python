@@ -11,7 +11,7 @@ def push_arr_to_range(nparr, vmin = None, vmax = None):
         # print("WARNING: vmin and vmax both are None, so nparr is not pushed to range.")
         return np.copy(nparr)
 
-def get_value_of_proportional_rank(amount_arr, mask_arr, proportional_rank):
+def get_value_of_proportional_rank(amount_arr, proportional_rank, mask_arr = None):
     """Get the value corresponding to the given rank.
     
     The rank is counted from the smallest value, so the proportional_rank 0.7 of 1~10 is 7.
@@ -27,7 +27,7 @@ def get_value_of_proportional_rank(amount_arr, mask_arr, proportional_rank):
     """
 
     assert(0. <= proportional_rank and proportional_rank <= 1.)
-    mask_arr_clean = np.where(mask_arr >= 1., 1., 0.)
+    mask_arr_clean = np.where(mask_arr >= 1., 1., 0.) if mask_arr is not None else np.ones(amount_arr.shape)
     numEntriesImputed = np.count_nonzero(mask_arr_clean)
     if numEntriesImputed > 0:
         rank = int(numEntriesImputed * proportional_rank) ## values higher than the rank from the 'smallest' value will survive, in other words maskKeepThreshold * 100% will die.
