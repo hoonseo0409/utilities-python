@@ -1200,10 +1200,55 @@ def plot_3D_plotly(nparr_3D, path_to_save_static : str, do_save_html : bool = Tr
         fig.write_html(utilsforminds.strings.format_extension(path_to_save_static, "html"))
     fig.write_image(path_to_save_static)
 
-def deconv_smoothness_3D(nparr, deconv_list_position_value, points_decider = lambda x: x > 1e-8):
-    nparr_deconv = np.zeros(nparr.shape)
-    nparr_filtered = np.where(points_decider(nparr), nparr, 0.)
-    x, y, z = nparr_filtered.nonzero()
+def get_new_position_from_origin_and_displacement(origin, displacement, whole_space_shape = None, off_limit_position = "boundary"):
+    """
+        Get new position from origin displaced as much as displacement.
+
+    Examples
+    --------
+    print(get_new_position_from_origin_and_displacement([1, 2, 0], [0, -3, 3], [3, 3, 3]))
+        [1, 0, 2]
+    """
+
+    # assert(off_limit_position in ["boundary", "origin"])
+    dimensions = len(origin)
+    new_position = []
+    for d in range(dimensions):
+        new_position.append(origin[d] + displacement[d])
+    if whole_space_shape is not None:
+        if off_limit_position == "boundary":
+            for d in range(dimensions):
+                if new_position[d] >= whole_space_shape[d]:
+                    new_position[d] = whole_space_shape[d] - 1
+                elif new_position[d] < 0:
+                    new_position[d] = 0
+        elif off_limit_position == "origin":
+            for d in range(dimensions):
+                if new_position[d] >= whole_space_shape[d] or new_position[d] < 0:
+                    return deepcopy(origin)
+    return tuple(new_position)
+
+def deconv_smoothness_3D(nparr, deconv_list_of_displacement_and_proportion, mask_nparr = None, keep_origin = True, overwrite = False):
+    shape = nparr.shape
+    nparr_deconv = np.zeros(shape)
+    if mask_nparr is None:
+        mask_loc = np.where(nparr > 1e-8, 1., 0.)
+    else:
+        assert(nparr.shape == mask_nparr.shape)
+        mask_loc = np.where(mask_nparr >= 1., 1., 0.)
+    x_arr, y_arr, z_arr = mask_loc.nonzero()
+
+    for x, y, z in zip(x_arr, y_arr, z_arr):
+        origin = [x, y, z]
+        for deconv_dict in deconv_list_of_displacement_and_proportion:
+            new_position = get_new_position_from_origin_and_displacement(origin = origin, displacement = deconv_dict["displacement"], whole_space_shape = shape)
+            if overwrite:
+                nparr_deconv[new_position] = nparr[x, y, z] * deconv_dict["proportion"]
+            else:
+                nparr_deconv[new_position] += nparr[x, y, z] * deconv_dict["proportion"]
+    if keep_origin:
+        nparr_deconv = (1. - mask_loc) * nparr_deconv + mask_loc * nparr
+    return nparr_deconv
 
 def plotly_2D_contour(nparr, path_to_save, arr_filter = lambda x: x, vmin = None, vmax = None, layout_kwargs = None, figsize_ratio = None, contour_kwargs = None, scene_kwargs = None, axis_kwargs = None, colorbar_kwargs = None):
     """Plot contours from nparr.
@@ -1240,7 +1285,8 @@ def plotly_2D_contour(nparr, path_to_save, arr_filter = lambda x: x, vmin = None
 if __name__ == '__main__':
     pass
     # plot_bar_charts('dummy', {'Frank':[12.7, 0.4, 4.4, 5.3, 7.1, 3.2], 'Guido':[6.3, 10.3, 10, 0.3, 5.3, 2.9]}, ['RR', 'Lasso', 'SVR', 'CNN', 'SVR', 'LR'], ytitle="RMSE of Prediction of TRIAILB-A")
-    test_list = []
-    for i in range(15):
-        test_list.append({"label": f"my label_{i}", "ydata": [3.4, 3.2, 1.1, 0.3]})
-    plot_xy_lines([1, 2, 3, 4], test_list, "dummy.eps")
+    # test_list = []
+    # for i in range(15):
+    #     test_list.append({"label": f"my label_{i}", "ydata": [3.4, 3.2, 1.1, 0.3]})
+    # plot_xy_lines([1, 2, 3, 4], test_list, "dummy.eps")
+    print(get_new_position_from_origin_and_displacement([1, 2, 0], [0, -3, 3], [3, 3, 3]))
