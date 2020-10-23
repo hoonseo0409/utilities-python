@@ -102,19 +102,46 @@ def copy_dict_and_delete_element(dict_to_copy, list_of_keys_to_delete):
     print(copy_dict_and_delete_element(dict_to_copy = test_dict, list_of_keys_to_delete = ["n", 1]))
         == {'m': ['d', 'e', 'f', 'g']}
     """
+
     result = deepcopy(dict_to_copy)
     for key in list_of_keys_to_delete:
         if key in result.keys():
             del result[key]
     return result
 
+def squeeze_list_of_numbers_with_average_of_each_range(list_of_numbers, num_points_in_list_out = 100):
+    """
+    
+    Examples
+    --------
+    test_list = list(range(5))
+    print(squeeze_list_of_numbers_with_average_of_each_range(test_list, num_points_in_list_out= 2))
+        >>> [0.5, 2.5]
+    test_list = list(range(20))
+    print(squeeze_list_of_numbers_with_average_of_each_range(test_list, num_points_in_list_out= 5))
+        >>> [1.5, 5.5, 9.5, 13.5, 17.5]
+    test_list = list(range(19))
+    print(squeeze_list_of_numbers_with_average_of_each_range(test_list, num_points_in_list_out= 5))
+        >>> [1.0, 4.0, 7.0, 10.0, 13.0]
+    """
+
+    if len(list_of_numbers) <= num_points_in_list_out:
+        return deepcopy(list_of_numbers)
+    else:
+        list_out = []
+        num_numbers_in_each_group = len(list_of_numbers) // num_points_in_list_out
+        for group_idx in range(num_points_in_list_out):
+            average = sum(list_of_numbers[group_idx * num_numbers_in_each_group: (group_idx + 1) * num_numbers_in_each_group]) / num_numbers_in_each_group
+            list_out.append(average)
+        return list_out
+
 if __name__ == "__main__":
-    # test_dict_1 = {"n": ["a", "b", "c"], "m": {"hi": 4}, 1: ["h", "i"], "dup": {"ace": {1: 2, 3: 4}}, "none": None}
-    # test_dict_2 = {"n": ["a", "d"], "m": {"hi" : 2, "hello": {3: 2}}, 2: 4, "dup": {"ace": {1: {4: 5, 6: 7}, 3: None}}, "none": 4}
-    # print(merge_two_dicts_leaves_rec(test_dict_1, test_dict_2))
+    pass
+    # test_list = list(range(5))
+    # print(squeeze_list_of_numbers_with_average_of_each_range(test_list, num_points_in_list_out= 2))
 
-    # print(copy_dict_and_delete_element(dict_to_copy = test_dict, list_of_keys_to_delete = ["n", 1]))
+    # test_list = list(range(20))
+    # print(squeeze_list_of_numbers_with_average_of_each_range(test_list, num_points_in_list_out= 5))
 
-    test_list = [{'a':1, 'b':2, 'c':9}, {'a':3, 'b':2}, {'a':2, 'b':4}]
-    print(merge_dictionaries(test_list, use_last_when_overlapped = True))
-    print(merge_dictionaries(test_list, use_last_when_overlapped = False))
+    # test_list = list(range(19))
+    # print(squeeze_list_of_numbers_with_average_of_each_range(test_list, num_points_in_list_out= 5))
