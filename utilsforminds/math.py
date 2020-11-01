@@ -203,6 +203,11 @@ def mean(numbers):
     assert(len(numbers) > 0)
     return sum(numbers) / len(numbers)
 
+def is_number(target):
+    if isinstance(target, (int, float, complex)) and not isinstance(target, bool):
+        return True
+    else:
+        return False
 def get_new_weight_based_loss_trends(losses, current_weight, mean_before_losses_step_backwards = 6, mean_after_losses_step_backwards = 3, factor_weight_change_to_loss_change = +0.1, kind = 'arithmetic', max_weight = None, min_weight = None, do_nothing = False, verbose = False):
     """
     

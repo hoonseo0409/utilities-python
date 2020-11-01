@@ -270,11 +270,16 @@ def load_csv_columns_into_list(path_to_csv: str):
     return result_dict
 
 def paramDictToStr(param_dict):
-    result = ""
-    for key in param_dict.keys():
-        if (isinstance(key, (numbers.Number, type('a'), type(True), type(None))) or is_small_container(key)) and (isinstance(param_dict[key], (numbers.Number, type('a'), type(True), type(None))) or is_small_container(param_dict[key])):
-            result = result + str(key) + " : " + str(param_dict[key]) + "\n"
-    return result
+    if isinstance(param_dict, (numbers.Number, type("a"))):
+        return f"{param_dict}\n"
+    elif type(param_dict) != type({}):
+        return "None\n"
+    else:
+        result = ""
+        for key in param_dict.keys():
+            if (isinstance(key, (numbers.Number, type('a'), type(True), type(None))) or is_small_container(key)) and (isinstance(param_dict[key], (numbers.Number, type('a'), type(True), type(None))) or is_small_container(param_dict[key])):
+                result = result + str(key) + " : " + str(param_dict[key]) + "\n"
+        return result
 
 def gridSearch(function, params_grid):
     duplicatedNameNum = 0
