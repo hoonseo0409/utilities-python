@@ -629,14 +629,22 @@ def convert_3Darray_to_4DarrayRGB(arr_3D, vmin = None, vmax = None, cmap = plt.g
     return arr_4D
 
 def plot_bar_charts(path_to_save : str, name_numbers : dict, xlabels : list = None, xlabels_for_names : dict = None, xtitle = None, ytitle = None, bar_width = 'auto', alpha = 0.8, colors_dict = None, format = 'eps', diagonal_xtickers = 0, name_errors = None, name_to_show_percentage = None, name_not_to_show_percentage_legend = None, fontsize = 10, title = None, figsize = None, ylim = None, fix_legend = True, plot_legend = True, save_tikz = True):
-    """
+    """Plot bars.
+
+    For example, following the below case, enriched-original(for CNN)    enriched-original(for LR)    enriched-original(for SVR)    ...
     
     Parameters
     ----------
         name_numbers : dict
-            For example, name_numbers['enriched'] == [0.12, 0.43, 0.12] for RMSE
+            Length of bars. For example, name_numbers = {'enriched': [0.12, 0.43, 0.12], 'original': [0.15, 0.35, 0.15]} for RMSE.
         xlabels : list
-            Name of groups, For example ['CNN', 'LR', 'SVR', ..]
+            Name of groups, For example ['CNN', 'LR', 'SVR', ..]. 
+        name_errors: dict
+            Variance or standard deviation of each model (key in name_numbers), for example, name_errors= {'enriched': [0.03, 0.15, 0.07], 'original': [0.05, 0.06, 0.12]}
+        diagonal_xtickers : bool/float
+            Angle of xtickers. If True, it becomes diagonal with 45 degree.
+        ylim : float
+            y-axis cut range.
     """
 
     names = list(name_numbers.keys())
@@ -735,7 +743,6 @@ def plot_bar_charts(path_to_save : str, name_numbers : dict, xlabels : list = No
                 plt.xticks(local_index + bar_width_ * 0. + i, xlabels_for_names_list, fontsize = fontsize)
             else:
                 plt.xticks(local_index + bar_width_ * 0. + i, xlabels_for_names_list, fontsize = fontsize, rotation = diagonal_xtickers, ha = "right")
-
     
     if ylim is not None:
         assert(len(ylim) == 2)

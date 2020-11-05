@@ -203,6 +203,14 @@ def mean(numbers):
     assert(len(numbers) > 0)
     return sum(numbers) / len(numbers)
 
+def std(numbers):
+    assert(len(numbers) > 0)
+    mean_ = mean(numbers)
+    squared_diff_sum = 0.
+    for number in numbers:
+        squared_diff_sum += (number - mean_) ** 2.
+    return (squared_diff_sum / len(numbers)) ** 0.5
+
 def is_number(target):
     if isinstance(target, (int, float, complex)) and not isinstance(target, bool):
         return True
@@ -253,4 +261,6 @@ if __name__ == '__main__':
     # test_containers_list = [{'a': [1, 2.5, 3], 'b': {'c': [2, 4], 'd': 5}}, {'a': [2, 3.5, 4], 'b': {'c': [3, 5], 'd': 6}}]
     # print(statistics_across_containers(test_containers_list, kind_of_stat = 'mean'))
     # print(to_precision(1.23,4))
-    print(get_new_weight_based_loss_trends([1, 2, 1, 2, 1, 2, 3, 4, 5], 0.1))
+    # print(get_new_weight_based_loss_trends([1, 2, 1, 2, 1, 2, 3, 4, 5], 0.1))
+    print(mean([2.0, 3.0]))
+    print(std([2.0, 3.0]))
