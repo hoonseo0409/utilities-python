@@ -248,7 +248,7 @@ def is_small_container(container, length_limit = 20):
                 if not (isinstance(key, (numbers.Number, type('a'), type(True), type(None))) and isinstance(value, (numbers.Number, type('a'), type(True), type(None)))):
                     return False
             return True
-        if type(container) == type([]) or type(container) == type(tuple(3, 3)):
+        if type(container) == type([]) or type(container) == type(tuple([3, 3])):
             for item in container:
                 if not (isinstance(item, (numbers.Number, type('a'), type(True), type(None)))):
                     return False
