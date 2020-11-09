@@ -1,4 +1,5 @@
 import numpy as np
+import utilsforminds.helpers as helpers
 
 def push_arr_to_range(nparr, vmin = None, vmax = None):
     if vmin is not None and vmax is not None:
@@ -36,7 +37,33 @@ def get_value_of_proportional_rank(amount_arr, proportional_rank, mask_arr = Non
     else:
         return 1e-16
 
+def slice_array_to_given_shape(arr, shape, origin = "center"):
+    """Get the sub-array with given shape.
+    
+    Parameters
+    ----------
+    origin : tuple, str
+        If tuple, it is (x_begin, y_begin, z_begin), else if 'center', it will slice the center of array.
+    
+    Examples
+    --------
+    test_arr = np.zeros((100, 100, 100))
+    print(slice_array_to_given_shape(arr= test_arr, shape= [60, 200, 70], origin = "center").shape)
+        >>> (60, 100, 70)
+    """
+
+    slice_dict = {}
+    for axis in range(3):
+        if arr.shape[axis] > shape[axis]:
+            if origin == "center":
+                slice_dict[axis] = [(arr.shape[axis] - shape[axis]) // 2, (arr.shape[axis] - shape[axis]) // 2 + shape[axis]]
+            else:
+                assert(arr.shape[axis] >= origin[axis] + shape[axis])
+                slice_dict[axis] = [origin[axis], origin[axis] + shape[axis]]
+    return helpers.getSlicesV2(npArr= arr, dimIdxDict= slice_dict)
+
 if __name__ == "__main__":
-    amount_arr = np.array([[1., 2., 3.], [4., 5., 6.]])
-    mask_arr = np.array([[1., 1., 0.], [1., 1., 1.]])
-    print(get_value_of_proportional_rank(amount_arr = amount_arr, mask_arr = mask_arr, proportional_rank = 0.3))
+    pass
+    test_arr = np.zeros((100, 100, 100))
+    print(slice_array_to_given_shape(arr= test_arr, shape= [60, 200, 70], origin = "center").shape)
+    

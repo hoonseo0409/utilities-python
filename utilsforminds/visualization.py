@@ -1236,6 +1236,23 @@ def get_new_position_from_origin_and_displacement(origin, displacement, whole_sp
     return tuple(new_position)
 
 def deconv_smoothness_3D(nparr, deconv_list_of_displacement_and_proportion, mask_nparr = None, keep_origin = True, overwrite = False):
+    """Smooth the surface of points in 3D.
+    
+    Deconvolution is one to many mapping, and it will spread each point out.
+
+    Parameters
+    ----------
+    deconv_list_of_displacement_and_proportion : list
+        Indicates the positions and values of deconvolved (spread out) points. For example, [{"displacement": [1, 0, 0], "proportion": 1.0}, {"displacement": [0, 1, 0], "proportion": 1.0}, {"displacement": [0, 0, 1], "proportion": 1.0}, {"displacement": [-1, 0, 0], "proportion": 1.0}, {"displacement": [0, -1, 0], "proportion": 1.0}, {"displacement": [0, 0, -1], "proportion": 1.0}].
+    keep_origin : bool
+        Whether to keep the original points before deconvolution.
+    
+    Return
+    ------
+    nparr_deconv : array
+        3D array in same shape as nparr.
+    """
+
     shape = nparr.shape
     nparr_deconv = np.zeros(shape)
     if mask_nparr is None:

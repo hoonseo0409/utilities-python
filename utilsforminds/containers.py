@@ -24,7 +24,7 @@ def merge_two_dicts_leaves_rec(dict_1, dict_2):
     test_dict_1 = {"n": ["a", "b", "c"], "m": {"hi": 4}, 1: ["h", "i"], "dup": {"ace": {1: 2, 3: 4}}, "none": None}
     test_dict_2 = {"n": ["a", "d"], "m": {"hi" : 2, "hello": {3: 2}}, 2: 4, "dup": {"ace": {1: {4: 5, 6: 7}, 3: None}}, "none": 4}
     print(merge_two_dicts_leaves_rec(test_dict_1, test_dict_2))
-        {'n': ['a', 'd'], 'm': {'hi': 2, 'hello': {3: 2}}, 2: 4, 'dup': {'ace': {1: {4: 5, 6: 7}, 3: None}}, 'none': 4, 1: ['h', 'i']}
+        >>> {'n': ['a', 'd'], 'm': {'hi': 2, 'hello': {3: 2}}, 2: 4, 'dup': {'ace': {1: {4: 5, 6: 7}, 3: None}}, 'none': 4, 1: ['h', 'i']}
     """
 
     if dict_1 is None:
@@ -45,16 +45,17 @@ def merge_two_dicts_leaves_rec(dict_1, dict_2):
             
 
 def merge_dictionaries(list_of_dicts : list, use_last_when_overlapped = True, recursive_overwritting = True):
-    """ Merge dictionaries with 'update' method.
-        Always deepcopy because of nature of dict.update method. -> Changed to shallowcopy 200910.
+    """ Merge dictionaries from the root to leaves, recursively.
+
+    Always deepcopy because of nature of dict.update method. -> Changed to shallowcopy 200910.
 
     Examples
     --------
     test_list = [{'a':1, 'b':2, 'c':9}, {'a':3, 'b':2}, {'a':2, 'b':4}]\n
     merge_dictionaries(test_list, use_last_when_overlapped = True)\n
-        == {'a': 2, 'b': 4, 'c': 9}
+        >>> {'a': 2, 'b': 4, 'c': 9}
     merge_dictionaries(test_list, use_last_when_overlapped = False)\n
-        == {'a': 1, 'b': 2, 'c': 9}
+        >>> {'a': 1, 'b': 2, 'c': 9}
     """
     
     merged_dict = {}
@@ -76,9 +77,9 @@ def merge_lists(list_of_lists : list, use_last_when_overlapped = True):
     --------
     test_list = [["a", "b", "c"], ["d", "e", "f", "g"], ["h", "i"]]
     print(merge_lists(test_list, use_last_when_overlapped = True))
-        == ['h', 'i', 'f', 'g']
+        >>> ['h', 'i', 'f', 'g']
     print(merge_lists(test_list, use_last_when_overlapped = False))
-        == ['a', 'b', 'c', 'g']
+        >>> ['a', 'b', 'c', 'g']
     """
 
     merged_list = []
@@ -100,7 +101,7 @@ def copy_dict_and_delete_element(dict_to_copy, list_of_keys_to_delete):
     --------
     test_dict = {"n": ["a", "b", "c"], "m": ["d", "e", "f", "g"], 1: ["h", "i"]}
     print(copy_dict_and_delete_element(dict_to_copy = test_dict, list_of_keys_to_delete = ["n", 1]))
-        == {'m': ['d', 'e', 'f', 'g']}
+        >>> {'m': ['d', 'e', 'f', 'g']}
     """
 
     result = deepcopy(dict_to_copy)
