@@ -18,6 +18,8 @@ from PIL import Image, ImageSequence
 import tensorflow as tf
 import utilsforminds.visualization as visualization
 
+from datetime import timezone, datetime
+
 axisMap = {0: 'x', 1: 'y', 2: 'z', 'x': 0, 'y': 1, 'z': 2}
 
 def getExecPath():
@@ -1310,13 +1312,19 @@ def add_column_conditional(df, column_bemapped, mapping, new_column_name = 'adde
     df_copied[new_column_name] = df_copied[column_bemapped].map(name_map_dict)
     return df_copied
 
+def get_current_utc_timestamp():
+    """Get current utc time in your local time.
+    
+    Examples
+    --------
+    get_current_utc_timestamp()
+        >>> 1605306120.187412
+    """
+
+    dt = datetime.now()
+    utc_time = dt.replace(tzinfo = timezone.utc)
+    return utc_time.timestamp()
+
 if __name__ == '__main__':
     pass
-    print(get_top_n_indices(array_like = [3, 5, 1, 7, 3, 5], n = 3, from_largest = True))
-    print(get_top_n_indices(array_like = np.array([3, 5, 1, 7, 3, 5]), n = 3, from_largest = False))
-    # test_list = [3, 4.5, 2, 9, 4]
-    # print(get_smallest_largest_idc(test_list, 2))
-    # test_arr = np.ones((3, 3))
-    # print('1: ', index_arr_with_arraylike(test_arr, np.array([1, 2])))
-    # print('2: ', index_arr_with_arraylike(test_arr, [0]))
-    # print('3: ', test_arr)
+    print(get_current_utc_timestamp())

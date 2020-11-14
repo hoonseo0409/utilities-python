@@ -62,6 +62,15 @@ def slice_array_to_given_shape(arr, shape, origin = "center"):
                 slice_dict[axis] = [origin[axis], origin[axis] + shape[axis]]
     return helpers.getSlicesV2(npArr= arr, dimIdxDict= slice_dict)
 
+def mask_prob(shape, p):
+    """
+        Generates a random mask array of 1's and 0's of the specified shape and the given probability. Returns as type np.float32. The larger p results the denser (more 1's) mask.
+    """
+
+    A = np.random.uniform(0., 1., size = shape) # Generate a random standard uniform distribution of the specified shape
+    B = A < p   # Where A < p, a True (1) value is recorded in B, if A > p then a False (0) vlaue is recorded in B
+    return (1. * B).astype(np.float32)  # Return a mask array of 0s and 1s
+
 if __name__ == "__main__":
     pass
     test_arr = np.zeros((100, 100, 100))
