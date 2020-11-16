@@ -284,6 +284,7 @@ def paramDictToStr(param_dict):
         return result
 
 def gridSearch(function, params_grid):
+    """Deprecated, use containers.get_list_of_grids."""
     duplicatedNameNum = 0
     while(os.path.isfile(os.path.dirname(__file__) + '/gridSearchResults/' + function.__name__ + '_' + str(duplicatedNameNum) + ".txt")):
         duplicatedNameNum = duplicatedNameNum + 1
