@@ -301,24 +301,21 @@ def gridSearch(function, params_grid):
         txtFile.write(str(params) + "\n\t" + str(largerBetterScore) + "\n")
     
     assert(bestScore >= 0.)
-    # txtContents = txtContents + "\n\n--best result--\n" + str(bestParams) + "\n\t" + str(round(100 * bestScore))
-    # txtFile = open(os.path.dirname(__file__) + "/gridSearchResults/" + function.__name__ + '_' + str(round(100 * bestScore)) + ".txt", "w")
-    # txtFile.write(txtContents)
     txtFile.write("\n\n--best result--\n" + str(bestParams) + "\n\t" + bestScore)
     txtFile.close()
 
-def makeTestArr(shape):
-    assert(len(shape) == 4)
-    result = []
-    for i in range(shape[0]):
-        result.append([])
-        for j in range(shape[1]):
-            result[i].append([])
-            for k in range(shape[2]):
-                result[i][j].append([])
-                for l in range(shape[3]):
-                    result[i][j][k].append(str(i)+'_'+str(j)+'_'+str(k)+'_'+str(l))
-    return np.array(result)
+# def makeTestArr(shape):
+#     assert(len(shape) == 4)
+#     result = []
+#     for i in range(shape[0]):
+#         result.append([])
+#         for j in range(shape[1]):
+#             result[i].append([])
+#             for k in range(shape[2]):
+#                 result[i][j].append([])
+#                 for l in range(shape[3]):
+#                     result[i][j][k].append(str(i)+'_'+str(j)+'_'+str(k)+'_'+str(l))
+#     return np.array(result)
 
 def splitRange(isNoPartitions, number, start, end):
     """
@@ -398,72 +395,6 @@ def getDirSize(pathStart): # https://stackoverflow.com/questions/20267220/how-to
             bytes = bytes + os.path.getsize(path)
     return bytes / (1000 * 1000 * 1000) # return in GB unit
 
-# def saveGeoTensor(geoTensor, suffix = ''):
-#     sizeCurr = getDirSize('mappings')
-#     print('print size of mapping files: ', str(sizeCurr) + 'GB')
-#     noOfEntries = geoTensor.shape[0] * geoTensor.shape[1] * geoTensor.shape[2]
-#     assert(noOfEntries <= 300 * 700 * 300 and sizeCurr < 20.) # to prevent too large disk consumption
-#     if geoTensor.sampling_rate is not None:
-#         sampling_rate = round(geoTensor.sampling_rate * 100)
-#     else:
-#         sampling_rate = None
-
-#     # geoTensorFile = open(getExecPath() + '/mappings/' + 'shape-' + str(geoTensor.shape[0]) + '_' + str(geoTensor.shape[1]) + '_' + str(geoTensor.shape[2]) + '_' + 'mapping-' + '' + geoTensor.mapping + '.obj', 'wb')
-#     geoTensorFile = open(getExecPath() + f'/mappings/shape-{str(geoTensor.shape[0])}_{str(geoTensor.shape[1])}_{str(geoTensor.shape[2])}_mapping-{geoTensor.mapping}_sr-{str(sampling_rate)}_sm-{str(geoTensor.sampling_method)}'+suffix+'.obj', 'wb')
-#     pickle.dump(geoTensor, geoTensorFile)
-
-# def loadGeoTensor(shape, mapping, sampling_rate = None, sampling_method = None, suffix = ''):
-#     sizeCurr = getDirSize('mappings')
-#     print('print size of mapping files: ', str(sizeCurr) + 'GB')
-
-#     if sampling_method == 'irregular':
-#         total_sampling_rate = 1.
-#         for proportion in sampling_rate:
-#             total_sampling_rate = total_sampling_rate * (1 - proportion)
-#         total_sampling_rate = round(total_sampling_rate * 100)
-#     elif sampling_method == 'regular':
-#         total_sampling_rate = round(sampling_rate * 100)
-#     else:
-#         total_sampling_rate = None
-#     # geoTensorFileOpened = open(getExecPath() + '/mappings/' + 'shape-' + str(shape[0]) + '_' + str(shape[1]) + '_' + str(shape[2]) + '_' + 'mapping-' + mapping + '_sr-' + str(sampling_rate) + '.obj', 'rb')
-#     geoTensorFileOpened = open(getExecPath() + f'/mappings/shape-{str(shape[0])}_{str(shape[1])}_{str(shape[2])}_mapping-{mapping}_sr-{str(total_sampling_rate)}_sm-{str(sampling_method)}'+suffix+'.obj', 'rb')
-#     # print('size of loaded obj: ', sys.getsizeof(geoTensorFileOpened))
-#     return pickle.load(geoTensorFileOpened)
-
-# def keepAvgOnUnobs4D(dataAfterImputation, maskAfterImputation, maskBeforeImputation, avgBeforeImputation):
-#     assert(len(dataAfterImputation.shape) == 4 and dataAfterImputation.shape == maskAfterImputation.shape and maskAfterImputation.shape == maskBeforeImputation.shape)
-#     mask01AfterImputation = np.where(maskAfterImputation >= 1., 1., 0.)
-#     mask01BeforeImputation = np.where(maskBeforeImputation >= 1., 1., 0.)
-#     mask01ForImputedEntries = mask01AfterImputation - mask01BeforeImputation
-
-#     avgForImputedEntries = np.sum(mask01ForImputedEntries * dataAfterImputation) / np.count_nonzero(mask01ForImputedEntries)
-
-#     return dataAfterImputation * mask01BeforeImputation + dataAfterImputation * mask01ForImputedEntries * (avgBeforeImputation / (avgForImputedEntries + 1e-8))
-
-# def keepAvgOnUnobs4DForEachFeature(dataAfterImputation, maskAfterImputation, maskBeforeImputation, avgLst):
-#     '''
-#         Make average of imputed entries same as each feature of avgLst
-#     '''
-#     assert(len(dataAfterImputation.shape) == 4 and dataAfterImputation.shape == maskAfterImputation.shape and maskAfterImputation.shape == maskBeforeImputation.shape and len(avgLst) == dataAfterImputation.shape[3])
-
-#     dataResult = np.copy(dataAfterImputation)
-
-#     # mask01AfterImputationLst = []
-#     # mask01BeforeImputationLst = []
-#     # mask01ForImputedEntriesLst = []
-
-#     for feature in range(len(avgLst)):
-#         # mask01AfterImputationLst.append(np.where(maskAfterImputation >= 1., 1., 0.))
-#         # mask01BeforeImputationLst.append(np.where(maskBeforeImputation >= 1., 1., 0.))
-#         mask01AfterImputation = np.where(maskAfterImputation[:, :, :, feature] >= 1., 1., 0.)
-#         mask01BeforeImputation = np.where(maskBeforeImputation[:, :, :, feature] >= 1., 1., 0.)
-#         mask01ForImputedEntries = mask01AfterImputation - mask01BeforeImputation
-
-#         avgForImputedEntries = np.sum(mask01ForImputedEntries * dataResult[:, :, :, feature]) / (np.count_nonzero(mask01ForImputedEntries) + 1e-8)
-#         dataResult[:, :, :, feature] = dataResult[:, :, :, feature] * mask01BeforeImputation + dataResult[:, :, :, feature] * mask01ForImputedEntries * (avgLst[feature] / (avgForImputedEntries + 1e-8))
-
-#     return dataResult
-
 def getAvgLstFrom4DArr(dataArr, counterArr):
     '''
         Get average for each feature on entries whose counterArr > 1.
@@ -485,11 +416,11 @@ def getRMSE(groundTruthValueArr, targetValueArr, groundTruthMaskArr):
     groundTruthMaskArr01 = np.where(groundTruthMaskArr >= 1., 1., 0.)
     return np.sum(groundTruthMaskArr01 * (groundTruthValueArr - targetValueArr) ** 2.) ** 0.5 / np.sum(groundTruthMaskArr01)
 
-def reverseLst(lst):
-    resultLst = []
-    for i in range(len(lst)):
-        resultLst.append(lst[len(lst) - 1 - i])
-    return resultLst
+# def reverseLst(lst):
+#     resultLst = []
+#     for i in range(len(lst)):
+#         resultLst.append(lst[len(lst) - 1 - i])
+#     return resultLst
 
 def compressNparrLst(lst):
     assert(type(lst) == type([]) and len(lst) > 0)
@@ -600,77 +531,44 @@ def is_number_repl_isdigit(s):
 
     return s.replace('.','',1).isdigit()
 
-# def isProperNumFunctEskayCreek(string):
-#     if type(string) == type(1.2):
-#         if string < 0.:
-#             return False
-#         else:
-#             return string
-#     elif string == '':
-#         return False
-#     elif is_number_repl_isdigit(string):
-#         if float(string) < 0.:
-#             return False
-#         else:
-#             return float(string)
-#     else:
-#         return False
-
-# def isProperLabelFunctEskayCreek(string):
-#     if string [0:2] != 'U-':
-#         return string
-#     else:
-#         return False
-
-def deleteKeysFromDct(dct, keys):
-    """Delete elements from dictionary dct whose key is in keys
+# def deleteKeysFromDct(dct, keys):
+#     """Delete elements from dictionary dct whose key is in keys
     
-    Returns
-    -------
-    deletedDct : dict
-    """
+#     Returns
+#     -------
+#     deletedDct : dict
+#     """
 
-    deletedDct = dict(dct)
-    for key in keys:
-        del deletedDct[key]
-    return deletedDct
+#     deletedDct = dict(dct)
+#     for key in keys:
+#         del deletedDct[key]
+#     return deletedDct
 
-def mergeDcts(dct1, dct2):
-    """Merge two dictionaries into one dictionary
+# def popFromLstWithIdc(lst, idc):
+#     """Pop multiple elements from lst
     
-    Returns
-    -------
-    : dict
-        Merged dictionary
-    """
-
-    return {**dct1, **dct2}
-
-def popFromLstWithIdc(lst, idc):
-    """Pop multiple elements from lst
+#     Parameters
+#     ----------
+#     lst : list
+#         list to be poped
+#     idc : iterable
+#         indices
     
-    Parameters
-    ----------
-    lst : list
-        list to be poped
-    idc : iterable
-        indices
-    
-    Returns
-    -------
-    poped : list
-        list of poped elements
+#     Returns
+#     -------
+#     poped : list
+#         list of poped elements
 
-    Side effects
-    ------------
-    lst will be changed
-    """
+#     Side effects
+#     ------------
+#     lst will be changed
+#     """
 
-    idc = sorted(idc, reverse = True)
-    poped = []
-    for idx in idc:
-        poped.append(lst.pop(idx))
-    return poped
+#     idc = sorted(idc, reverse = True)
+#     poped = []
+#     for idx in idc:
+#         poped.append(lst.pop(idx))
+#     return poped
 
 def getNMAE_window_rec(groundTruthTensor, groundTruthCounterTensor, recoveredTensor, window, stride = None):
     """Recursive function to get window-wise absolute error, number of observations, max, and min
@@ -780,6 +678,7 @@ def getNMAE_window(groundTruthTensor, recoveredTensor, groundTruthCounterTensor,
     NMAE : float
         window-wise NMAE
     """
+
     if type(window) == type(()) or type(window) == type([]):
         window_ = np.array(window)
     else:
@@ -839,22 +738,6 @@ def removeDirsInLst(dirLst):
 def gifToArr(gifPath):
     with Image.open(gifPath) as img:
         return np.array([np.array(frame.copy().convert('RGB').getdata(),dtype=np.float32).reshape(frame.size[1],frame.size[0],3) for frame in ImageSequence.Iterator(img)])
-
-# def cutArrayToMinMax(arr, min = None, max = None):
-#     """Cut given array with given ceil and floor
-    
-#     This is not scaling but cutting.
-#     """
-
-#     if min is not None and max is not None:
-#         assert(max >= min)
-#         return np.where(arr > max, max, np.where(arr < min, min, arr))
-#     elif min is None and max is not None:
-#         return np.where(arr > max, max, arr)
-#     elif min is not None and max is None:
-#         return np.where(arr < min, min, arr)
-#     else:
-#         return arr
 
 # def saveGifFromArr(arr, path, fps = 5, vmin = None, vmax = None, axis = 0):
 #     """Save 4D Numpy array into gif.
@@ -917,11 +800,6 @@ def collect_idx_of_dense_slices_along_axis(arr, axis, get_dense_slice_threshold 
             return nonzero_idx_list
     else:
         return list(range(arr.shape[axis]))
-# def tfAssertionAll(conditionTensor):
-#     tf.debugging.Assert(tf.reduce_all(conditionTensor))
-
-# def tfAllClose(aTensor, bTensor, rtol = 1e-5, atol = 1e-8):
-#     return tf.reduce_all(tf.abs(aTensor - bTensor) <= tf.abs(bTensor) * rtol + atol)
 
 def evaluate_mineral_correlation(geoTensor):
     xcoord, ycoord, zcoord = np.nonzero(geoTensor.counterTensorDict['au'])
@@ -1039,19 +917,6 @@ def get_dummy_arr_list(shape_, functions_list, relation_matrix, origin = 'center
         result_arr_list_after_relation.append(min_max_scale(array_after_relation))
     return result_arr_list_after_relation
 
-# def sample_z_uniform(min, max, shape):
-#     # assert(len(shape) >= 1)
-#     return np.random.uniform(min, max, size = shape).astype(np.float32)
-
-# def sample_z_normal(mean, std, shape):
-#     assert(len(shape) >= 1)
-#     return np.random.normal(loc = mean, scale = std, size = shape).astype(np.float32)
-
-# def mask_prob(shape, p):
-#     A = np.random.uniform(0., 1., size = shape)
-#     B = A < p
-#     return (1. * B).astype(np.float32)
-
 def get_y_x_dictionary(x, y, num_samples_each_category = 1000):
     assert(x.shape[0] == y.shape[0])
     y_x_dict = {}
@@ -1138,34 +1003,44 @@ def cutArrayToMinMax(arr, min = None, max = None):
     else:
         return arr
 
-def access_with_list_of_keys_or_indices_rec(container_tobe_accessed, list_of_keys_or_indices):
-    """Helper recursive function for access_with_list_of_keys_or_indices function.
-    
-    """
-    key_or_index = list_of_keys_or_indices.pop(0)
-    if isinstance(container_tobe_accessed[key_or_index], list) or isinstance(container_tobe_accessed[key_or_index], dict) or isinstance(container_tobe_accessed[key_or_index], tuple):
-        if len(list_of_keys_or_indices) > 0:
-            return access_with_list_of_keys_or_indices_rec(container_tobe_accessed[key_or_index], list_of_keys_or_indices)
-        else:
-            return container_tobe_accessed[key_or_index]
-    else:
-        return container_tobe_accessed[key_or_index]
-
 def access_with_list_of_keys_or_indices(container_tobe_accessed, list_of_keys_or_indices):
-    """This is not in-place function. This function returns pointer to an element, not an element copied. 
+    """Deprecated : Use containers.access_with_list_of_keys_or_indices.
     
+    Helper recursive function for access_with_list_of_keys_or_indices function. 201115 : Name changed from access_with_list_of_keys_or_indices_rec to access_with_list_of_keys_or_indices.
+
     Examples
     --------
-    test_dict = {'hi':[1, {'hello': [3, 4]}], 'end': [3, 6]}\n
-    print(access_with_list_of_keys_or_indices(test_dict, ['hi', 1, 'hello', 1]))
-        4
+    print(access_with_list_of_keys_or_indices({"a": 3, "b": [4, {5: [6, 7]}]}, ["b", 1, 5, 0]))
+        >>> 6
     """
 
-    list_of_keys_or_indices_copied = deepcopy(list_of_keys_or_indices)
-    return access_with_list_of_keys_or_indices_rec(container_tobe_accessed, list_of_keys_or_indices_copied)
+    key_or_index = list_of_keys_or_indices[0]
+    remaining_list_of_keys_or_indices = list_of_keys_or_indices[1:]
+    if isinstance(container_tobe_accessed[key_or_index], list) or isinstance(container_tobe_accessed[key_or_index], dict) or isinstance(container_tobe_accessed[key_or_index], tuple): ## next child node is list/dict/tuple.
+        if len(remaining_list_of_keys_or_indices) > 0: ## We need to go one step more.
+            return access_with_list_of_keys_or_indices(container_tobe_accessed[key_or_index], remaining_list_of_keys_or_indices)
+        else: ## No more to go.
+            return container_tobe_accessed[key_or_index]
+    else: ## Next child node is not a container: list/dict/tuple, so ends here.
+        return container_tobe_accessed[key_or_index]
+
+# def access_with_list_of_keys_or_indices(container_tobe_accessed, list_of_keys_or_indices):
+#     """This is not in-place function. This function returns pointer to an element, not an element copied. 
+    
+#     Examples
+#     --------
+#     test_dict = {'hi':[1, {'hello': [3, 4]}], 'end': [3, 6]}\n
+#     print(access_with_list_of_keys_or_indices(test_dict, ['hi', 1, 'hello', 1]))
+#         >>> 4
+#     """
+
+#     list_of_keys_or_indices_copied = deepcopy(list_of_keys_or_indices)
+#     return access_with_list_of_keys_or_indices_rec(container_tobe_accessed, list_of_keys_or_indices_copied)
 
 def get_paths_to_leaves_rec(container, paths):
-    """Helper recursive function for get_paths_to_leaves"""
+    """Deprecated : Use containers.get_paths_to_leaves_rec
+    
+    Helper recursive function for get_paths_to_leaves"""
 
     result_paths = []
     for path in paths:
@@ -1187,7 +1062,9 @@ def get_paths_to_leaves_rec(container, paths):
     return result_paths             
 
 def get_paths_to_leaves(container):
-    """Get paths to leaves from nested dictionary or list
+    """Deprecated : Use containers.get_paths_to_leaves
+    
+    Get paths to leaves from nested dictionary or list.
     
     Parameters
     ----------
@@ -1327,4 +1204,5 @@ def get_current_utc_timestamp():
 
 if __name__ == '__main__':
     pass
-    print(get_current_utc_timestamp())
+    test_dict = {'hi':[1, {'hello': [3, 4]}], 'end': [3, 6]}
+    print(get_paths_to_leaves(test_dict))
