@@ -1,4 +1,5 @@
 import os
+import numbers
 
 def format_extension(path : str, format : str):
     """Format extension
@@ -45,7 +46,7 @@ class Formatter(object):
     
     ref: https://stackoverflow.com/questions/3229419/how-to-pretty-print-nested-dictionaries
     """
-    def __init__(self):
+    def __init__(self, whether_print_object = False, limit_number_of_prints_in_container = 20, recursive_prints = True):
         self.types = {}
         self.htchar = '\t'
         self.lfchar = '\n'
@@ -54,9 +55,39 @@ class Formatter(object):
         self.set_formater(dict, self.__class__.format_dict)
         self.set_formater(list, self.__class__.format_list)
         self.set_formater(tuple, self.__class__.format_tuple)
+        self.whether_print_object = whether_print_object
+        self.limit_number_of_prints_in_container = limit_number_of_prints_in_container
+        self.recursive_prints = recursive_prints
 
     def set_formater(self, obj, callback):
         self.types[obj] = callback
+
+    def cut_container_to_limit(self, value):
+        """Cut the size of container.
+        
+        Parameters
+        ----------
+        value : object
+            Something to print, possibly string, list, tuple, dictionary, number, .., every object.
+        """
+
+        if isinstance(value, dict):
+            value_shrink_in_limit = {}
+            count = 0
+            for key in value.keys():
+                if count >= self.limit_number_of_prints_in_container:
+                    break
+                if self.recursive_prints or not isinstance(value[key], (list, tuple, dict, type(range(7)))):
+                    value_shrink_in_limit[key] = value[key]
+                    count += 1
+        elif isinstance(value, (list, tuple, type(range(7)))):
+            value_shrink_in_limit = []
+            for idx in range(min(self.limit_number_of_prints_in_container, len(value))):
+                if self.recursive_prints or not isinstance(value[idx], (list, tuple, dict, type(range(7)))):
+                    value_shrink_in_limit.append(value[idx])
+        else:
+            value_shrink_in_limit = value
+        return value_shrink_in_limit
 
     def __call__(self, value, **args):
         for key in args:
@@ -65,34 +96,56 @@ class Formatter(object):
         return formater(self, value, self.indent)
 
     def format_object(self, value, indent):
-        return repr(value)
+        if self.whether_print_object or isinstance(value, (numbers.Number, str)):
+            return repr(value)
+        else:
+            return "Non-printable"
+        # return repr(value)
 
     def format_dict(self, value, indent):
+        ## Cut the size of container.
+        value_shrink_in_limit = self.cut_container_to_limit(value)
+
         items = [
             self.lfchar + self.htchar * (indent + 1) + repr(key) + ': ' +
-            (self.types[type(value[key]) if type(value[key]) in self.types else object])(self, value[key], indent + 1)
-            for key in value
+            (self.types[type(value_shrink_in_limit[key]) if type(value_shrink_in_limit[key]) in self.types else object])(self, value_shrink_in_limit[key], indent + 1)
+            for key in value_shrink_in_limit
         ]
         return '{%s}' % (','.join(items) + self.lfchar + self.htchar * indent)
 
     def format_list(self, value, indent):
+        ## Cut the size of container.
+        value_shrink_in_limit = self.cut_container_to_limit(value)
+
         items = [
             self.lfchar + self.htchar * (indent + 1) + (self.types[type(item) if type(item) in self.types else object])(self, item, indent + 1)
-            for item in value
+            for item in value_shrink_in_limit
         ]
         return '[%s]' % (','.join(items) + self.lfchar + self.htchar * indent)
 
     def format_tuple(self, value, indent):
+        ## Cut the size of container.
+        value_shrink_in_limit = self.cut_container_to_limit(value)
+
         items = [
             self.lfchar + self.htchar * (indent + 1) + (self.types[type(item) if type(item) in self.types else object])(self, item, indent + 1)
-            for item in value
+            for item in value_shrink_in_limit
         ]
         return '(%s)' % (','.join(items) + self.lfchar + self.htchar * indent)
 
-def container_to_str(container):
+def container_to_str(container, whether_print_object = False, limit_number_of_prints_in_container = 20, recursive_prints = True):
     """Pretty print for parameter print.
     
     ref: https://stackoverflow.com/questions/3229419/how-to-pretty-print-nested-dictionaries
+
+    Parameters
+    ----------
+    whether_print_object : bool
+        Whether to print special object, which is not container/number/string.
+    limit_number_of_prints_in_container : int
+        Maximum number of elements to print in a container.
+    recursive_prints : bool
+        Whether to print the container in a recursive containers. 
 
     Examples
     --------
@@ -119,9 +172,10 @@ def container_to_str(container):
         12: 13
         }
     """
-    
-    return Formatter()(container)
+
+    return Formatter(whether_print_object = whether_print_object, limit_number_of_prints_in_container = limit_number_of_prints_in_container, recursive_prints = recursive_prints)(container)
 
 if __name__ == "__main__":
-    test_dict = {'hi':[1, {'hello': [3, 4], "die": "live"}], 'end': [3, 6], 7: "hihi", 8: "hellobye", 10: 11, 12: 13}
+    test_dict = {'hi':[1, {'hello': [3, [7 for i in range(100)]], "die": "live"}], 'end': [3, 6], 7: "hihi", 8: "hellobye", 10: 11, 12: 13, 22: (lambda x: True)}
     print(container_to_str(test_dict))
+    

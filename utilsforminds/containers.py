@@ -1,5 +1,4 @@
 from copy import deepcopy
-import helpers
 
 def get_items_from_list_conditionally(list_, condition_function, whether_deepcopy = False):
     """ This is reference-copy function not value-copy.
@@ -258,7 +257,7 @@ def is_container(something):
         >>> True
     """
 
-    if isinstance(something, (list, tuple, dict)):
+    if isinstance(something, (list, tuple, dict, type(range(7)))):
         return True
     else:
         return False
