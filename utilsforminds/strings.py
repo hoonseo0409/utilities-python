@@ -58,7 +58,7 @@ class Formatter(object):
         if file_format == "txt":
             self.htchar = '\t'
             self.lfchar = '\n'
-            self.emphasizer = lambda x, path: f"*<{x}>*" if path in self.paths_to_emphasize else x
+            self.emphasizer = lambda x, path: f"!< {x} >!" if path in self.paths_to_emphasize else x
             self.curly_bracket = {"open": "{", "close": "}"}
         elif file_format == "rtf":
             self.htchar = '\t'
@@ -241,7 +241,7 @@ def container_to_str(container, whether_print_object = True, limit_number_of_pri
 
 if __name__ == "__main__":
     test_dict = {'hi':[1, {'hello': [3, [7 for i in range(3)]], "die": "live"}], 'end': [3, 6], 7: "hihi", 8: "hellobye", 10: 11, 12: 13, 22: (lambda x: True)}
-    print(container_to_str(test_dict))
+    # print(container_to_str(test_dict))
     print(container_to_str(test_dict, file_format = "txt", paths_to_emphasize = [["end", 1], ["hi"], [22], ["hi", 1, "die"]]))
 
     # test = 'tester.rtf'

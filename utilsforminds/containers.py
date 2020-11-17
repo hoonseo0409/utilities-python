@@ -271,62 +271,71 @@ class Grid():
     def __init__(self, *list_of_components):
         self.list_of_components = list_of_components
 
-def get_list_of_grids(container, key_of_name = None):
-    """Grid Search.
+class GridSearch():
+    """Class for grid search with the different combination of parameters (grids)."""
 
-    The Grid object can be located deep inside of nested list/dict.
-
-    Parameters
-    ----------
-    container : dict or list or tuple
-        Container which will be shallow copied for grid search. Container is expected to contain 'Grid' object.
-    key_of_name : index or hashable key
-        The key/index to access the name of each grid container. The automatic number is added to the name.
-    
-    Examples
-    --------
-    test_grid_search_dict = dict(model_class = lambda x: True, iters = Grid(10, 20), model_structure = [["Dense", {"units": Grid(100, 200), "activation": Grid("tanh")}], Grid("hi", "bye")], name = "my model")\n
-    for container_init in get_list_of_grids(container = test_grid_search_dict, key_of_name= "name"):
-        print(f"{container_init}")
-        {'model_class': <function <lambda> at 0x14a2595e0>, 'iters': 10, 'model_structure': [['Dense', {'units': 100, 'activation': 'tanh'}], 'hi'], 'name': 'my model_0'}
-        {'model_class': <function <lambda> at 0x14a2595e0>, 'iters': 20, 'model_structure': [['Dense', {'units': 100, 'activation': 'tanh'}], 'hi'], 'name': 'my model_1'}
-        {'model_class': <function <lambda> at 0x14a2595e0>, 'iters': 10, 'model_structure': [['Dense', {'units': 100, 'activation': 'tanh'}], 'bye'], 'name': 'my model_2'}
-        {'model_class': <function <lambda> at 0x14a2595e0>, 'iters': 20, 'model_structure': [['Dense', {'units': 100, 'activation': 'tanh'}], 'bye'], 'name': 'my model_3'}
-        {'model_class': <function <lambda> at 0x14a2595e0>, 'iters': 10, 'model_structure': [['Dense', {'units': 200, 'activation': 'tanh'}], 'hi'], 'name': 'my model_4'}
-        {'model_class': <function <lambda> at 0x14a2595e0>, 'iters': 20, 'model_structure': [['Dense', {'units': 200, 'activation': 'tanh'}], 'hi'], 'name': 'my model_5'}
-        {'model_class': <function <lambda> at 0x14a2595e0>, 'iters': 10, 'model_structure': [['Dense', {'units': 200, 'activation': 'tanh'}], 'bye'], 'name': 'my model_6'}
-        {'model_class': <function <lambda> at 0x14a2595e0>, 'iters': 20, 'model_structure': [['Dense', {'units': 200, 'activation': 'tanh'}], 'bye'], 'name': 'my model_7'}
+    def __init__(self, container, key_of_name = None):
+        """Init.
         
-    """
+        Parameters
+        ----------
+        container : dict or list or tuple
+            Container which will be shallow copied for grid search. Container is expected to contain 'Grid' object.
+        key_of_name : index or hashable key
+            The key/index to access the name of each grid container. The automatic number is added to the name."""
 
-    list_of_paths_to_grids = get_paths_to_leaves(container, leaf_include_condition = lambda x: True if isinstance(x, Grid) else False) ## [[1, 'b', 3], [2, 0], [2, 1], [2, 2, 0], [2, 2, 1], [3], ...]
-    list_of_containers_init = [deepcopy(container)] ## Final result: realized grids.
-
-    ## For each path to Grid object.
-    for path in list_of_paths_to_grids: ## e.g. path = [1, 'b', 3].
-        grid = access_with_list_of_keys_or_indices(container, path) ## This is grid object.
-        if len(grid.list_of_components) == 0: ## CASE Grid(): Set default grid value None.
-            for container_init in list_of_containers_init: ## e.g. container_init = dict(model_class = lambda x: True, iters = Grid(10, 20), model_structure = [["Dense", {"units": Grid(100, 200), "activation": Grid("tanh")}], Grid("hi", "bye")], name = "my model")
-                access_with_list_of_keys_or_indices(container_init, path[:-1])[path[-1]] = None ## Edit empty grid as None.
-        else: ## Not empty grid.
-            for container_init in list_of_containers_init: ## Apply first component of grid for efficient computation.
-                access_with_list_of_keys_or_indices(container_init, path[:-1])[path[-1]] = grid.list_of_components[0]
-            
-            ## Apply remaining components.
-            list_of_containers_init_for_this_grid = [] ## Added containers because of current grid.
-            for component_idx in range(1, len(grid.list_of_components)): ## First index is already applied above.
-                list_of_containers_init_copy = deepcopy(list_of_containers_init) ## All of containers which will be edited by the components of current grid.
-                for container_init in list_of_containers_init_copy: ## Edit the container with realized component.
-                    access_with_list_of_keys_or_indices(container_init, path[:-1])[path[-1]] = grid.list_of_components[component_idx]
-                list_of_containers_init_for_this_grid = list_of_containers_init_for_this_grid + list_of_containers_init_copy ## Adds this realized component of current grid.
-            list_of_containers_init = list_of_containers_init + list_of_containers_init_for_this_grid ## Adds all the realized components of current grid.
+        self.container = container
+        self.key_of_name = key_of_name
+        self.list_of_paths_to_grids = get_paths_to_leaves(container, leaf_include_condition = lambda x: True if isinstance(x, Grid) else False) ## [[1, 'b', 3], [2, 0], [2, 1], [2, 2, 0], [2, 2, 1], [3], ...]
     
-    ## Append numbering for each instance.
-    if key_of_name is not None:
-        assert(isinstance(container[key_of_name], str))
-        for container_init, idx in zip(list_of_containers_init, range(len(list_of_containers_init))):
-            container_init[key_of_name] = container_init[key_of_name] + f"_{idx}"
-    return list_of_containers_init
+    def get_list_of_grids(self):
+        """Grid Search.
+
+        The Grid object can be located deep inside of nested list/dict.
+        
+        Examples
+        --------
+        test_grid_search_dict = dict(model_class = lambda x: True, iters = Grid(10, 20), model_structure = [["Dense", {"units": Grid(100, 200), "activation": Grid("tanh")}], Grid("hi", "bye")], name = "my model")\n
+        for container_init in get_list_of_grids(container = test_grid_search_dict, key_of_name= "name"):
+            print(f"{container_init}")
+            >>> {'model_class': <function <lambda> at 0x1033d3040>, 'iters': 10, 'model_structure': [['Dense', {'units': 100, 'activation': 'tanh'}], 'hi'], 'name': 'my model_0'}
+            {'model_class': <function <lambda> at 0x1033d3040>, 'iters': 20, 'model_structure': [['Dense', {'units': 100, 'activation': 'tanh'}], 'hi'], 'name': 'my model_1'}
+            {'model_class': <function <lambda> at 0x1033d3040>, 'iters': 10, 'model_structure': [['Dense', {'units': 100, 'activation': 'tanh'}], 'bye'], 'name': 'my model_2'}
+            {'model_class': <function <lambda> at 0x1033d3040>, 'iters': 20, 'model_structure': [['Dense', {'units': 100, 'activation': 'tanh'}], 'bye'], 'name': 'my model_3'}
+            {'model_class': <function <lambda> at 0x1033d3040>, 'iters': 10, 'model_structure': [['Dense', {'units': 200, 'activation': 'tanh'}], 'hi'], 'name': 'my model_4'}
+            {'model_class': <function <lambda> at 0x1033d3040>, 'iters': 20, 'model_structure': [['Dense', {'units': 200, 'activation': 'tanh'}], 'hi'], 'name': 'my model_5'}
+            {'model_class': <function <lambda> at 0x1033d3040>, 'iters': 10, 'model_structure': [['Dense', {'units': 200, 'activation': 'tanh'}], 'bye'], 'name': 'my model_6'}
+            {'model_class': <function <lambda> at 0x1033d3040>, 'iters': 20, 'model_structure': [['Dense', {'units': 200, 'activation': 'tanh'}], 'bye'], 'name': 'my model_7'}
+            
+        """
+
+        list_of_containers_init = [deepcopy(self.container)] ## Final result: realized grids.
+
+        ## For each path to Grid object.
+        for path in self.list_of_paths_to_grids: ## e.g. path = [1, 'b', 3].
+            grid = access_with_list_of_keys_or_indices(self.container, path) ## This is grid object.
+            if len(grid.list_of_components) == 0: ## CASE Grid(): Set default grid value None.
+                for container_init in list_of_containers_init: ## e.g. container_init = dict(model_class = lambda x: True, iters = Grid(10, 20), model_structure = [["Dense", {"units": Grid(100, 200), "activation": Grid("tanh")}], Grid("hi", "bye")], name = "my model")
+                    access_with_list_of_keys_or_indices(container_init, path[:-1])[path[-1]] = None ## Edit empty grid as None.
+            else: ## Not empty grid.
+                for container_init in list_of_containers_init: ## Apply first component of grid for efficient computation.
+                    access_with_list_of_keys_or_indices(container_init, path[:-1])[path[-1]] = grid.list_of_components[0]
+                
+                ## Apply remaining components.
+                list_of_containers_init_for_this_grid = [] ## Added containers because of current grid.
+                for component_idx in range(1, len(grid.list_of_components)): ## First index is already applied above.
+                    list_of_containers_init_copy = deepcopy(list_of_containers_init) ## All of containers which will be edited by the components of current grid.
+                    for container_init in list_of_containers_init_copy: ## Edit the container with realized component.
+                        access_with_list_of_keys_or_indices(container_init, path[:-1])[path[-1]] = grid.list_of_components[component_idx]
+                    list_of_containers_init_for_this_grid = list_of_containers_init_for_this_grid + list_of_containers_init_copy ## Adds this realized component of current grid.
+                list_of_containers_init = list_of_containers_init + list_of_containers_init_for_this_grid ## Adds all the realized components of current grid.
+        
+        ## Append numbering for each instance.
+        if self.key_of_name is not None:
+            assert(isinstance(self.container[self.key_of_name], str))
+            for container_init, idx in zip(list_of_containers_init, range(len(list_of_containers_init))):
+                container_init[self.key_of_name] = container_init[self.key_of_name] + f"_{idx}"
+        return list_of_containers_init
 
 def whether_lists_have_same_values(*lists, any_or_all = "all"):
     """Compare the values of lists.
@@ -376,7 +385,7 @@ if __name__ == "__main__":
     # print(whether_lists_have_same_values(*test_list_2, any_or_all = "all"))
     # print(whether_lists_have_same_values(*test_list_2, any_or_all = "any"))
 
-    test_list = []
-
-    print(test_list in [[]])
+    test_grid_search = GridSearch(dict(model_class = lambda x: True, iters = Grid(10, 20), model_structure = [["Dense", {"units": Grid(100, 200), "activation": Grid("tanh")}], Grid("hi", "bye")], name = "my model"), key_of_name= "name")
+    for container_init in test_grid_search.get_list_of_grids():
+        print(f"{container_init}")
 
