@@ -263,13 +263,18 @@ def is_container(something):
         return False
 
 class Grid():
-    """Grid object used in get_list_of_grids function for grid search."""
+    """Grid object used in get_list_of_grids function for grid search.
+    
+    Put this where you want to search grids of it.
+    """
 
     def __init__(self, *list_of_components):
         self.list_of_components = list_of_components
 
 def get_list_of_grids(container, key_of_name = None):
     """Grid Search.
+
+    The Grid object can be located deep inside of nested list/dict.
 
     Parameters
     ----------
@@ -323,17 +328,55 @@ def get_list_of_grids(container, key_of_name = None):
             container_init[key_of_name] = container_init[key_of_name] + f"_{idx}"
     return list_of_containers_init
 
+def whether_lists_have_same_values(*lists, any_or_all = "all"):
+    """Compare the values of lists.
+    
+    Examples
+    --------
+    test_list_1 = [[1, 2], [2, 1], [3, 4, 5], [], [3, 4, 5], [6]]
+    print(whether_lists_have_same_values(*test_list_1, any_or_all = "all"))
+        >>> False
+    print(whether_lists_have_same_values(*test_list_1, any_or_all = "any"))
+        >>> True
+    test_list_2 = [[6, "hi"], [6, "hi"], [6, "hi"]]
+    print(whether_lists_have_same_values(*test_list_2, any_or_all = "all"))
+        >>> True
+    print(whether_lists_have_same_values(*test_list_2, any_or_all = "any"))
+        >>> True
+    """
+    
+    base_idx = 1 ## pivot.
+    assert(len(lists) > 1)
+    for i in range(len(lists)): ## lists[i] is pivot list.
+        for j in range(i + 1, len(lists)): ## Compare with j-th list.
+            if lists[i] != lists[j]:
+                if any_or_all == "all": return False
+            else:
+                if any_or_all == "any": return True
+        if any_or_all == "all": return True
+    return False ## For the case any_or_all == "any".
 
 if __name__ == "__main__":
     pass
-    test_dict = {'hi':[1, {'hello': [3, 4]}], 'end': [3, 6], 7: "hey"}
-    print(get_paths_to_leaves(test_dict))
-    print(get_paths_to_leaves(test_dict, leaf_include_condition= lambda x: True if isinstance(x, int) else False))
-    test_list = ["a", {"b": {3: 4}}, [4, 5, [6, 7]], 4]
-    print(get_paths_to_leaves(test_list))
-    print(get_paths_to_leaves(test_list, leaf_include_condition= lambda x: True if isinstance(x, int) else False))
+    # test_dict = {'hi':[1, {'hello': [3, 4]}], 'end': [3, 6], 7: "hey"}
+    # print(get_paths_to_leaves(test_dict))
+    # print(get_paths_to_leaves(test_dict, leaf_include_condition= lambda x: True if isinstance(x, int) else False))
+    # test_list = ["a", {"b": {3: 4}}, [4, 5, [6, 7]], 4]
+    # print(get_paths_to_leaves(test_list))
+    # print(get_paths_to_leaves(test_list, leaf_include_condition= lambda x: True if isinstance(x, int) else False))
 
-    test_grid_search_dict = dict(model_class = lambda x: True, iters = Grid(10, 20), model_structure = [["Dense", {"units": Grid(100, 200), "activation": Grid("tanh")}], Grid("hi", "bye")], name = "my model")
-    for container_init in get_list_of_grids(container = test_grid_search_dict, key_of_name= "name"):
-        print(f"{container_init}")
+    # test_grid_search_dict = dict(model_class = lambda x: True, iters = Grid(10, 20), model_structure = [["Dense", {"units": Grid(100, 200), "activation": Grid("tanh")}], Grid("hi", "bye")], name = "my model")
+    # for container_init in get_list_of_grids(container = test_grid_search_dict, key_of_name= "name"):
+    #     print(f"{container_init}")
+
+    # test_list_1 = [[1, 2], [2, 1], [3, 4, 5], [], [3, 4, 5], [6]]
+    # print(whether_lists_have_same_values(*test_list_1, any_or_all = "all"))
+    # print(whether_lists_have_same_values(*test_list_1, any_or_all = "any"))
+    # test_list_2 = [[6, "hi"], [6, "hi"], [6, "hi"]]
+    # print(whether_lists_have_same_values(*test_list_2, any_or_all = "all"))
+    # print(whether_lists_have_same_values(*test_list_2, any_or_all = "any"))
+
+    test_list = []
+
+    print(test_list in [[]])
 
