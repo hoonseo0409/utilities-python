@@ -58,7 +58,7 @@ class Formatter(object):
         if file_format == "txt":
             self.htchar = '\t'
             self.lfchar = '\n'
-            self.emphasizer = lambda x, path: f"!< {x} >!" if path in self.paths_to_emphasize else x
+            self.emphasizer = lambda x, path: f"+++!< {x} >!+++" if path in self.paths_to_emphasize else x
             self.curly_bracket = {"open": "{", "close": "}"}
         elif file_format == "rtf":
             self.htchar = '\t'

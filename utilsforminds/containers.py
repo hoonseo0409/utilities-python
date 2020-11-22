@@ -57,6 +57,16 @@ def merge_dictionaries(list_of_dicts : list, use_last_when_overlapped = True, re
         >>> {'a': 2, 'b': 4, 'c': 9}
     merge_dictionaries(test_list, use_last_when_overlapped = False)\n
         >>> {'a': 1, 'b': 2, 'c': 9}
+
+    Example of shallow copy:
+    test_dict_1 = {"a": 1, "b": 2, "c": 3}\n
+    test_dict_2 = {"b": 7}\n
+    print(merge_dictionaries([test_dict_1, test_dict_2]))
+        >>> {'b': 7, 'a': 1, 'c': 3}
+    print(test_dict_1)
+        >>> {'a': 1, 'b': 2, 'c': 3}
+    print(test_dict_2)
+        >>> {'b': 7}
     """
     
     merged_dict = {}
@@ -365,6 +375,8 @@ def whether_lists_have_same_values(*lists, any_or_all = "all"):
         if any_or_all == "all": return True
     return False ## For the case any_or_all == "any".
 
+# def get_updated_dict_without_chainging_original_dict(original_dict, dict_to_change)
+
 if __name__ == "__main__":
     pass
     # test_dict = {'hi':[1, {'hello': [3, 4]}], 'end': [3, 6], 7: "hey"}
@@ -385,7 +397,13 @@ if __name__ == "__main__":
     # print(whether_lists_have_same_values(*test_list_2, any_or_all = "all"))
     # print(whether_lists_have_same_values(*test_list_2, any_or_all = "any"))
 
-    test_grid_search = GridSearch(dict(model_class = lambda x: True, iters = Grid(10, 20), model_structure = [["Dense", {"units": Grid(100, 200), "activation": Grid("tanh")}], Grid("hi", "bye")], name = "my model"), key_of_name= "name")
-    for container_init in test_grid_search.get_list_of_grids():
-        print(f"{container_init}")
+    # test_grid_search = GridSearch(dict(model_class = lambda x: True, iters = Grid(10, 20), model_structure = [["Dense", {"units": Grid(100, 200), "activation": Grid("tanh")}], Grid("hi", "bye")], name = "my model"), key_of_name= "name")
+    # for container_init in test_grid_search.get_list_of_grids():
+    #     print(f"{container_init}")
+
+    test_dict_1 = {"a": 1, "b": 2, "c": 3}
+    test_dict_2 = {"b": 7}
+    print(merge_dictionaries([test_dict_1, test_dict_2]))
+    print(test_dict_1)
+    print(test_dict_2)
 
