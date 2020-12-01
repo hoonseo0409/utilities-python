@@ -153,7 +153,7 @@ class Formatter(object):
         ]
         return self.emphasizer('[%s]' % (','.join(items) + self.lfchar + self.htchar * indent), path = path)
 
-    def format_tuple(self, value, indent):
+    def format_tuple(self, value, indent, path):
         ## Cut the size of container.
         value_shrink_in_limit = self.cut_container_to_limit(value)
 
