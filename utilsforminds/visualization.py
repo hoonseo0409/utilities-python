@@ -1301,7 +1301,7 @@ def plotly_2D_contour(nparr, path_to_save, arr_filter = lambda x: x, vmin = None
     scene_kwargs_local = merge_dictionaries([{}, scene_kwargs])
     colorbar_kwargs_local = merge_dictionaries([{"titlefont": {"size": 30}}, colorbar_kwargs])
     contour_kwargs_local = merge_dictionaries([{"colorscale": colorscale, "colorbar": colorbar_kwargs_local}, contour_kwargs]) ## "contours": {"start": vmin, "end": vmax},
-    layout_kwargs_local = merge_dictionaries([{"title": None, "xaxis": {"title": "x", "range": [0, nparr.shape[1]], "tickvals" : [i * (nparr.shape[1] // 5) for i in range(1, 5)], "ticktext": [i * (nparr.shape[1] // 5) for i in range(1, 5)]}, "yaxis": {"title": "y", "range": [0, nparr.shape[0]], "tickvals" : [i * (nparr.shape[0] // 5) for i in range(1, 5)], "ticktext": [i * (nparr.shape[0] // 5) for i in range(1, 5)]}}, layout_kwargs]) ## 0 axis goes to vertical, 1 axis goes to horizontal
+    layout_kwargs_local = merge_dictionaries([{"title": None, "xaxis": {"title": "x", "tickvals" : [i * (nparr.shape[1] // 5) for i in range(1, 5)], "ticktext": [i * (nparr.shape[1] // 5) for i in range(1, 5)]}, "yaxis": {"title": "y", "tickvals" : [i * (nparr.shape[0] // 5) for i in range(1, 5)], "ticktext": [i * (nparr.shape[0] // 5) for i in range(1, 5)]}}, layout_kwargs]) ## 0 axis goes to vertical, 1 axis goes to horizontal, do not use range parameter as it create weird margins.
 
     contour = go.Contour(z = nparr_local, **contour_kwargs_local)
     scene = go.Scene(**scene_kwargs_local)
@@ -1309,6 +1309,7 @@ def plotly_2D_contour(nparr, path_to_save, arr_filter = lambda x: x, vmin = None
     fig = go.Figure(data = contour, layout = layout)
 
     if figsize_ratio is not None:
+        raise Exception(NotImplementedError)
         fig.update_layout(scene_aspectmode= 'manual', scene_aspectratio= figsize_ratio)
     
     fig.write_image(path_to_save)
