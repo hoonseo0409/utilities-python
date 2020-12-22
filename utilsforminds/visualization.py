@@ -706,7 +706,7 @@ def plot_bar_charts(path_to_save : str, name_numbers : dict, xlabels : list = No
         # bar_width_ = 0.30 * (2 / len(name_numbers))  
         bar_width_ = 0.20 * (2 / len(name_numbers))  
     else:
-        bar_width_ = bar_width
+        bar_width_ = 0.20 * (2 / len(name_numbers)) * bar_width
     index = np.arange(n_groups)
     # create plot
     if figsize is None:
