@@ -648,7 +648,7 @@ def plot_bar_charts(path_to_save : str, name_numbers : dict, xlabels : list = No
     """
 
     ## Input sanity check
-    for check_target in [name_numbers, name_errors]:
+    for check_target in list(filter(lambda x: True if x is not None else False, [name_numbers, name_errors])):
         for numbers_list in check_target.values():
             if any(pd.isna(numbers_list)): ## At least one element is nan/inf.
                 print(f"WARNING: This function plot_bar_charts encounters invalid numbers such as nan/inf, so will be passed and do nothing.")
