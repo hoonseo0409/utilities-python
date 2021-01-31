@@ -7,6 +7,7 @@ else:
     matplotlib.use("MacOSX")
 # matplotlib.pyplot.set_cmap('Paired')
 import matplotlib.pyplot as plt
+import pyvista as pv
 
 # plt.set_cmap('Paired')
 
@@ -1192,7 +1193,57 @@ def plot_3D_plotly(nparr_3D, path_to_save_static : str, do_save_html : bool = Tr
         else:
             hovertext = None
             hoverinfo = None
-        plot_objects.append(graph_objs.Mesh3d(name = alpha_shape_legend, x = x, y = y, z = z, hovertext = hovertext, hoverinfo = hoverinfo, **alpha_shape_kwargs_local))
+        plot_objects.append(graph_objs.Mesh3d(name = alpha_shape_legend, x = x, y = y, z = z, hovertext = hovertext, hoverinfo = hoverinfo, intensity = utilsforminds.numpy_array.push_arr_to_range(nparr_3D[x, y, z], vmin = vmin, vmax = vmax), colorbar = marker_kwargs_local["colorbar"], **alpha_shape_kwargs_local))
+        # else: ## "colored-alphashape" in kinds_to_plot
+        #     # get min max values
+        #     # vmax, vmin = min_max_data(x, y, z)
+        #     # generate point cloud
+        #     cloud = pv.PolyData(np.array(list(zip(x, y, z)))) # set up the pyvista point cloud structure
+        #     #alphaparameter for alpha shape definition
+        #     # alpha = 0.5
+        #     #Extract the total simplicial structure of the alpha shape defined via pyvista
+        #     mesh = cloud.delaunay_3d(alpha= 1. / alpha_shape_kwargs_local["alphahull"])
+        #     #and select its simplexes of dimension 0, 1, 2, 3:
+        #     unconnected_points3d = []  #isolated 0-simplices
+        #     edges = [] # isolated edges, 1-simplices
+        #     faces = []  # triangles that are not faces of some tetrahedra
+        #     tetrahedra = []  # 3-simplices
+        #     for k  in mesh.offset:  #HERE WE CAN ACCESS mesh.offset
+        #         length = mesh.cells[k] 
+        #         if length == 2:
+        #             edges.append(list(mesh.cells[k+1: k+length+1]))
+        #         elif length ==3:
+        #             faces.append(list(mesh.cells[k+1: k+length+1]))
+        #         elif length == 4:
+        #             tetrahedra.append(list(mesh.cells[k+1: k+length+1]))
+        #         elif length == 1:
+        #             unconnected_points3d.append(mesh.cells[k+1])
+                
+
+        #     # get faces of the mesh
+        #     boundary_mesh = mesh.extract_geometry()
+        #     boundary_faces = boundary_mesh.faces.reshape((-1,4))[:, 1:]  
+        #     # get indices from mesh triangles
+        #     boundary_points= points3d[boundary_faces]
+        #     x1, y1, z1 = boundary_faces.T ## x1, y1, z1 is index of point of triangle, so there can be duplication, because it is combination of three indices.
+        #     # plot objects for every index
+        #     for index in range(len(boundary_faces)):
+        #         # plot the indivisual mesh triangles one at a time with color specified
+        #         plot_objects.append(go.Mesh3d(
+        #             #data points
+        #             x=x,
+        #             y=y,
+        #             z=z,
+        #             color = color_density(x=x[x1[index]], 
+        #                                 y=y[y1[index]], 
+        #                                 z=z[z1[index]], 
+        #                                 max_data=vmax, min_data=vmin),
+        #             # i, j and k give the vertices of triangles
+        #             i=x1[index:index+1],
+        #             j=y1[index:index+1],
+        #             k=z1[index:index+1],
+        #             showscale=True
+        #         ))
 
     scene = graph_objs.Scene(xaxis = {"range": [0, input_shape[0]], "tickvals": xyz_tickers_copied["x"]["tickvals"], "ticktext": xyz_tickers_copied["x"]["ticktext"], **axis_kwargs_local},
     yaxis = {"range": [0, input_shape[1]], "tickvals": xyz_tickers_copied["y"]["tickvals"], "ticktext":  xyz_tickers_copied["y"]["ticktext"], **axis_kwargs_local},
