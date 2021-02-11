@@ -71,8 +71,34 @@ def mask_prob(shape, p):
     B = A < p   # Where A < p, a True (1) value is recorded in B, if A > p then a False (0) vlaue is recorded in B
     return (1. * B).astype(np.float32)  # Return a mask array of 0s and 1s
 
+def inverse_one_hot_encode(arr):
+    """
+
+    Parameters
+    ----------
+    arr : Numpy array
+        One-hot encoded array. The dimension should be larger than 2 and arr.shape[0] is interpreted as the number of samples.
+
+    Examples
+    --------
+    test_arr = np.array([[0., 1.], [0., 1.], [1., 0.], [0., 1.]])
+    print(inverse_one_hot_encode(test_arr))
+    >>> [0 0 1 0]
+    """
+
+    unique_labels = np.unique(arr, axis= 0)
+    arr_single_label = []
+    for i in range(arr.shape[0]):
+        for j in range(unique_labels.shape[0]):
+            if np.array_equal(arr[i], unique_labels[j]):
+                arr_single_label.append(j)
+                break
+    arr_single_label = np.array(arr_single_label)
+    assert(arr_single_label.shape[0] == arr.shape[0])
+    return arr_single_label
+
 if __name__ == "__main__":
     pass
-    test_arr = np.zeros((100, 100, 100))
-    print(slice_array_to_given_shape(arr= test_arr, shape= [60, 200, 70], origin = "center").shape)
+    test_arr = np.array([[0., 1.], [0., 1.], [1., 0.], [0., 1.]])
+    print(inverse_one_hot_encode(test_arr))
     

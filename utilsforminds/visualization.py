@@ -37,6 +37,7 @@ import plotly.graph_objs as go
 import plotly.tools as tls
 import plotly
 from utilsforminds.containers import merge_dictionaries
+from sklearn.cluster import OPTICS
 
 axis_rotation_dict = {0: 0, 1: 0, 2: 0}
 axis_name_dict = {0: 'Easting', 1: 'Northing', 2: 'Elevation'}
@@ -1107,7 +1108,7 @@ def get_xy_axis_from_z(zaxis = 0):
     else:
         raise Exception(ValueError)
 
-def plot_3D_plotly(nparr_3D, path_to_save_static : str, do_save_html : bool = True, kinds_to_plot : list = None, marker_kwargs : dict = None, vmin = None, vmax = None, alpha_shape_kwargs : dict = None, points_decider = lambda x: x > 1e-8, observation_mask_nparr_3D = None, title= None, points_legends : dict = None, alpha_shape_legend = "", scene_kwargs : dict = None, xyz_tickers = None, axis_kwargs : dict = None, layout_kwargs : dict = None, figsize_ratio : dict = None, camera = None, showgrid = False, zeroline = True, showline = False, transparent_bacground = True, colorbar_kwargs = None, get_hovertext = None):
+def plot_3D_plotly(nparr_3D, path_to_save_static : str, do_save_html : bool = True, kinds_to_plot : list = None, marker_kwargs : dict = None, vmin = None, vmax = None, alpha_shape_kwargs : dict = None, points_decider = lambda x: x > 1e-8, observation_mask_nparr_3D = None, title= None, points_legends : dict = None, alpha_shape_legend = "", scene_kwargs : dict = None, xyz_tickers = None, axis_kwargs : dict = None, layout_kwargs : dict = None, figsize_ratio : dict = None, camera = None, showgrid = False, zeroline = True, showline = False, transparent_bacground = True, colorbar_kwargs = None, get_hovertext = None, alpha_shape_clustering = False):
     """
     
     Parameters
@@ -1193,7 +1194,35 @@ def plot_3D_plotly(nparr_3D, path_to_save_static : str, do_save_html : bool = Tr
         else:
             hovertext = None
             hoverinfo = None
-        plot_objects.append(graph_objs.Mesh3d(name = alpha_shape_legend, x = x, y = y, z = z, hovertext = hovertext, hoverinfo = hoverinfo, intensity = utilsforminds.numpy_array.push_arr_to_range(nparr_3D[x, y, z], vmin = vmin, vmax = vmax), colorbar = marker_kwargs_local["colorbar"], **alpha_shape_kwargs_local))
+        if alpha_shape_clustering:
+            positions = np.stack([x, y, z], axis = -1)
+            cluster_labels = OPTICS(min_samples = 40).fit_predict(positions) ## Change here if you wanna use different clustering.
+            number_of_clusters_to_plot = 5
+
+            smallest_number_of_points_in_cluster = -1
+            cluster_labels_to_plot = []
+            number_of_points_in_clusters = []
+            for cluster_label in set(cluster_labels):
+                number_of_points_in_cluster = np.sum(np.where(cluster_labels == cluster_label, 1., 0.))
+                if len(cluster_labels_to_plot) < number_of_clusters_to_plot:
+                    cluster_labels_to_plot.append(cluster_label)
+                    number_of_points_in_clusters.append(number_of_points_in_cluster)
+                else:
+                    smallest_number_of_points_in_cluster = min(number_of_points_in_clusters)
+                    if smallest_number_of_points_in_cluster < number_of_points_in_cluster:
+                        arg_smallest_number_of_points_in_cluster = np.argmin(number_of_points_in_clusters)
+                        cluster_labels_to_plot[arg_smallest_number_of_points_in_cluster] = cluster_label
+                        number_of_points_in_clusters[arg_smallest_number_of_points_in_cluster] = number_of_points_in_cluster
+
+            showscale = True ## Only the first plot has colorbar.
+            for cluster_label in cluster_labels_to_plot:
+                x_this_cluster = x[cluster_labels == cluster_label]
+                y_this_cluster = y[cluster_labels == cluster_label]
+                z_this_cluster = z[cluster_labels == cluster_label]
+                plot_objects.append(graph_objs.Mesh3d(name = alpha_shape_legend, x = x_this_cluster, y = y_this_cluster, z = z_this_cluster, hovertext = hovertext, hoverinfo = hoverinfo, intensity = utilsforminds.numpy_array.push_arr_to_range(nparr_3D[x_this_cluster, y_this_cluster, z_this_cluster], vmin = vmin, vmax = vmax), colorbar = marker_kwargs_local["colorbar"], showscale = showscale, **alpha_shape_kwargs_local))
+                showscale = False ## Only the first plot has colorbar.
+        else:
+            plot_objects.append(graph_objs.Mesh3d(name = alpha_shape_legend, x = x, y = y, z = z, hovertext = hovertext, hoverinfo = hoverinfo, intensity = utilsforminds.numpy_array.push_arr_to_range(nparr_3D[x, y, z], vmin = vmin, vmax = vmax), colorbar = marker_kwargs_local["colorbar"], **alpha_shape_kwargs_local))
         # else: ## "colored-alphashape" in kinds_to_plot
         #     # get min max values
         #     # vmax, vmin = min_max_data(x, y, z)
@@ -1372,4 +1401,14 @@ if __name__ == '__main__':
     # for i in range(15):
     #     test_list.append({"label": f"my label_{i}", "ydata": [3.4, 3.2, 1.1, 0.3]})
     # plot_xy_lines([1, 2, 3, 4], test_list, "dummy.eps")
-    print(get_new_position_from_origin_and_displacement([1, 2, 0], [0, -3, 3], [3, 3, 3]))
+    x = np.array([1, 2, 0, 5])
+    y = np.array([0, -3, 7, 6])
+    z = np.array([9, 11, 15, 12])
+    positions = np.stack([x, y, z], axis = -1)
+    cluster_labels = OPTICS(min_samples = 2).fit_predict(positions)
+    for cluster_label in set(cluster_labels):
+        x_this_cluster = x[cluster_labels == cluster_label]
+        y_this_cluster = y[cluster_labels == cluster_label]
+        z_this_cluster = z[cluster_labels == cluster_label]
+        print(x_this_cluster)
+    print(cluster_labels)
