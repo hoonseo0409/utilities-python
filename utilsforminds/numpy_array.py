@@ -71,7 +71,7 @@ def mask_prob(shape, p):
     B = A < p   # Where A < p, a True (1) value is recorded in B, if A > p then a False (0) vlaue is recorded in B
     return (1. * B).astype(np.float32)  # Return a mask array of 0s and 1s
 
-def inverse_one_hot_encode(arr):
+def inverse_one_hot_encode(arr, return_encode_list = False):
     """
 
     Parameters
@@ -84,6 +84,10 @@ def inverse_one_hot_encode(arr):
     test_arr = np.array([[0., 1.], [0., 1.], [1., 0.], [0., 1.]])
     print(inverse_one_hot_encode(test_arr))
     >>> [0 0 1 0]
+
+    test_arr = np.array([[0., 1.], [0., 1.], [1., 0.], [0., 1.]])
+    print(inverse_one_hot_encode(test_arr, return_encode_list = True))
+    >>> (array([0, 0, 1, 0]), [array([0., 1.]), array([1., 0.])])
     """
 
     unique_labels = np.unique(arr, axis= 0)
@@ -95,10 +99,16 @@ def inverse_one_hot_encode(arr):
                 break
     arr_single_label = np.array(arr_single_label)
     assert(arr_single_label.shape[0] == arr.shape[0])
-    return arr_single_label
+    if not return_encode_list:
+        return arr_single_label
+    else:
+        encode_dict = [unique_labels[j] for j in range(unique_labels.shape[0])]
+        return arr_single_label, encode_dict
+
+
 
 if __name__ == "__main__":
     pass
     test_arr = np.array([[0., 1.], [0., 1.], [1., 0.], [0., 1.]])
-    print(inverse_one_hot_encode(test_arr))
+    print(inverse_one_hot_encode(test_arr, return_encode_list = True))
     

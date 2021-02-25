@@ -23,6 +23,7 @@ import utilsforminds.helpers as helpers
 import random
 import numpy as np
 import utilsforminds
+from itertools import cycle
 # from mayavi import mlab # see install manual + brew install vtk
 # from mayavi.api import Engine
 # import mayavi.tools.pipeline
@@ -37,7 +38,16 @@ import plotly.graph_objs as go
 import plotly.tools as tls
 import plotly
 from utilsforminds.containers import merge_dictionaries
+
 from sklearn.cluster import OPTICS
+from sklearn import svm, datasets
+from sklearn.metrics import roc_curve, auc
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import label_binarize
+from sklearn.multiclass import OneVsRestClassifier
+from sklearn.metrics import roc_auc_score
+
+from scipy import interp
 
 axis_rotation_dict = {0: 0, 1: 0, 2: 0}
 axis_name_dict = {0: 'Easting', 1: 'Northing', 2: 'Elevation'}
@@ -1393,6 +1403,82 @@ def plotly_2D_contour(nparr, path_to_save, arr_filter = lambda x: x, vmin = None
         fig.update_layout(scene_aspectmode= 'manual', scene_aspectratio= figsize_ratio)
     
     fig.write_image(path_to_save)
+
+def plot_ROC(path_to_save, y_true, list_of_y_pred, list_of_model_names = None, list_of_class_names = None, title = 'Receiver operating characteristic', xlabel = 'False Positive Rate', ylabel = 'True Positive Rate', colors = None, linewidth = 2, extension = "eps"):
+    n_classes = y_true.shape[1]
+    if colors is None: colors = cycle(["red", "navy", "lightgreen", "teal", "violet", "green", "orange", "blue", "coral", "yellowgreen", "sienna", "olive", "maroon", "goldenrod", "darkblue", "orchid", "crimson"])
+    if list_of_model_names is None:
+        list_of_model_names = ["" for i in range(len(list_of_y_pred))]
+    else:
+        list_of_model_names = [f"{name}, " for name in list_of_model_names]
+    if list_of_class_names is None:
+        list_of_class_names = ["" for i in range(n_classes)]
+    else:
+        assert(len(list_of_class_names) == n_classes)
+        list_of_class_names = [f"{name}, " for name in list_of_class_names]
+
+    plt.figure()
+
+    fpr_list = []
+    tpr_list = []
+    roc_auc_list = []
+
+    for model_idx in range(len(list_of_y_pred)):
+        assert(list_of_y_pred[model_idx].shape[1] == n_classes)
+        assert(y_true.shape[0] == list_of_y_pred[model_idx].shape[0])
+        ## Compute ROC curve and ROC area for each class
+        fpr_list.append(dict())
+        tpr_list.append(dict())
+        roc_auc_list.append(dict())
+        for i in range(n_classes):
+            fpr_list[model_idx][i], tpr_list[model_idx][i], _ = roc_curve(y_true[:, i], list_of_y_pred[model_idx][:, i])
+            roc_auc_list[model_idx][i] = auc(fpr_list[model_idx][i], tpr_list[model_idx][i])
+        
+        ## Compute micro-average ROC curve and ROC area
+        fpr_list[model_idx]["micro"], tpr_list[model_idx]["micro"], _ = roc_curve(y_true.ravel(), list_of_y_pred[model_idx].ravel())
+        roc_auc_list[model_idx]["micro"] = auc(fpr_list[model_idx]["micro"], tpr_list[model_idx]["micro"])
+
+        if n_classes == 2: ## Plot of a ROC curve for a specific class
+            plt.plot(fpr_list[model_idx][0], tpr_list[model_idx][0], color = next(colors), lw= linewidth, label= f"{list_of_model_names[model_idx]}area = {roc_auc_list[model_idx][0]:0.2f}")
+        
+        else: ## Compute macro-average ROC curve and ROC area
+            # First aggregate all false positive rates
+            all_fpr = np.unique(np.concatenate([fpr_list[model_idx][i] for i in range(n_classes)]))
+
+            # Then interpolate all ROC curves at this points
+            mean_tpr = np.zeros_like(all_fpr)
+            for i in range(n_classes):
+                mean_tpr += interp(all_fpr, fpr_list[model_idx][i], tpr_list[model_idx][i])
+
+            # Finally average it and compute AUC
+            mean_tpr /= n_classes
+
+            fpr_list[model_idx]["macro"] = all_fpr
+            tpr_list[model_idx]["macro"] = mean_tpr
+            roc_auc_list[model_idx]["macro"] = auc(fpr_list[model_idx]["macro"], tpr_list[model_idx]["macro"])
+
+            # Plot all ROC curves
+            plt.figure()
+            plt.plot(fpr_list[model_idx]["micro"], tpr_list[model_idx]["micro"],
+                    label=f'micro-average, {list_of_model_names[model_idx]}area = {roc_auc_list[model_idx]["micro"]:0.2f}',
+                    color= next(colors), linestyle=':', linewidth=4)
+            
+            plt.plot(fpr_list[model_idx]["macro"], tpr_list[model_idx]["macro"],
+                    label=f'macro-average, {list_of_model_names[model_idx]}area = {roc_auc_list[model_idx]["macro"]:0.2f}',
+                    color= next(colors), linestyle=':', linewidth=4)
+
+            for i, color in zip(range(n_classes), colors):
+                plt.plot(fpr_list[model_idx][i], tpr_list[model_idx][i], color=color, lw=linewidth,
+                        label=f'{list_of_class_names[i]}area = {roc_auc_list[model_idx][i]:0.2f}')
+    ## Plot auxilaries
+    plt.plot([0, 1], [0, 1], lw= linewidth, linestyle='--')
+    plt.xlim([0.0, 1.0])
+    plt.ylim([0.0, 1.05])
+    plt.xlabel(xlabel)
+    plt.ylabel(ylabel)
+    plt.title(title)
+    plt.legend(loc="lower right")
+    plt.savefig(path_to_save + "." + extension, format = extension)
 
 if __name__ == '__main__':
     pass
