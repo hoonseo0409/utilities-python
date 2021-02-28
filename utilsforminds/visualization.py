@@ -7,7 +7,7 @@ else:
     matplotlib.use("MacOSX")
 # matplotlib.pyplot.set_cmap('Paired')
 import matplotlib.pyplot as plt
-import pyvista as pv
+# import pyvista as pv
 
 # plt.set_cmap('Paired')
 
@@ -1404,7 +1404,7 @@ def plotly_2D_contour(nparr, path_to_save, arr_filter = lambda x: x, vmin = None
     
     fig.write_image(path_to_save)
 
-def plot_ROC(path_to_save, y_true, list_of_y_pred, list_of_model_names = None, list_of_class_names = None, title = 'Receiver operating characteristic', xlabel = 'False Positive Rate', ylabel = 'True Positive Rate', colors = None, linewidth = 2, extension = "eps"):
+def plot_ROC(path_to_save, y_true, list_of_y_pred, list_of_model_names = None, list_of_class_names = None, title = 'Receiver operating characteristic', xlabel = 'False Positive Rate', ylabel = 'True Positive Rate', colors = None, linewidth = 1, extension = "eps"):
     n_classes = y_true.shape[1]
     if colors is None: colors = cycle(["red", "navy", "lightgreen", "teal", "violet", "green", "orange", "blue", "coral", "yellowgreen", "sienna", "olive", "maroon", "goldenrod", "darkblue", "orchid", "crimson"])
     if list_of_model_names is None:
@@ -1458,18 +1458,18 @@ def plot_ROC(path_to_save, y_true, list_of_y_pred, list_of_model_names = None, l
             roc_auc_list[model_idx]["macro"] = auc(fpr_list[model_idx]["macro"], tpr_list[model_idx]["macro"])
 
             # Plot all ROC curves
-            plt.figure()
             plt.plot(fpr_list[model_idx]["micro"], tpr_list[model_idx]["micro"],
-                    label=f'micro-average, {list_of_model_names[model_idx]}area = {roc_auc_list[model_idx]["micro"]:0.2f}',
-                    color= next(colors), linestyle=':', linewidth=4)
+                    label=f'micro, {list_of_model_names[model_idx]}area = {roc_auc_list[model_idx]["micro"]:0.2f}',
+                    color= next(colors), linewidth=1) # linestyle=':',
             
             plt.plot(fpr_list[model_idx]["macro"], tpr_list[model_idx]["macro"],
-                    label=f'macro-average, {list_of_model_names[model_idx]}area = {roc_auc_list[model_idx]["macro"]:0.2f}',
-                    color= next(colors), linestyle=':', linewidth=4)
+                    label=f'macro, {list_of_model_names[model_idx]}area = {roc_auc_list[model_idx]["macro"]:0.2f}',
+                    color= next(colors), linewidth=1) # linestyle=':',
 
-            for i, color in zip(range(n_classes), colors):
-                plt.plot(fpr_list[model_idx][i], tpr_list[model_idx][i], color=color, lw=linewidth,
-                        label=f'{list_of_class_names[i]}area = {roc_auc_list[model_idx][i]:0.2f}')
+            ## Plot ROC curve for each class:
+            # for i, color in zip(range(n_classes), colors):
+            #     plt.plot(fpr_list[model_idx][i], tpr_list[model_idx][i], color=color, lw=linewidth,
+            #             label=f'{list_of_class_names[i]}area = {roc_auc_list[model_idx][i]:0.2f}')
     ## Plot auxilaries
     plt.plot([0, 1], [0, 1], lw= linewidth, linestyle='--')
     plt.xlim([0.0, 1.0])
