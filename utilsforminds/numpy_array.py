@@ -105,10 +105,13 @@ def inverse_one_hot_encode(arr, return_encode_list = False):
         encode_dict = [unique_labels[j] for j in range(unique_labels.shape[0])]
         return arr_single_label, encode_dict
 
-
-
 if __name__ == "__main__":
     pass
-    test_arr = np.array([[0., 1.], [0., 1.], [1., 0.], [0., 1.]])
-    print(inverse_one_hot_encode(test_arr, return_encode_list = True))
+    counts_dict = {(lambda x: True if x > 2 else False): 0, (lambda x: True if x <= 2 else False): 0}
+    for i in range(10):
+        for key in counts_dict.keys():
+            if key(i):
+                counts_dict[key] += 1
+    
+    print(counts_dict)
     

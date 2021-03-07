@@ -1,4 +1,5 @@
 from copy import deepcopy
+import numpy as np
 
 def get_items_from_list_conditionally(list_, condition_function, whether_deepcopy = False):
     """ This is reference-copy function not value-copy.
@@ -344,7 +345,8 @@ class GridSearch():
         if self.key_of_name is not None:
             assert(isinstance(self.container[self.key_of_name], str))
             for container_init, idx in zip(list_of_containers_init, range(len(list_of_containers_init))):
-                container_init[self.key_of_name] = container_init[self.key_of_name] + f"_{idx}"
+                if idx > 0:
+                    container_init[self.key_of_name] = container_init[self.key_of_name] + f"_{idx}"
         return list_of_containers_init
 
 def whether_lists_have_same_values(*lists, any_or_all = "all"):
@@ -375,35 +377,43 @@ def whether_lists_have_same_values(*lists, any_or_all = "all"):
         if any_or_all == "all": return True
     return False ## For the case any_or_all == "any".
 
-# def get_updated_dict_without_chainging_original_dict(original_dict, dict_to_change)
+def get_items_counts_dict_from_container(container, access_to_item_funct = lambda x: x):
+    """
+    
+    Examples
+    --------
+    test_dicts = [{"predictor label": np.array([[0., 1.]])}, {"predictor label": np.array([[0., 1.]])}, {"predictor label": np.array([[1., 0.]])}, {"predictor label": np.array([[0., 1.]])}]
+    print(get_items_counts_dict_from_container([0, 2, 3], access_to_item_funct = lambda x: test_dicts[x]["predictor label"]))
+        >>> {((0.0, 1.0),): 2, ((1.0, 0.0),): 1}
+    """
+    counts_dict = {}
+    for item in container:
+        sub_item = access_to_item_funct(item)
+        if isinstance(sub_item, np.ndarray):
+            sub_item = tuple(map(tuple, sub_item))
+        if sub_item in counts_dict.keys():
+            counts_dict[sub_item] += 1
+        else:
+            counts_dict[sub_item] = 1
+    return counts_dict
+
+def get_max_with_accessor(container, accessor = lambda x: x):
+    """
+
+    Examples
+    --------
+    test_dict = {0: 3, 1: 2, 5: 7, "a": 4}
+    print(get_max_with_accessor(test_dict, accessor = lambda x: test_dict[x]))
+        >>> 7
+    """
+    current_max = accessor(next(iter(container)))
+    for item in container:
+        if current_max < accessor(item):
+            current_max = accessor(item)
+    return current_max
 
 if __name__ == "__main__":
     pass
-    # test_dict = {'hi':[1, {'hello': [3, 4]}], 'end': [3, 6], 7: "hey"}
-    # print(get_paths_to_leaves(test_dict))
-    # print(get_paths_to_leaves(test_dict, leaf_include_condition= lambda x: True if isinstance(x, int) else False))
-    # test_list = ["a", {"b": {3: 4}}, [4, 5, [6, 7]], 4]
-    # print(get_paths_to_leaves(test_list))
-    # print(get_paths_to_leaves(test_list, leaf_include_condition= lambda x: True if isinstance(x, int) else False))
-
-    # test_grid_search_dict = dict(model_class = lambda x: True, iters = Grid(10, 20), model_structure = [["Dense", {"units": Grid(100, 200), "activation": Grid("tanh")}], Grid("hi", "bye")], name = "my model")
-    # for container_init in get_list_of_grids(container = test_grid_search_dict, key_of_name= "name"):
-    #     print(f"{container_init}")
-
-    # test_list_1 = [[1, 2], [2, 1], [3, 4, 5], [], [3, 4, 5], [6]]
-    # print(whether_lists_have_same_values(*test_list_1, any_or_all = "all"))
-    # print(whether_lists_have_same_values(*test_list_1, any_or_all = "any"))
-    # test_list_2 = [[6, "hi"], [6, "hi"], [6, "hi"]]
-    # print(whether_lists_have_same_values(*test_list_2, any_or_all = "all"))
-    # print(whether_lists_have_same_values(*test_list_2, any_or_all = "any"))
-
-    # test_grid_search = GridSearch(dict(model_class = lambda x: True, iters = Grid(10, 20), model_structure = [["Dense", {"units": Grid(100, 200), "activation": Grid("tanh")}], Grid("hi", "bye")], name = "my model"), key_of_name= "name")
-    # for container_init in test_grid_search.get_list_of_grids():
-    #     print(f"{container_init}")
-
-    test_dict_1 = {"a": 1, "b": 2, "c": 3}
-    test_dict_2 = {"b": 7}
-    print(merge_dictionaries([test_dict_1, test_dict_2]))
-    print(test_dict_1)
-    print(test_dict_2)
+    test_dicts = [{"predictor label": np.array([[0., 1.]])}, {"predictor label": np.array([[0., 1.]])}, {"predictor label": np.array([[1., 0.]])}, {"predictor label": np.array([[0., 1.]])}]
+    print(get_items_counts_dict_from_container([0, 2, 3], access_to_item_funct = lambda x: test_dicts[x]["predictor label"]))
 

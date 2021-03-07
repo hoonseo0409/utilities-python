@@ -776,12 +776,31 @@ def gifToArr(gifPath):
 #     return arr_4D
 
 def get_proportional_ranked_value(amount_arr, counter_arr = None, proportion = 0.1):
-    assert(proportion >= 0. and proportion <= 1.)
+    """Get ranked values among non-zero values from the numpy array.
+
+    Parameters
+    ----------
+    proportion : float in [0., 1.] or int
+        If float, then proportion of rank from the smallest value. For example, proportion = 0.02 gives top 2% from largest value. If float, then it is direct rank from the largest value.
+    
+    Examples
+    --------
+    print(get_proportional_ranked_value(np.array([0, 0, 0, 0, 0, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]), proportion = 0.3))
+    >>> 8
+    
+    """
+    
+    # assert(proportion >= 0. and proportion <= 1.)
     if counter_arr is not None:
-        num_of_nonzero = np.count_nonzero(np.where(counter_arr >= 1e-8, 1., 0.))
+        # num_of_nonzero = np.count_nonzero(np.where(counter_arr >= 1e-8, 1., 0.))
+        num_of_nonzero = np.count_nonzero(counter_arr)
     else:
-        num_of_nonzero = np.count_nonzero(np.where(amount_arr >= 1e-8, 1., 0.))
-    rank = int(proportion * num_of_nonzero)
+        # num_of_nonzero = np.count_nonzero(np.where(amount_arr >= 1e-8, 1., 0.))
+        num_of_nonzero = np.count_nonzero(amount_arr)
+    if 0. <= proportion <= 1.:
+        rank = int(proportion * num_of_nonzero)
+    else:
+        rank = proportion
     return np.partition(amount_arr.flatten(), -1 * rank)[-1 * rank]
 
 def collect_idx_of_dense_slices_along_axis(arr, axis, get_dense_slice_threshold = 0, nonzero_threshold = 1e-8, return_first_slice_when_empty = True):
@@ -1205,5 +1224,4 @@ def get_current_utc_timestamp():
 
 if __name__ == '__main__':
     pass
-    test_dict = {'hi':[1, {'hello': [3, 4]}], 'end': [3, 6]}
-    print(get_paths_to_leaves(test_dict))
+    print(get_proportional_ranked_value(np.array([0, 0, 0, 0, 0, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]), proportion = 0.3))
