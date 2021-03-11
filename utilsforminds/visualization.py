@@ -1390,7 +1390,7 @@ def deconv_smoothness_3D(nparr, deconv_list_of_displacement_and_proportion, mask
         nparr_deconv = (1. - mask_loc) * nparr_deconv + mask_loc * nparr
     return nparr_deconv
 
-def plotly_2D_contour(nparr, path_to_save, arr_filter = lambda x: x, vmin = None, vmax = None, layout_kwargs = None, figsize_ratio = None, contour_kwargs = None, scene_kwargs = None, axis_kwargs = None, colorbar_kwargs = None):
+def plotly_2D_contour(nparr, path_to_save, arr_filter = lambda x: x, vmin = None, vmax = None, layout_kwargs = None, figsize_ratio = None, contour_kwargs = None, scene_kwargs = None, axis_kwargs = None, colorbar_kwargs = None, fill_out_small_values_with_nan= True):
     """Plot contours from nparr.
 
     Parameters
@@ -1402,6 +1402,8 @@ def plotly_2D_contour(nparr, path_to_save, arr_filter = lambda x: x, vmin = None
     colorscale[0] = 'rgb(255,255,255)' ## Set white color for zero value.
 
     nparr_local = arr_filter(nparr)
+    if fill_out_small_values_with_nan: nparr_local = np.where(nparr_local < vmin, np.nan, nparr_local)
+
     vmin = max(0., nparr_local.min()) if vmin is None else vmin
     vmax = max(0., nparr_local.max()) if vmax is None else vmax
     ## Set local keywords arguments
