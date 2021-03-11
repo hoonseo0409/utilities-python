@@ -37,6 +37,8 @@ import plotly.graph_objs as graph_objs
 import plotly.graph_objs as go
 import plotly.tools as tls
 import plotly
+import pyvista as pv
+
 from utilsforminds.containers import merge_dictionaries
 
 from sklearn.cluster import OPTICS
@@ -1118,7 +1120,7 @@ def get_xy_axis_from_z(zaxis = 0):
     else:
         raise Exception(ValueError)
 
-def plot_3D_plotly(nparr_3D, path_to_save_static : str, do_save_html : bool = True, kinds_to_plot : list = None, marker_kwargs : dict = None, vmin = None, vmax = None, alpha_shape_kwargs : dict = None, points_decider = lambda x: x > 1e-8, observation_mask_nparr_3D = None, title= None, points_legends : dict = None, alpha_shape_legend = "", scene_kwargs : dict = None, xyz_tickers = None, axis_kwargs : dict = None, layout_kwargs : dict = None, figsize_ratio : dict = None, camera = None, showgrid = False, zeroline = True, showline = False, transparent_bacground = True, colorbar_kwargs = None, get_hovertext = None, alpha_shape_clustering = False):
+def plot_3D_plotly(nparr_3D, path_to_save_static : str, do_save_html : bool = True, grid_formatter_to_save_tri = None, kinds_to_plot : list = None, marker_kwargs : dict = None, vmin = None, vmax = None, alpha_shape_kwargs : dict = None, points_decider = lambda x: x > 1e-8, observation_mask_nparr_3D = None, title= None, points_legends : dict = None, alpha_shape_legend = "", scene_kwargs : dict = None, xyz_tickers = None, axis_kwargs : dict = None, layout_kwargs : dict = None, figsize_ratio : dict = None, camera = None, showgrid = False, zeroline = True, showline = False, transparent_bacground = True, colorbar_kwargs = None, get_hovertext = None, alpha_shape_clustering = False, use_pyvista_alphashape = False):
     """
     
     Parameters
@@ -1129,6 +1131,7 @@ def plot_3D_plotly(nparr_3D, path_to_save_static : str, do_save_html : bool = Tr
 
     assert(len(nparr_3D.shape) == 3)
     input_shape = deepcopy(nparr_3D.shape)
+    tri1 = None ## To check whether triangulation is already calculated.
     
     ## assign default values
     title_copied = "" if title is None else title
@@ -1190,8 +1193,22 @@ def plot_3D_plotly(nparr_3D, path_to_save_static : str, do_save_html : bool = Tr
                 marker_kwargs_copied = utilsforminds.containers.copy_dict_and_delete_element(marker_kwargs_local, ["colorbar"])
             plot_objects.append(graph_objs.Scatter3d(mode = 'markers', name = points_legend, x = x, y = y, z = z, marker = graph_objs.Marker(color = colors_arr, symbol = marker_symbol, **marker_kwargs_copied), hovertext = hovertext, hoverinfo = hoverinfo)) ## parameter, e.g. x, y, .. can be used in hovertemplate.
     if "alphashape" in kinds_to_plot:
+        if use_pyvista_alphashape:
+            alpha = 1. / alpha_shape_kwargs_local["alphahull"]
+            del alpha_shape_kwargs_local["alphahull"]
         mask_nparr_3D_alphashape = nparr_3D_filtered
         x, y, z = mask_nparr_3D_alphashape.nonzero()
+        # if do_normalize_coordinates:
+        #     def min_max_scale(arr):
+        #         max_ = arr.max()
+        #         min_ = arr.min()
+        #         if max_ > min_:
+        #             return (arr - min_) / (max_ - min_)
+        #         else:
+        #             return arr
+        #     x = min_max_scale(x)
+        #     y = min_max_scale(y)
+        #     z = min_max_scale(z)
         if get_hovertext is not None:
             hovertext = get_hovertext(x = x, y = y, z = z, value = nparr_3D[x, y, z])
             hoverinfo = "text"
@@ -1223,60 +1240,30 @@ def plot_3D_plotly(nparr_3D, path_to_save_static : str, do_save_html : bool = Tr
                 x_this_cluster = x[cluster_labels == cluster_label]
                 y_this_cluster = y[cluster_labels == cluster_label]
                 z_this_cluster = z[cluster_labels == cluster_label]
-                plot_objects.append(graph_objs.Mesh3d(name = alpha_shape_legend, x = x_this_cluster, y = y_this_cluster, z = z_this_cluster, hovertext = hovertext, hoverinfo = hoverinfo, intensity = utilsforminds.numpy_array.push_arr_to_range(nparr_3D[x_this_cluster, y_this_cluster, z_this_cluster], vmin = vmin, vmax = vmax), colorbar = marker_kwargs_local["colorbar"], showscale = showscale, **alpha_shape_kwargs_local))
+                if use_pyvista_alphashape:
+                    tri1, tri2, tri3 = get_triangles_of_alpha_shape(x_this_cluster, y_this_cluster, z_this_cluster, alpha = alpha)
+                    plot_objects.append(graph_objs.Mesh3d(name = alpha_shape_legend, x = x_this_cluster, y = y_this_cluster, z = z_this_cluster, hovertext = hovertext, hoverinfo = hoverinfo, intensity = utilsforminds.numpy_array.push_arr_to_range(nparr_3D[x_this_cluster, y_this_cluster, z_this_cluster], vmin = vmin, vmax = vmax), colorbar = marker_kwargs_local["colorbar"], showscale = showscale, i = tri1, j = tri2, k = tri3, **alpha_shape_kwargs_local))
+                else:
+                    plot_objects.append(graph_objs.Mesh3d(name = alpha_shape_legend, x = x_this_cluster, y = y_this_cluster, z = z_this_cluster, hovertext = hovertext, hoverinfo = hoverinfo, intensity = utilsforminds.numpy_array.push_arr_to_range(nparr_3D[x_this_cluster, y_this_cluster, z_this_cluster], vmin = vmin, vmax = vmax), colorbar = marker_kwargs_local["colorbar"], showscale = showscale, **alpha_shape_kwargs_local))
                 showscale = False ## Only the first plot has colorbar.
         else:
-            plot_objects.append(graph_objs.Mesh3d(name = alpha_shape_legend, x = x, y = y, z = z, hovertext = hovertext, hoverinfo = hoverinfo, intensity = utilsforminds.numpy_array.push_arr_to_range(nparr_3D[x, y, z], vmin = vmin, vmax = vmax), colorbar = marker_kwargs_local["colorbar"], **alpha_shape_kwargs_local))
-        # else: ## "colored-alphashape" in kinds_to_plot
-        #     # get min max values
-        #     # vmax, vmin = min_max_data(x, y, z)
-        #     # generate point cloud
-        #     cloud = pv.PolyData(np.array(list(zip(x, y, z)))) # set up the pyvista point cloud structure
-        #     #alphaparameter for alpha shape definition
-        #     # alpha = 0.5
-        #     #Extract the total simplicial structure of the alpha shape defined via pyvista
-        #     mesh = cloud.delaunay_3d(alpha= 1. / alpha_shape_kwargs_local["alphahull"])
-        #     #and select its simplexes of dimension 0, 1, 2, 3:
-        #     unconnected_points3d = []  #isolated 0-simplices
-        #     edges = [] # isolated edges, 1-simplices
-        #     faces = []  # triangles that are not faces of some tetrahedra
-        #     tetrahedra = []  # 3-simplices
-        #     for k  in mesh.offset:  #HERE WE CAN ACCESS mesh.offset
-        #         length = mesh.cells[k] 
-        #         if length == 2:
-        #             edges.append(list(mesh.cells[k+1: k+length+1]))
-        #         elif length ==3:
-        #             faces.append(list(mesh.cells[k+1: k+length+1]))
-        #         elif length == 4:
-        #             tetrahedra.append(list(mesh.cells[k+1: k+length+1]))
-        #         elif length == 1:
-        #             unconnected_points3d.append(mesh.cells[k+1])
-                
+            if use_pyvista_alphashape:
+                tri1, tri2, tri3 = get_triangles_of_alpha_shape(x, y, z, alpha = alpha)
+                plot_objects.append(graph_objs.Mesh3d(name = alpha_shape_legend, x = x, y = y, z = z, hovertext = hovertext, hoverinfo = hoverinfo, intensity = utilsforminds.numpy_array.push_arr_to_range(nparr_3D[x, y, z], vmin = vmin, vmax = vmax), colorbar = marker_kwargs_local["colorbar"], i = tri1, j = tri2, k = tri3, **alpha_shape_kwargs_local))
+            else:
+                plot_objects.append(graph_objs.Mesh3d(name = alpha_shape_legend, x = x, y = y, z = z, hovertext = hovertext, hoverinfo = hoverinfo, intensity = utilsforminds.numpy_array.push_arr_to_range(nparr_3D[x, y, z], vmin = vmin, vmax = vmax), colorbar = marker_kwargs_local["colorbar"], **alpha_shape_kwargs_local))
 
-        #     # get faces of the mesh
-        #     boundary_mesh = mesh.extract_geometry()
-        #     boundary_faces = boundary_mesh.faces.reshape((-1,4))[:, 1:]  
-        #     # get indices from mesh triangles
-        #     boundary_points= points3d[boundary_faces]
-        #     x1, y1, z1 = boundary_faces.T ## x1, y1, z1 is index of point of triangle, so there can be duplication, because it is combination of three indices.
-        #     # plot objects for every index
-        #     for index in range(len(boundary_faces)):
-        #         # plot the indivisual mesh triangles one at a time with color specified
-        #         plot_objects.append(go.Mesh3d(
-        #             #data points
-        #             x=x,
-        #             y=y,
-        #             z=z,
-        #             color = color_density(x=x[x1[index]], 
-        #                                 y=y[y1[index]], 
-        #                                 z=z[z1[index]], 
-        #                                 max_data=vmax, min_data=vmin),
-        #             # i, j and k give the vertices of triangles
-        #             i=x1[index:index+1],
-        #             j=y1[index:index+1],
-        #             k=z1[index:index+1],
-        #             showscale=True
-        #         ))
+        if grid_formatter_to_save_tri is not None and not alpha_shape_clustering: ## Saving clustered alpha-shape will be implemented in the future in case we need.
+            if tri1 is None:
+                tri1, tri2, tri3 = get_triangles_of_alpha_shape(x, y, z, alpha = alpha)
+            with open(utilsforminds.strings.format_extension(path_to_save_static, "tri"), "w") as text_file:
+                for triangle_idx in range(tri1.shape[0]):
+                    line = ""
+                    for triangle in [tri1, tri2, tri3]:
+                        for position, position_idx in zip([x, y, z], range(3)):
+                            line = line + f"{grid_formatter_to_save_tri(position = position[triangle[triangle_idx]], axis = position_idx)} "
+                    text_file.write(line[:-1] + "\n")
+            
 
     scene = graph_objs.Scene(xaxis = {"range": [0, input_shape[0]], "tickvals": xyz_tickers_copied["x"]["tickvals"], "ticktext": xyz_tickers_copied["x"]["ticktext"], "tickangle": -90, **axis_kwargs_local},
     yaxis = {"range": [0, input_shape[1]], "tickvals": xyz_tickers_copied["y"]["tickvals"], "ticktext":  xyz_tickers_copied["y"]["ticktext"], "tickangle": -90, **axis_kwargs_local},
@@ -1297,6 +1284,44 @@ def plot_3D_plotly(nparr_3D, path_to_save_static : str, do_save_html : bool = Tr
     if do_save_html:
         fig.write_html(utilsforminds.strings.format_extension(path_to_save_static, "html"))
     fig.write_image(path_to_save_static)
+
+def get_triangles_of_alpha_shape(x, y, z, alpha):
+    """
+    
+    Returns
+    -------
+    tri1, tri2, tri3: 1D numpy array of indices of points.
+        tri1[j], tri2[j], tri3[j] indicate the first, second, third point of j-th triangle. For example, (x[tri1[j]], y[tri1[j]], z[tri1[j]]) is the first point of triangle.
+    """
+    cloud = pv.PolyData(np.array(list(zip(x, y, z)))) # set up the pyvista point cloud structure
+    #Extract the total simplicial structure of the alpha shape defined via pyvista
+    # mesh = cloud.delaunay_3d(alpha= 1. / alpha_shape_kwargs_local["alphahull"]) ## (pyvista alpha = 1/alphahull; alphahull is an attribute of the Plotly Mesh3d)
+    mesh = cloud.delaunay_3d(alpha= alpha)
+
+    #and select its simplexes of dimension 0, 1, 2, 3:
+    unconnected_points3d = []  #isolated 0-simplices
+    edges = [] # isolated edges, 1-simplices
+    faces = []  # triangles that are not faces of some tetrahedra
+    tetrahedra = []  # 3-simplices
+    for k  in mesh.offset:  #HERE WE CAN ACCESS mesh.offset
+        length = mesh.cells[k] 
+        if length == 2:
+            edges.append(list(mesh.cells[k+1: k+length+1]))
+        elif length ==3:
+            faces.append(list(mesh.cells[k+1: k+length+1]))
+        elif length == 4:
+            tetrahedra.append(list(mesh.cells[k+1: k+length+1]))
+        elif length == 1:
+            unconnected_points3d.append(mesh.cells[k+1])
+        
+
+    # get faces of the mesh
+    boundary_mesh = mesh.extract_geometry()
+    boundary_faces = boundary_mesh.faces.reshape((-1,4))[:, 1:]  
+    # get indices from mesh triangles
+    # boundary_points= points3d[boundary_faces]
+    tri1, tri2, tri3 = boundary_faces.T ## x1, y1, z1 is index (in x, y, z) of point of triangle, so there can be duplication, because it is combination of three indices.
+    return tri1, tri2, tri3
 
 def get_new_position_from_origin_and_displacement(origin, displacement, whole_space_shape = None, off_limit_position = "boundary"):
     """
