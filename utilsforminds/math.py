@@ -199,17 +199,23 @@ def sparse_group_lasso_function_object(reg_factor = 1e5):
         return reg_factor * (group_norm + lasso)
     return sparse_group_lasso
 
-def mean(numbers):
-    assert(len(numbers) > 0)
-    return sum(numbers) / len(numbers)
+def mean(numbers, default = None):
+    if default is None:
+        assert(len(numbers) > 0)
+        return sum(numbers) / len(numbers)
+    else:
+        if len(numbers) > 0: return sum(numbers) / len(numbers)
+        else: return default
 
-def std(numbers):
-    assert(len(numbers) > 0)
-    mean_ = mean(numbers)
-    squared_diff_sum = 0.
-    for number in numbers:
-        squared_diff_sum += (number - mean_) ** 2.
-    return (squared_diff_sum / len(numbers)) ** 0.5
+def std(numbers, default = None):
+    if default is None or len(numbers) > 0:
+        mean_ = mean(numbers)
+        squared_diff_sum = 0.
+        for number in numbers:
+            squared_diff_sum += (number - mean_) ** 2.
+        return (squared_diff_sum / len(numbers)) ** 0.5
+    else:
+        return default
 
 def is_number(target):
     if isinstance(target, (int, float, complex)) and not isinstance(target, bool):
