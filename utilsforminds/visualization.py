@@ -642,7 +642,7 @@ def convert_3Darray_to_4DarrayRGB(arr_3D, vmin = None, vmax = None, cmap = plt.g
     arr_4D = np.delete(arr_4D, 3, 3)
     return arr_4D
 
-def plot_bar_charts(path_to_save : str, name_numbers : dict, xlabels : list = None, xlabels_for_names : dict = None, xtitle = None, ytitle = None, bar_width = 'auto', alpha = 0.8, colors_dict = None, format = 'eps', diagonal_xtickers = 0, name_errors = None, name_to_show_percentage = None, name_not_to_show_percentage_legend = None, fontsize = 10, title = None, figsize = None, ylim = None, fix_legend = True, plot_legend = True, save_tikz = False):
+def plot_bar_charts(path_to_save : str, name_numbers : dict, xlabels : list = None, xlabels_for_names : dict = None, xtitle = None, ytitle = None, bar_width = 'auto', alpha = 0.8, colors_dict = None, format = 'eps', diagonal_xtickers = 0, name_errors = None, name_to_show_percentage = None, name_not_to_show_percentage_legend = None, fontsize = 10, title = None, figsize = None, ylim = None, fix_legend = True, plot_legend = True, save_tikz = False, horizontal_bars = False):
     """Plot bars.
 
     For example, following the below case, enriched-original(for CNN)    enriched-original(for LR)    enriched-original(for SVR)    ...
@@ -665,7 +665,7 @@ def plot_bar_charts(path_to_save : str, name_numbers : dict, xlabels : list = No
     for check_target in list(filter(lambda x: True if x is not None else False, [name_numbers, name_errors])):
         for numbers_list in check_target.values():
             if any(pd.isna(numbers_list)): ## At least one element is nan/inf.
-                print(f"WARNING: This function plot_bar_charts encounters invalid numbers such as nan/inf, so will be passed and do nothing.")
+                print(f"WARNING: This function plot_bar_charts encounters invalid numbers such as nan/inf, so this call will be ignored and do nothing.")
                 return None
 
     names = list(name_numbers.keys())
@@ -722,59 +722,79 @@ def plot_bar_charts(path_to_save : str, name_numbers : dict, xlabels : list = No
     else:
         bar_width_ = 0.20 * (2 / len(name_numbers)) * bar_width
     index = np.arange(n_groups)
+
+    ## Horizontal bars support:
+    plt_dicts = {}
+    if not horizontal_bars:
+        plt_dicts["xlabel"] = plt.xlabel
+        plt_dicts["ylabel"] = plt.ylabel
+        plt_dicts["xticks"] = plt.xticks
+        plt_dicts["yticks"] = plt.yticks
+        plt_dicts["ylim"] = plt.ylim
+        plt_dicts["bar"] = plt.bar
+    else:
+        plt_dicts["xlabel"] = plt.ylabel
+        plt_dicts["ylabel"] = plt.xlabel
+        plt_dicts["xticks"] = plt.yticks
+        plt_dicts["yticks"] = plt.xticks
+        plt_dicts["ylim"] = plt.xlim
+        plt_dicts["bar"] = plt.barh
+
     # create plot
     if figsize is None:
         fig, ax = plt.subplots()
     else:
         fig, ax = plt.subplots(figsize = figsize)
+    
+    # if horizontal_bars: ax.invert_yaxis()  # labels read top-to-bottom
 
     rects_list = []
     index_copied = np.copy(index).astype(np.float)
     for name in names:
-        rects_list.append(plt.bar(index_copied, name_numbers[name], bar_width_, alpha = alpha, label = name + legend_prefix_dict[name], **plt_bars_kwargs_dict[name])) ## label will be label in legend
+        rects_list.append(plt_dicts["bar"](index_copied, name_numbers[name], bar_width_, alpha = alpha, label = name + legend_prefix_dict[name], **plt_bars_kwargs_dict[name])) ## label will be label in legend
         index_copied += bar_width_
 
     if title is not None:
         plt.title(title, fontsize = fontsize)
     if xtitle is not None:
-        plt.xlabel(xtitle, fontsize = fontsize)
+        plt_dicts["xlabel"](xtitle, fontsize = fontsize)
     if ytitle is not None:
-        plt.ylabel(ytitle, fontsize = fontsize)
+        plt_dicts["ylabel"](ytitle, fontsize = fontsize)
     # plt.title('Scores by person')
 
     if xlabels_copied is not None:
         if diagonal_xtickers == True:
-            plt.xticks(index + (bar_width_/2) * (len(name_numbers)-1), xlabels_copied, fontsize = fontsize, rotation = 45, ha = "right")
+            plt_dicts["xticks"](index + (bar_width_/2) * (len(name_numbers)-1), xlabels_copied, fontsize = fontsize, rotation = 45, ha = "right")
         elif diagonal_xtickers == False:
-            plt.xticks(index + (bar_width_/2) * (len(name_numbers)-1), xlabels_copied, fontsize = fontsize)
+            plt_dicts["xticks"](index + (bar_width_/2) * (len(name_numbers)-1), xlabels_copied, fontsize = fontsize)
         else:
-            plt.xticks(index + (bar_width_/2) * (len(name_numbers)-1), xlabels_copied, fontsize = fontsize, rotation = diagonal_xtickers, ha = "right")
+            plt_dicts["xticks"](index + (bar_width_/2) * (len(name_numbers)-1), xlabels_copied, fontsize = fontsize, rotation = diagonal_xtickers, ha = "right")
         if fix_legend:
             numbers_tot = []
             for numbers in name_numbers.values():
                 numbers_tot += numbers
-            plt.ylim([0., np.max(numbers_tot) * (1. + 0.1 * len(name_numbers))])
+            plt_dicts["ylim"]([0., np.max(numbers_tot) * (1. + 0.1 * len(name_numbers))])
     
     if xlabels_for_names is not None:
         local_index = np.arange(len(name_numbers)) * bar_width_
         for i in range(0, n_groups):
             if diagonal_xtickers == True:
-                plt.xticks(local_index + bar_width_ * 0. + i, xlabels_for_names_list, fontsize = fontsize, rotation = 45, ha = "right")
+                plt_dicts["xticks"](local_index + bar_width_ * 0. + i, xlabels_for_names_list, fontsize = fontsize, rotation = 45, ha = "right")
             elif diagonal_xtickers == False:
-                plt.xticks(local_index + bar_width_ * 0. + i, xlabels_for_names_list, fontsize = fontsize)
+                plt_dicts["xticks"](local_index + bar_width_ * 0. + i, xlabels_for_names_list, fontsize = fontsize)
             else:
-                plt.xticks(local_index + bar_width_ * 0. + i, xlabels_for_names_list, fontsize = fontsize, rotation = diagonal_xtickers, ha = "right")
+                plt_dicts["xticks"](local_index + bar_width_ * 0. + i, xlabels_for_names_list, fontsize = fontsize, rotation = diagonal_xtickers, ha = "right")
     
     if ylim is not None:
         assert(len(ylim) == 2)
         if ylim[1] == None:
-            plt.ylim(bottom = ylim[0])
+            plt_dicts["ylim"](bottom = ylim[0])
         elif ylim[0] == None:
-            plt.ylim(top = ylim[1])
+            plt_dicts["ylim"](top = ylim[1])
         else:
-            plt.ylim(ylim)
+            plt_dicts["ylim"](ylim)
     
-    plt.yticks(fontsize = fontsize * 0.6)
+    plt_dicts["yticks"](fontsize = fontsize * 0.6)
         
     if plot_legend:
         plt.legend(fontsize = fontsize * 0.6)
@@ -1425,7 +1445,7 @@ def plotly_2D_contour(nparr, path_to_save, arr_filter = lambda x: x, vmin = None
     
     fig.write_image(path_to_save)
 
-def plot_ROC(path_to_save, y_true, list_of_y_pred, list_of_model_names = None, list_of_class_names = None, title = 'Receiver operating characteristic', xlabel = 'False Positive Rate', ylabel = 'True Positive Rate', colors = None, linewidth = 1, extension = "eps"):
+def plot_ROC(path_to_save, y_true, list_of_y_pred, list_of_model_names = None, list_of_class_names = None, title = 'Receiver operating characteristic', xlabel = 'False Positive Rate', ylabel = 'True Positive Rate', colors = None, linewidth = 1, extension = "eps", fontsize_ratio = 1.0):
     n_classes = y_true.shape[1]
     if colors is None: colors = cycle(["red", "navy", "lightgreen", "teal", "violet", "green", "orange", "blue", "coral", "yellowgreen", "sienna", "olive", "maroon", "goldenrod", "darkblue", "orchid", "crimson"])
     if list_of_model_names is None:
@@ -1495,10 +1515,10 @@ def plot_ROC(path_to_save, y_true, list_of_y_pred, list_of_model_names = None, l
     plt.plot([0, 1], [0, 1], lw= linewidth, linestyle='--')
     plt.xlim([0.0, 1.0])
     plt.ylim([0.0, 1.05])
-    plt.xlabel(xlabel)
-    plt.ylabel(ylabel)
-    plt.title(title)
-    plt.legend(loc="lower right")
+    plt.xlabel(xlabel, fontsize= 15 * fontsize_ratio)
+    plt.ylabel(ylabel, fontsize= 15 * fontsize_ratio)
+    plt.title(title, fontsize= 2 * fontsize_ratio)
+    plt.legend(loc="lower right", fontsize= 15 * fontsize_ratio)
     plt.savefig(path_to_save + "." + extension, format = extension)
 
 if __name__ == '__main__':
