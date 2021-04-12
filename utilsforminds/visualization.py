@@ -27,6 +27,7 @@ from itertools import cycle
 # from mayavi import mlab # see install manual + brew install vtk
 # from mayavi.api import Engine
 # import mayavi.tools.pipeline
+from tqdm import tqdm
 from scipy import ndimage
 import moviepy.editor as mpy
 from copy import deepcopy
@@ -1323,7 +1324,7 @@ def get_triangles_of_alpha_shape(x, y, z, alpha):
     edges = [] # isolated edges, 1-simplices
     faces = []  # triangles that are not faces of some tetrahedra
     tetrahedra = []  # 3-simplices
-    for k  in mesh.offset:  #HERE WE CAN ACCESS mesh.offset
+    for k  in tqdm(mesh.offset):  #HERE WE CAN ACCESS mesh.offset
         length = mesh.cells[k] 
         if length == 2:
             edges.append(list(mesh.cells[k+1: k+length+1]))
