@@ -19,10 +19,13 @@ from mpl_toolkits.mplot3d import Axes3D
 from mpl_toolkits.mplot3d.axis3d import Axis
 
 import os
-import utilsforminds.helpers as helpers
 import random
 import numpy as np
+
 import utilsforminds
+import utilsforminds.decorators as decorators
+import utilsforminds.helpers as helpers
+
 from itertools import cycle
 # from mayavi import mlab # see install manual + brew install vtk
 # from mayavi.api import Engine
@@ -50,6 +53,7 @@ from sklearn.multiclass import OneVsRestClassifier
 from sklearn.metrics import roc_auc_score
 
 from scipy import interp
+# from meshplex import MeshTri
 
 axis_rotation_dict = {0: 0, 1: 0, 2: 0}
 axis_name_dict = {0: 'Easting', 1: 'Northing', 2: 'Elevation'}
@@ -1091,7 +1095,7 @@ def plot_top_bars_with_rows(data_df, path_to_save : str, color_column = None, co
         tikzplotlib.save(utilsforminds.visualization.format_path_extension(path_to_save))
     plt.clf()
 
-def plot_xy_lines(x, y_dict_list : list, path_to_save : str, title = None, x_label = None, y_label = None, figsize= (17, 5), label_fontsize = 20, format = 'eps', save_tikz = False):
+def plot_xy_lines(x, y_dict_list : list, path_to_save : str, title = None, x_label = None, y_label = None, figsize= (17, 5), label_fontsize = 20, font_size_proportion = 1.0, showlegend= True, format = 'eps', save_tikz = False):
     """
     
     Examples
@@ -1104,7 +1108,7 @@ def plot_xy_lines(x, y_dict_list : list, path_to_save : str, title = None, x_lab
 
     y_dict_list_copied = deepcopy(y_dict_list)
     for y_dict_idx in range(len(y_dict_list_copied)):
-        for required_key in ["label", "ydata"]:
+        for required_key in ["ydata"]:
             assert(required_key in y_dict_list_copied[y_dict_idx].keys())
         y_dict_list_copied[y_dict_idx]["ydata"] = np.array(y_dict_list_copied[y_dict_idx]["ydata"])
         assert(y_dict_list_copied[y_dict_idx]["ydata"].shape == x_arr_copied.shape)
@@ -1116,13 +1120,17 @@ def plot_xy_lines(x, y_dict_list : list, path_to_save : str, title = None, x_lab
         y_dict_no_ydata.pop("ydata", None)
         plt.plot(x_arr_copied, y_dict["ydata"], **y_dict_no_ydata)
 
-    plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+    if showlegend: plt.legend(loc='center left', bbox_to_anchor=(1, 0.5), fontsize= 17 * font_size_proportion)
     if title is not None:
-        plt.title(title, fontsize = int(label_fontsize * 1.5))
+        plt.title(title, fontsize = int(label_fontsize * 1.5 * font_size_proportion))
     if x_label is not None:
-        plt.xlabel(x_label, fontsize = label_fontsize)
+        plt.xlabel(x_label, fontsize = label_fontsize * font_size_proportion)
     if y_label is not None:
-        plt.ylabel(y_label, fontsize = label_fontsize)
+        plt.ylabel(y_label, fontsize = label_fontsize * font_size_proportion)
+    plt.xticks(fontsize= 14 * font_size_proportion)
+    plt.yticks(fontsize= 14 * font_size_proportion)
+
+    plt.tight_layout()
     plt.savefig(path_to_save, format = format)
     if save_tikz:
         tikzplotlib.save(utilsforminds.visualization.format_path_extension(path_to_save))
@@ -1140,7 +1148,8 @@ def get_xy_axis_from_z(zaxis = 0):
     else:
         raise Exception(ValueError)
 
-def plot_3D_plotly(nparr_3D, path_to_save_static : str, do_save_html : bool = True, grid_formatter_to_save_tri = None, kinds_to_plot : list = None, marker_kwargs : dict = None, vmin = None, vmax = None, alpha_shape_kwargs : dict = None, points_decider = lambda x: x > 1e-8, observation_mask_nparr_3D = None, title= None, points_legends : dict = None, alpha_shape_legend = "", scene_kwargs : dict = None, xyz_tickers = None, axis_kwargs : dict = None, layout_kwargs : dict = None, figsize_ratio : dict = None, camera = None, showgrid = False, zeroline = True, showline = False, transparent_bacground = True, colorbar_kwargs = None, get_hovertext = None, alpha_shape_clustering = False, use_pyvista_alphashape = False):
+@decorators.grid_of_functions(param_to_grid= "alphahull", param_formatter_dict= {"path_to_save_static": lambda **kwargs: kwargs["path_to_save_static"].split(".")[0] + "_" + str(kwargs["alphahull"] * 100)}, grid_condition= lambda **kwargs: True if ("kinds_to_plot" in kwargs.keys() and "alphashape" in kwargs["kinds_to_plot"]) else False)
+def plot_3D_plotly(nparr_3D, path_to_save_static : str, do_save_html : bool = True, grid_formatter_to_save_tri = None, save_info_txt = False, kinds_to_plot : list = None, marker_kwargs : dict = None, vmin = None, vmax = None, alpha_shape_kwargs : dict = None, alphahull: float = 0.65, points_decider = lambda x: x > 1e-8, observation_mask_nparr_3D = None, title= None, points_legends : dict = None, alpha_shape_legend = "alpha-shape", scene_kwargs : dict = None, xyz_tickers = None, axis_kwargs : dict = None, layout_kwargs : dict = None, figsize_ratio : dict = None, camera = None, showgrid = False, zeroline = True, showline = False, transparent_bacground = True, colorbar_kwargs = None, get_hovertext = None, alpha_shape_clustering = False, use_pyvista_alphashape = False, additional_gos = None, coordinate_info= None, layout_legend = None):
     """
     
     Parameters
@@ -1171,10 +1180,12 @@ def plot_3D_plotly(nparr_3D, path_to_save_static : str, do_save_html : bool = Tr
     marker_kwargs_local = utilsforminds.containers.merge_dictionaries([marker_kwargs_local, marker_kwargs])
     # marker_kwargs_local["colorbar"] = utilsforminds.containers.merge_dictionaries([{"title": "colorbar", "xpad": 0.0}, colorbar_kwargs])
     marker_kwargs_local["colorbar"] = utilsforminds.containers.merge_dictionaries([{"title": "colorbar"}, colorbar_kwargs])
-    alpha_shape_kwargs_local = utilsforminds.containers.merge_dictionaries([{"color": "orange", "opacity": 0.3}, alpha_shape_kwargs])
+    alpha_shape_kwargs_local = utilsforminds.containers.merge_dictionaries([{"color": "orange", "opacity": 0.3, "showlegend": True}, alpha_shape_kwargs])
+    alpha_shape_kwargs_local.update({"alphahull": alphahull})
     points_legends_local = utilsforminds.containers.merge_lists([["Added to Mask", "Mask"], points_legends])
     scene_kwargs_local = utilsforminds.containers.merge_dictionaries([{"xaxis_title": "x", "yaxis_title": "y", "zaxis_title": "z"}, scene_kwargs])
     axis_kwargs_local = utilsforminds.containers.merge_dictionaries([{"showgrid": showgrid, "zeroline": zeroline, "showline": showline, "zerolinecolor": "black", "backgroundcolor": "rgb(255, 255, 255)"}, axis_kwargs])
+    layout_legend_local = utilsforminds.containers.merge_dictionaries([dict(orientation= "h"), layout_legend])
 
     if xyz_tickers is None:
         xyz_tickers_copied = {
@@ -1189,9 +1200,11 @@ def plot_3D_plotly(nparr_3D, path_to_save_static : str, do_save_html : bool = Tr
     layout_kwargs_local = {} if layout_kwargs is None else deepcopy(layout_kwargs)
 
     camera_copied = merge_dictionaries([dict(up=dict(x=0, y=0, z=1), center=dict(x=0, y=0, z=0), eye=dict(x=1.25, y=1.25, z=1.25), projection= dict(type= "orthographic")), camera]) ## projection= dict(type= "orthographic") gives vertial elevation axis, which looks professinal for geologist.
+
+    if additional_gos is None: additional_gos = []
     
     ## Generates objects to plot
-    plot_objects = []
+    plot_objects = deepcopy(additional_gos)
     nparr_3D_filtered = np.where(points_decider(nparr_3D), 1., 0.)
     if observation_mask_nparr_3D is None:
         observation_mask_nparr_3D_added = np.zeros(input_shape)
@@ -1211,10 +1224,10 @@ def plot_3D_plotly(nparr_3D, path_to_save_static : str, do_save_html : bool = Tr
                 marker_kwargs_copied = marker_kwargs_local
             else:
                 marker_kwargs_copied = utilsforminds.containers.copy_dict_and_delete_element(marker_kwargs_local, ["colorbar"])
-            plot_objects.append(graph_objs.Scatter3d(mode = 'markers', name = points_legend, x = x, y = y, z = z, marker = graph_objs.Marker(color = colors_arr, symbol = marker_symbol, **marker_kwargs_copied), hovertext = hovertext, hoverinfo = hoverinfo)) ## parameter, e.g. x, y, .. can be used in hovertemplate.
+            plot_objects.append(graph_objs.Scatter3d(mode = 'markers', name = points_legend, x = x, y = y, z = z, marker = graph_objs.Marker(color = colors_arr, symbol = marker_symbol, **marker_kwargs_copied), hovertext = hovertext, hoverinfo = hoverinfo, showlegend = True)) ## parameter, e.g. x, y, .. can be used in hovertemplate.
     if "alphashape" in kinds_to_plot:
         if use_pyvista_alphashape:
-            alpha = 1. / alpha_shape_kwargs_local["alphahull"]
+            alpha = 1. / max(alpha_shape_kwargs_local["alphahull"], 1e-16)
             del alpha_shape_kwargs_local["alphahull"]
         mask_nparr_3D_alphashape = nparr_3D_filtered
         x, y, z = mask_nparr_3D_alphashape.nonzero()
@@ -1261,21 +1274,21 @@ def plot_3D_plotly(nparr_3D, path_to_save_static : str, do_save_html : bool = Tr
                 y_this_cluster = y[cluster_labels == cluster_label]
                 z_this_cluster = z[cluster_labels == cluster_label]
                 if use_pyvista_alphashape:
-                    tri1, tri2, tri3 = get_triangles_of_alpha_shape(x_this_cluster, y_this_cluster, z_this_cluster, alpha = alpha)
+                    tri1, tri2, tri3, volume = get_triangles_of_alpha_shape(x_this_cluster, y_this_cluster, z_this_cluster, alpha = alpha)
                     plot_objects.append(graph_objs.Mesh3d(name = alpha_shape_legend, x = x_this_cluster, y = y_this_cluster, z = z_this_cluster, hovertext = hovertext, hoverinfo = hoverinfo, intensity = utilsforminds.numpy_array.push_arr_to_range(nparr_3D[x_this_cluster, y_this_cluster, z_this_cluster], vmin = vmin, vmax = vmax), colorbar = marker_kwargs_local["colorbar"], showscale = showscale, i = tri1, j = tri2, k = tri3, **alpha_shape_kwargs_local))
                 else:
                     plot_objects.append(graph_objs.Mesh3d(name = alpha_shape_legend, x = x_this_cluster, y = y_this_cluster, z = z_this_cluster, hovertext = hovertext, hoverinfo = hoverinfo, intensity = utilsforminds.numpy_array.push_arr_to_range(nparr_3D[x_this_cluster, y_this_cluster, z_this_cluster], vmin = vmin, vmax = vmax), colorbar = marker_kwargs_local["colorbar"], showscale = showscale, **alpha_shape_kwargs_local))
                 showscale = False ## Only the first plot has colorbar.
         else:
             if use_pyvista_alphashape:
-                tri1, tri2, tri3 = get_triangles_of_alpha_shape(x, y, z, alpha = alpha)
+                tri1, tri2, tri3, volume = get_triangles_of_alpha_shape(x, y, z, alpha = alpha)
                 plot_objects.append(graph_objs.Mesh3d(name = alpha_shape_legend, x = x, y = y, z = z, hovertext = hovertext, hoverinfo = hoverinfo, intensity = utilsforminds.numpy_array.push_arr_to_range(nparr_3D[x, y, z], vmin = vmin, vmax = vmax), colorbar = marker_kwargs_local["colorbar"], i = tri1, j = tri2, k = tri3, **alpha_shape_kwargs_local))
             else:
                 plot_objects.append(graph_objs.Mesh3d(name = alpha_shape_legend, x = x, y = y, z = z, hovertext = hovertext, hoverinfo = hoverinfo, intensity = utilsforminds.numpy_array.push_arr_to_range(nparr_3D[x, y, z], vmin = vmin, vmax = vmax), colorbar = marker_kwargs_local["colorbar"], **alpha_shape_kwargs_local))
 
         if grid_formatter_to_save_tri is not None and not alpha_shape_clustering: ## Saving clustered alpha-shape will be implemented in the future in case we need.
             if tri1 is None:
-                tri1, tri2, tri3 = get_triangles_of_alpha_shape(x, y, z, alpha = alpha)
+                tri1, tri2, tri3, volume = get_triangles_of_alpha_shape(x, y, z, alpha = alpha)
             with open(utilsforminds.strings.format_extension(path_to_save_static, "tri"), "w") as text_file:
                 for triangle_idx in range(tri1.shape[0]):
                     line = ""
@@ -1283,6 +1296,29 @@ def plot_3D_plotly(nparr_3D, path_to_save_static : str, do_save_html : bool = Tr
                         for position, position_idx in zip([x, y, z], range(3)):
                             line = line + f"{grid_formatter_to_save_tri(position = position[triangle[triangle_idx]], axis = position_idx)} "
                     text_file.write(line[:-1] + "\n")
+        
+        if save_info_txt and use_pyvista_alphashape and not alpha_shape_clustering: ## calculate and print alpha-shape information.
+            ## calculate the volume of alpha-shape, https://stackoverflow.com/questions/61638966/find-volume-of-object-given-a-triangular-mesh
+            if coordinate_info is not None: 
+                x_physical, y_physical, z_physical= x * coordinate_info[0]["grid"] + coordinate_info[0]["min"], y * coordinate_info[1]["grid"] + coordinate_info[1]["min"], z * coordinate_info[2]["grid"] + coordinate_info[2]["min"]
+                volume = volume * coordinate_info[0]["grid"] * coordinate_info[1]["grid"] * coordinate_info[2]["grid"]
+            else:
+                x_physical, y_physical, z_physical= x, y, z
+
+            faces= np.concatenate([[tri1], [tri2], [tri3]], axis=0).T
+            verts= np.concatenate([[x_physical], [y_physical], [z_physical]], axis=0).T
+            # volume = sum(MeshTri(verts, faces).cell_volumes) ## analyze mesh: https://github.com/mikedh/trimesh
+
+            surface_area = 0.
+            indices_of_unique_vertices = []
+            for triangle_idx in range(tri1.shape[0]):
+                x1, y1, z1, x2, y2, z2, x3, y3, z3 = x_physical[tri1[triangle_idx]], y_physical[tri1[triangle_idx]], z_physical[tri1[triangle_idx]], x_physical[tri2[triangle_idx]], y_physical[tri2[triangle_idx]], z_physical[tri2[triangle_idx]], x_physical[tri3[triangle_idx]], y_physical[tri3[triangle_idx]], z_physical[tri3[triangle_idx]]
+                surface_area += (1/2) * ((x2 * y1 - x3 * y1 - x1 * y2 + x3 * y2 + x1 * y3 - x2 * y3) ** 2. + (x2 * z1 - x3 * z1 - x1 * z2 + x3 * z2 + x1 * z3 - x2 * z3) ** 2. + (y2 * z1 - y3 * z1 - y1 * z2 + y3 * z2 + y1 * z3 - y2 * z3) ** 2.) ** 0.5 ## https://stackoverflow.com/questions/59597399/area-of-triangle-using-3-sets-of-coordinates and https://math.stackexchange.com/questions/128991/how-to-calculate-the-area-of-a-3d-triangle
+                for triangles in [tri1, tri2, tri3]:
+                    if triangles[triangle_idx] not in indices_of_unique_vertices: indices_of_unique_vertices.append(triangles[triangle_idx])
+            unique_amounts = nparr_3D[x[indices_of_unique_vertices], y[indices_of_unique_vertices], z[indices_of_unique_vertices]]
+            with open(utilsforminds.strings.format_extension(path_to_save_static, "txt"), "w") as text_file:
+                text_file.write(f"total grade: {np.sum(unique_amounts)}\navg grade: {np.mean(unique_amounts)}\nnumber of points: {unique_amounts.shape[0]}\nvolume: {volume}\nsurface area: {surface_area}\nnumber of triangulations: {tri1.shape[0]}\ngrade per volume: {np.sum(unique_amounts) / max(volume, 1e-8)}")
             
 
     scene = graph_objs.Scene(xaxis = {"range": [0, input_shape[0]], "tickvals": xyz_tickers_copied["x"]["tickvals"], "ticktext": xyz_tickers_copied["x"]["ticktext"], "tickangle": -90, **axis_kwargs_local},
@@ -1299,11 +1335,12 @@ def plot_3D_plotly(nparr_3D, path_to_save_static : str, do_save_html : bool = Tr
         fig.update_layout(scene_aspectmode='manual', scene_aspectratio=figsize_ratio) ## scene_aspectmode='auto' is default argument
     if transparent_bacground:
         fig.update_layout(paper_bgcolor = 'rgba(0,0,0,0)', plot_bgcolor = 'rgba(0,0,0,0)')
+    fig.update_layout(legend= layout_legend_local)
 
     ## Save the result
     if do_save_html:
         fig.write_html(utilsforminds.strings.format_extension(path_to_save_static, "html"))
-    fig.write_image(path_to_save_static)
+    fig.write_image(utilsforminds.strings.format_extension(path_to_save_static, "png"))
 
 def get_triangles_of_alpha_shape(x, y, z, alpha):
     """
@@ -1333,7 +1370,6 @@ def get_triangles_of_alpha_shape(x, y, z, alpha):
             tetrahedra.append(list(mesh.cells[k+1: k+length+1]))
         elif length == 1:
             unconnected_points3d.append(mesh.cells[k+1])
-        
 
     # get faces of the mesh
     boundary_mesh = mesh.extract_geometry()
@@ -1341,7 +1377,7 @@ def get_triangles_of_alpha_shape(x, y, z, alpha):
     # get indices from mesh triangles
     # boundary_points= points3d[boundary_faces]
     tri1, tri2, tri3 = boundary_faces.T ## x1, y1, z1 is index (in x, y, z) of point of triangle, so there can be duplication, because it is combination of three indices.
-    return tri1, tri2, tri3
+    return tri1, tri2, tri3, boundary_mesh.volume
 
 def get_new_position_from_origin_and_displacement(origin, displacement, whole_space_shape = None, off_limit_position = "boundary"):
     """

@@ -1,8 +1,10 @@
+from copy import deepcopy
 import utilsforminds
 import functools
 import numpy as np
 import utilsforminds.helpers as helpers
 from inspect import signature
+from utilsforminds.containers import Grid
 
 def signature_multi_binding(new_old_signature_dict):
     def decorator(func):
@@ -69,14 +71,95 @@ def check_bad_values_in_numpy_arr(check_list = ['nan', 'inf']):
         return wrapper_check_bad_values_in_numpy_arr
     return decorator_check_bad_values_in_numpy_arr
 
+def grid_of_functions(param_to_grid, param_formatter_dict = None, grid_condition = None):
+    """Deep copy kwargs.
+    
+    Examples 1
+    ----------
+    test_grid = Grid(1, 2, 4)
+
+    @grid_of_functions(param_to_grid= "number", param_formatter_dict= {"path": lambda **kwargs: kwargs["path"] + str(kwargs["number"])})
+    def test_func(path = "here.txt", number = 4, dummy = 77):
+        print(path)
+        print(number + 5)
+        print(dummy)
+        return number
+
+    result = test_func(path = "here.txt", number = test_grid, dummy = 77)
+    print(result)
+
+    >>> here.txt1
+    6
+    77
+    here.txt2
+    7
+    77
+    here.txt4
+    9
+    77
+    [1, 2, 4]
+
+    Examples 2
+    ----------
+    test_grid = Grid(1, 2, 4)
+
+    @grid_of_functions(param_to_grid= "number", param_formatter_dict= {"path": lambda **kwargs: kwargs["path"] + str(kwargs["number"])})
+    def test_func(path = "here.txt", number = 4, dummy = 77):
+        print(path)
+        print(number + 5)
+        print(dummy)
+        return number
+
+    result = test_func()
+    print(result)
+    >>> here.txt
+    9
+    77
+    4
+    """
+
+    # if not isinstance(list_of_params_to_grid, list):
+    #     list_of_params_to_grid = [list_of_params_to_grid]
+    if param_formatter_dict is None:
+        param_formatter_dict = {}
+    if grid_condition is None:
+        grid_condition = lambda **kwargs: True
+    def decorator_grids(func):
+        @functools.wraps(func)
+        def wrapper_grids(*args, **kwargs):
+            if param_to_grid in kwargs.keys() and len(param_formatter_dict) > 0 and any([param in kwargs.keys() for param in param_formatter_dict.keys()]) and (isinstance(kwargs[param_to_grid], Grid)) and grid_condition(**kwargs):
+                kwargs_copy = deepcopy(kwargs)
+                returns_list = []
+                for component in kwargs[param_to_grid].list_of_components:
+                    kwargs_copy[param_to_grid] = component
+                    for param in param_formatter_dict.keys(): 
+                        kwargs_copy[param] = deepcopy(kwargs[param])
+                    for param in param_formatter_dict.keys():
+                        kwargs_copy[param] = param_formatter_dict[param](**kwargs_copy)
+                    returns_list.append(func(*args, **kwargs_copy))
+                return returns_list
+            else:
+                return func(*args, **kwargs)
+        return wrapper_grids
+    return decorator_grids
+
+
+
+
 if __name__ == "__main__":
     pass
-    # @check_bad_values_in_numpy_arr()
-    # def add_arr(arr_1, arr_2, name):
-    #     print(name)
-    #     return arr_1 + arr_2
+    # test_dict = {"a": 3, "b": 5}
+    # print(test_dict.update({"a": 9}))
+    # print(test_dict)
 
-    # test_arr_1 = np.ones((3, 3))
-    # test_arr_2 = np.ones((3, 3)) + 2.
-    # # test_arr_2[1, 2] = np.inf
-    # print(add_arr(test_arr_1, name = 'hello', arr_2= test_arr_2))
+    test_grid = Grid(1, 2, 4)
+
+    @grid_of_functions(param_to_grid= "number", param_formatter_dict= {"path": lambda **kwargs: kwargs["path"] + str(kwargs["number"])})
+    def test_func(path = "here.txt", number = 4, dummy = 77):
+        print(path)
+        print(number + 5)
+        print(dummy)
+        return number
+
+    result = test_func()
+    print(result)
