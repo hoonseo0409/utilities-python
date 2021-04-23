@@ -1354,7 +1354,7 @@ def get_triangles_of_alpha_shape(x, y, z, alpha):
     cloud = pv.PolyData(np.array(list(zip(x, y, z)))) # set up the pyvista point cloud structure
     #Extract the total simplicial structure of the alpha shape defined via pyvista
     # mesh = cloud.delaunay_3d(alpha= 1. / alpha_shape_kwargs_local["alphahull"]) ## (pyvista alpha = 1/alphahull; alphahull is an attribute of the Plotly Mesh3d)
-    mesh = cloud.delaunay_3d(alpha= alpha)
+    mesh = cloud.delaunay_3d(alpha= alpha, progress_bar= True)
 
     #and select its simplexes of dimension 0, 1, 2, 3:
     unconnected_points3d = []  #isolated 0-simplices
@@ -1466,15 +1466,19 @@ def plotly_2D_contour(nparr, path_to_save, arr_filter = lambda x: x, vmin = None
     ## Set local keywords arguments
     axis_kwargs_local = {} if axis_kwargs is None else deepcopy(axis_kwargs)
     # scene_kwargs_local = merge_dictionaries([{"xaxis": {"title": "x", "range": [0, nparr.shape[0]], "tickvals": range(nparr.shape[0] // 5, nparr.shape[0], nparr.shape[0] // 5), "ticktext": range(nparr.shape[0] // 5, nparr.shape[0], nparr.shape[0] // 5), **axis_kwargs_local}, "yaxis": {"title": "y", "range": [0, nparr.shape[1]], "tickvals": range(nparr.shape[1] // 5, nparr.shape[1], nparr.shape[1] // 5), "ticktext": range(nparr.shape[1] // 5, nparr.shape[1], nparr.shape[1] // 5), **axis_kwargs_local}}, scene_kwargs])
-    scene_kwargs_local = merge_dictionaries([{}, scene_kwargs])
+    scene_kwargs_local = merge_dictionaries([dict(), scene_kwargs])
     colorbar_kwargs_local = merge_dictionaries([{"titlefont": {"size": 30}}, colorbar_kwargs])
     contour_kwargs_local = merge_dictionaries([{"colorscale": colorscale, "colorbar": colorbar_kwargs_local}, contour_kwargs]) ## "contours": {"start": vmin, "end": vmax},
-    layout_kwargs_local = merge_dictionaries([{"title": None, "xaxis": {"title": "x", "tickvals" : [i * (nparr.shape[1] // 5) for i in range(1, 5)], "ticktext": [i * (nparr.shape[1] // 5) for i in range(1, 5)]}, "yaxis": {"title": "y", "tickvals" : [i * (nparr.shape[0] // 5) for i in range(1, 5)], "ticktext": [i * (nparr.shape[0] // 5) for i in range(1, 5)]}}, layout_kwargs]) ## 0 axis goes to vertical, 1 axis goes to horizontal, do not use range parameter as it create weird margins.
+    layout_kwargs_local = merge_dictionaries([{"title": None, "xaxis": {"title": "x", "tickvals" : [i * (nparr.shape[1] // 5) for i in range(1, 5)], "ticktext": [i * (nparr.shape[1] // 5) for i in range(1, 5)]}, "yaxis": {"title": "y", "tickvals" : [i * (nparr.shape[0] // 5) for i in range(1, 5)], "ticktext": [i * (nparr.shape[0] // 5) for i in range(1, 5)]}}, layout_kwargs]) ## 0 axis goes to vertical, 1 axis goes to horizontal, do not use range parameter as it create weird margins
 
     contour = go.Contour(z = nparr_local, **contour_kwargs_local)
     scene = go.Scene(**scene_kwargs_local)
     layout = go.Layout(scene = scene, **layout_kwargs_local)
     fig = go.Figure(data = contour, layout = layout)
+
+    ## https://plotly.com/python/axes/#styling-and-coloring-axes-and-the-zeroline , https://stackoverflow.com/questions/42096292/outline-plot-area-in-plotly-in-python
+    fig.update_xaxes(showline=True, linewidth=2, linecolor='black', mirror = True)
+    fig.update_yaxes(showline=True, linewidth=2, linecolor='black', mirror = True)
 
     if figsize_ratio is not None:
         raise Exception(NotImplementedError)
