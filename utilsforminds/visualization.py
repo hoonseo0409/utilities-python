@@ -1558,8 +1558,9 @@ def plot_ROC(path_to_save, y_true, list_of_y_pred, list_of_model_names = None, l
     plt.ylim([0.0, 1.05])
     plt.xlabel(xlabel, fontsize= 15 * fontsize_ratio)
     plt.ylabel(ylabel, fontsize= 15 * fontsize_ratio)
-    plt.title(title, fontsize= 2 * fontsize_ratio)
+    if title is not None: plt.title(title, fontsize= 10 * fontsize_ratio)
     plt.legend(loc="lower right", fontsize= 15 * fontsize_ratio)
+    plt.tight_layout()
     plt.savefig(path_to_save + "." + extension, format = extension)
 
 if __name__ == '__main__':
