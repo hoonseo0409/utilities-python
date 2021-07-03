@@ -457,7 +457,7 @@ def compressNparrLst(lst):
 #     movedDims = list(range(len(dims)))
 #     return np.moveaxis(npArr, dims, movedDims)[tuple(idxs)]
 
-def getSlicesV2(npArr, dimIdxDict):
+def getSlicesV2(npArr, dimIdxDict, assign = None):
     """Get slices given tuple.
 
     ref: https://stackoverflow.com/questions/39474396/building-a-tuple-containing-colons-to-be-used-to-index-a-numpy-array
@@ -466,6 +466,7 @@ def getSlicesV2(npArr, dimIdxDict):
     --------
         getSlicesV2(arr, {2: 3, 0: 1}) == arr[1, :, 3]
         getSlicesV2(arr, {2: [1, 3], 0:1}) == arr[1, :, 1:3]
+        getSlicesV2(arr, {2: [1, 3], 0:1}, assign = 99) == arr[1, :, 1:3] = 99
 
     """
 
@@ -482,7 +483,8 @@ def getSlicesV2(npArr, dimIdxDict):
                 raise Exception(f'wrong length of slice:{len(dimIdxDict[dim])}, this should be 2 or 3')
         else:
             indices.append(dimIdxDict[dim])
-    return npArr[tuple(indices)]
+    if assign is None: return npArr[tuple(indices)]
+    else: npArr[tuple(indices)] = assign
 
 def get_slices_with_idc_rec(arr, dim_idc_dict):
     """ Helper recursive function for get_slices_with_idc().
@@ -503,7 +505,7 @@ def get_slices_with_idc_rec(arr, dim_idc_dict):
         return get_slices_with_idc_rec(np.take(arr, indices = single_item, axis = single_key), dim_idc_dict)
 
 def get_slices_with_idc(arr, dim_idc_dict):
-    """ Slicing or Indexing Numpy array with given dlictionary {axis: indices}.
+    """ Slicing or Indexing Numpy array with given dictionary {axis: indices}.
 
     Examples
     --------
@@ -1224,4 +1226,10 @@ def get_current_utc_timestamp():
 
 if __name__ == '__main__':
     pass
-    print(get_proportional_ranked_value(np.array([0, 0, 0, 0, 0, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]), proportion = 0.3))
+    arr = np.arange(24).reshape(3, 2, 4)
+    # print(arr)
+    print(getSlicesV2(arr, {2: [1, 3], 0:1}))
+    # print(arr[1, :, 1:3])
+    print("after")
+    getSlicesV2(arr, {2: [1, 3], 0:1}, assign = 99)
+    print(getSlicesV2(arr, {2: [1, 3], 0:1}))
