@@ -477,7 +477,7 @@ def getSlicesV2(npArr, dimIdxDict, assign = None):
         elif type(dimIdxDict[dim]) == type([]) or type(dimIdxDict[dim]) == type(()):
             if len(dimIdxDict[dim]) == 2:
                 indices.append(slice(dimIdxDict[dim][0], dimIdxDict[dim][1]))
-            elif len(dimIdxDict[dim]) == 2:
+            elif len(dimIdxDict[dim]) == 3:
                 indices.append(slice(dimIdxDict[dim][0], dimIdxDict[dim][1], dimIdxDict[dim][2]))
             else:
                 raise Exception(f'wrong length of slice:{len(dimIdxDict[dim])}, this should be 2 or 3')
