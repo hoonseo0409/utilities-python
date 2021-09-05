@@ -1616,7 +1616,7 @@ def deconv_smoothness_3D(nparr, deconv_list_of_displacement_and_proportion, mask
         nparr_deconv = (1. - mask_loc) * nparr_deconv + mask_loc * nparr
     return nparr_deconv
 
-def plotly_2D_contour(nparr, path_to_save, arr_filter = lambda x: x, vmin = None, vmax = None, layout_kwargs = None, figsize_ratio = None, contour_kwargs = None, scene_kwargs = None, axis_kwargs = None, colorbar_kwargs = None, fill_out_small_values_with_nan= True):
+def plotly_2D_contour(nparr, path_to_save, arr_filter = lambda x: x, vmin = None, vmax = None, layout_kwargs = None, figsize_ratio = None, contour_kwargs = None, scene_kwargs = None, axis_kwargs = None, colorbar_kwargs = None, fill_out_small_values_with_nan= True, points_to_plot = None):
     """Plot contours from nparr.
 
     Parameters
@@ -1638,12 +1638,20 @@ def plotly_2D_contour(nparr, path_to_save, arr_filter = lambda x: x, vmin = None
     scene_kwargs_local = merge_dictionaries([dict(), scene_kwargs])
     colorbar_kwargs_local = merge_dictionaries([{"titlefont": {"size": 30}}, colorbar_kwargs])
     contour_kwargs_local = merge_dictionaries([{"colorscale": colorscale, "colorbar": colorbar_kwargs_local}, contour_kwargs]) ## "contours": {"start": vmin, "end": vmax},
-    layout_kwargs_local = merge_dictionaries([{"title": None, "xaxis": {"title": "x", "tickvals" : [i * (nparr.shape[1] // 5) for i in range(1, 5)], "ticktext": [i * (nparr.shape[1] // 5) for i in range(1, 5)]}, "yaxis": {"title": "y", "tickvals" : [i * (nparr.shape[0] // 5) for i in range(1, 5)], "ticktext": [i * (nparr.shape[0] // 5) for i in range(1, 5)]}}, layout_kwargs]) ## 0 axis goes to vertical, 1 axis goes to horizontal, do not use range parameter as it create weird margins
+    layout_kwargs_local = merge_dictionaries([{"title": None, "xaxis": {"title": "x", "tickvals" : [i * (nparr.shape[1] // 5) for i in range(1, 5)], "ticktext": [i * (nparr.shape[1] // 5) for i in range(1, 5)], "showgrid": False, "zeroline": False, "showline": False, "zerolinecolor": "black"}, "yaxis": {"title": "y", "tickvals" : [i * (nparr.shape[0] // 5) for i in range(1, 5)], "ticktext": [i * (nparr.shape[0] // 5) for i in range(1, 5)], "showgrid": False, "zeroline": False, "showline": False, "zerolinecolor": "black"}}, layout_kwargs]) ## 0 axis goes to vertical, 1 axis goes to horizontal, do not use range parameter as it create weird margins.
 
-    contour = go.Contour(z = nparr_local, **contour_kwargs_local)
+    data = []
+    # data.append(go.Contour(z = nparr_local, **contour_kwargs_local)) ## You may comment this line.
+    if points_to_plot is not None:
+        x_, y_ = np.nonzero(points_to_plot)
+        data.append(go.Scatter(x=y_, y=x_,
+                    mode='markers',
+                    marker_symbol='cross-thin'))
     scene = go.Scene(**scene_kwargs_local)
     layout = go.Layout(scene = scene, **layout_kwargs_local)
-    fig = go.Figure(data = contour, layout = layout)
+    fig = go.Figure(data = go.Scatter(x=y_, y=x_,
+                    mode='markers',
+                    marker_symbol= "cross", marker_color= "black", marker_size= 6), layout = layout)
 
     ## https://plotly.com/python/axes/#styling-and-coloring-axes-and-the-zeroline , https://stackoverflow.com/questions/42096292/outline-plot-area-in-plotly-in-python
     fig.update_xaxes(showline=True, linewidth=2, linecolor='black', mirror = True)
@@ -1652,7 +1660,8 @@ def plotly_2D_contour(nparr, path_to_save, arr_filter = lambda x: x, vmin = None
     if figsize_ratio is not None:
         raise Exception(NotImplementedError)
         fig.update_layout(scene_aspectmode= 'manual', scene_aspectratio= figsize_ratio)
-    
+    fig.update_layout(paper_bgcolor = 'rgba(0,0,0,0)', plot_bgcolor = 'rgba(0,0,0,0)')
+
     fig.write_image(path_to_save)
 
 def plot_ROC(path_to_save, y_true, list_of_y_pred, list_of_model_names = None, list_of_class_names = None, title = 'Receiver operating characteristic', xlabel = 'False Positive Rate', ylabel = 'True Positive Rate', colors = None, linewidth = 1, extension = "eps", fontsize_ratio = 1.0):
