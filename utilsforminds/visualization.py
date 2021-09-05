@@ -42,7 +42,15 @@ import plotly.tools as tls
 import plotly
 import pyvista as pv
 
-from alphashape import alphashape
+# import logging
+# alphashape_log = logging.getLogger("alphashape")
+# alphashape_log.setLevel(logging.CRITICAL)
+# alphashape_log.addHandler(logging.NullHandler())
+# alphashape_log.propagate = False
+
+import alphashape
+from alphashape import optimizealpha as optimizealpha_original
+
 import shapely
 from shapely.geometry import MultiPoint
 import trimesh
@@ -1154,6 +1162,24 @@ def get_xy_axis_from_z(zaxis = 0):
     else:
         raise Exception(ValueError)
 
+def get_volume_of_alpha_shape(points, alpha):
+    """
+    
+    Parameters
+    ----------
+    points : ndarray
+        For example, [[1, 2, 1], [3, 13, 61], ...].
+    
+    Returns
+    -------
+    volume : float
+    """
+
+    cloud = pv.PolyData(points) # set up the pyvista point cloud structure
+    mesh = cloud.delaunay_3d(alpha= alpha, progress_bar= True)
+    boundary_mesh = mesh.extract_geometry()
+    return boundary_mesh.volume
+
 def _testalpha(points, alpha: float, value_flat_for_alphashape_optimization: np.ndarray):
     """
     Evaluates an alpha parameter.
@@ -1161,6 +1187,7 @@ def _testalpha(points, alpha: float, value_flat_for_alphashape_optimization: np.
     This helper function creates an alpha shape with the given points and alpha
     parameter.  It then checks that the produced shape is a Polygon and that it
     intersects all the input points.
+    ref: https://alphashape.readthedocs.io/en/latest/_modules/alphashape/optimizealpha.html
 
     Args:
         points: data points
@@ -1170,24 +1197,24 @@ def _testalpha(points, alpha: float, value_flat_for_alphashape_optimization: np.
         bool: True if the resulting alpha shape is a single polygon that
             intersects all the input data points.
     """
-
-    polygon = alphashape(points, alpha)
+    try:
+        polygon = alphashape.alphashape(points, alpha = alpha)
+    except Exception as e:
+        print(f"Exception while creating alphashape for _testalpha: {e}")
+        return False
+    value_sum = 0
     if isinstance(polygon, (shapely.geometry.polygon.Polygon, shapely.geometry.multipolygon.MultiPolygon)):
-        if not isinstance(points, MultiPoint):
-            points = MultiPoint(list(points))
+        points_multi = MultiPoint(list(points))
         # return all([polygon.intersects(point) for point in points])
-        value_sum = 0
-        for point_idx in range(len(points)):
-            if polygon.intersects(points[point_idx]): value_sum += value_flat_for_alphashape_optimization[point_idx]
-        return value_sum / max(polygon.area, 1e-16)
-        # return value_sum
-    # if isinstance(polygon, shapely.geometry.polygon.Polygon):
-    #     if not isinstance(points, MultiPoint):
-    #         points = MultiPoint(list(points))
-    #     return all([polygon.intersects(point) for point in points])
-    # elif isinstance(polygon, trimesh.base.Trimesh):
-    #     return len(polygon.faces) > 0 and all(
-    #         trimesh.proximity.signed_distance(polygon, list(points)) >= 0)
+        for point_idx in range(len(points_multi)):
+            if polygon.intersects(points_multi[point_idx]): value_sum += value_flat_for_alphashape_optimization[point_idx]
+        # return value_sum / max(polygon.area, 1e-16)
+        return value_sum / max(get_volume_of_alpha_shape(points, alpha), 1e-16)
+    elif isinstance(polygon, trimesh.base.Trimesh) and len(polygon.faces) > 0:
+        distances = trimesh.proximity.signed_distance(polygon, list(points))
+        for point_idx in range(len(distances)):
+            if distances[point_idx] >= 0: value_sum += value_flat_for_alphashape_optimization[point_idx]
+        return value_sum / (polygon.area ** (3/2) * np.mean(polygon.area_faces))
     else:
         return False
 
@@ -1203,6 +1230,7 @@ def optimizealpha(points, value_flat_for_alphashape_optimization,
     Note:  If the solver fails to find a solution, a value of zero will be
     returned, which when used with the alphashape function will safely return a
     convex hull around the points.
+    ref: https://alphashape.readthedocs.io/en/latest/_modules/alphashape/optimizealpha.html
 
     Args:
 
@@ -1218,6 +1246,7 @@ def optimizealpha(points, value_flat_for_alphashape_optimization,
         float: The optimized alpha parameter
 
     """
+    # return optimizealpha_original(points= np.array(points), max_iterations= 100, lower= 0., upper= 100, silent= False)
     # Convert to a shapely multipoint object if not one already
     # if USE_GP and isinstance(points, geopandas.GeoDataFrame):
     #     points = points['geometry']
@@ -1280,6 +1309,14 @@ def plot_3D_plotly(nparr_3D, path_to_save_static : str, do_save_html : bool = Tr
     tri1 = None ## To check whether triangulation is already calculated.
     
     ## assign default values
+    suffix = 0
+    if os.path.exists(utilsforminds.strings.format_extension(path_to_save_static, 'png')):
+        while os.path.exists(utilsforminds.strings.format_extension(f'{path_to_save_static}_{suffix}', 'png')):
+            suffix += 1
+            if suffix > 100:
+                raise Exception("Check code.")
+        path_to_save = f"{path_to_save_static}_{suffix}"
+    path_to_save = path_to_save_static
     title_copied = "" if title is None else title
     if kinds_to_plot is None:
         kinds_to_plot = ["scatter"]
@@ -1322,13 +1359,16 @@ def plot_3D_plotly(nparr_3D, path_to_save_static : str, do_save_html : bool = Tr
     
     ## Generates objects to plot
     plot_objects = deepcopy(additional_gos)
-    nparr_3D_filtered = np.where(points_decider(nparr_3D), 1., 0.)
+    nparr_3D_whole = np.where(points_decider(nparr_3D), 1., 0.)
     if observation_mask_nparr_3D is None:
         observation_mask_nparr_3D_added = np.zeros(input_shape)
+        nparr_3D_non_mask = nparr_3D_whole
     else:
-        observation_mask_nparr_3D_added = np.where(nparr_3D_filtered == 1., np.where(points_decider(observation_mask_nparr_3D), 0., 1.), 0.)
+        # observation_mask_nparr_3D_added = np.where(nparr_3D_whole == 1., np.where(points_decider(observation_mask_nparr_3D), 0., 1.), 0.)
+        observation_mask_nparr_3D_added = np.where(nparr_3D_whole == 1., np.where(observation_mask_nparr_3D, 0., 1.), 0.)
+        nparr_3D_non_mask = np.where(nparr_3D_whole, np.where(observation_mask_nparr_3D_added, 0., 1.), 0.)
     if "scatter" in kinds_to_plot:
-        for is_main, mask_to_plot, marker_symbol, points_legend in zip([True, False], [nparr_3D_filtered, observation_mask_nparr_3D_added], ["circle", "cross"], [points_legends_local[1], points_legends_local[0]]):
+        for is_main, mask_to_plot, marker_symbol, points_legend in zip([True, False], [nparr_3D_non_mask, observation_mask_nparr_3D_added], ["circle", "cross"], [points_legends_local[1], points_legends_local[0]]):
             x, y, z = mask_to_plot.nonzero()
             colors_arr = utilsforminds.numpy_array.push_arr_to_range(nparr_3D[x, y, z], vmin = vmin, vmax = vmax) ## don't need maybe, because of cmin and cmax.
             if get_hovertext is not None:
@@ -1346,7 +1386,7 @@ def plot_3D_plotly(nparr_3D, path_to_save_static : str, do_save_html : bool = Tr
         if use_pyvista_alphashape:
             alpha = 1. / max(alpha_shape_kwargs_local["alphahull"], 1e-16)
             del alpha_shape_kwargs_local["alphahull"]
-        mask_nparr_3D_alphashape = nparr_3D_filtered
+        mask_nparr_3D_alphashape = nparr_3D_whole
         x, y, z = mask_nparr_3D_alphashape.nonzero()
         # if do_normalize_coordinates:
         #     def min_max_scale(arr):
@@ -1359,6 +1399,17 @@ def plot_3D_plotly(nparr_3D, path_to_save_static : str, do_save_html : bool = Tr
         #     x = min_max_scale(x)
         #     y = min_max_scale(y)
         #     z = min_max_scale(z)
+        def optimize_alpha(x, y, z):
+            if value_arr_for_alphashape_optimization is not None and x.shape[0] > 10:
+                points = np.array(list(zip(x, y, z)))
+                value_flat_for_alphashape_optimization = value_arr_for_alphashape_optimization[x, y, z]
+                best_alpha = optimizealpha(points = points, value_flat_for_alphashape_optimization = value_flat_for_alphashape_optimization, lower = 0, upper = alpha * 100)
+            else:
+                best_alpha = alpha
+            with open(utilsforminds.strings.format_extension(path_to_save, "txt"), "a") as text_file:
+                text_file.write(f"alpha: {best_alpha}\n")
+            return best_alpha
+
         if get_hovertext is not None:
             hovertext = get_hovertext(x = x, y = y, z = z, value = nparr_3D[x, y, z])
             hoverinfo = "text"
@@ -1367,7 +1418,7 @@ def plot_3D_plotly(nparr_3D, path_to_save_static : str, do_save_html : bool = Tr
             hoverinfo = None
         if alpha_shape_clustering:
             positions = np.stack([x, y, z], axis = -1)
-            cluster_labels = OPTICS(min_samples = 40).fit_predict(positions) ## Change here if you wanna use different clustering.
+            cluster_labels = OPTICS(min_samples = min(positions.shape[0], 20)).fit_predict(positions) ## Change here if you wanna use different clustering.
             number_of_clusters_to_plot = 5
 
             smallest_number_of_points_in_cluster = -1
@@ -1390,29 +1441,31 @@ def plot_3D_plotly(nparr_3D, path_to_save_static : str, do_save_html : bool = Tr
                 x_this_cluster = x[cluster_labels == cluster_label]
                 y_this_cluster = y[cluster_labels == cluster_label]
                 z_this_cluster = z[cluster_labels == cluster_label]
+                best_alpha = optimize_alpha(x_this_cluster, y_this_cluster, z_this_cluster)
                 if use_pyvista_alphashape:
-                    tri1, tri2, tri3, volume = get_triangles_of_alpha_shape(x_this_cluster, y_this_cluster, z_this_cluster, alpha = alpha, value_arr_for_alphashape_optimization = value_arr_for_alphashape_optimization)
-                    plot_objects.append(graph_objs.Mesh3d(name = alpha_shape_legend, x = x_this_cluster, y = y_this_cluster, z = z_this_cluster, hovertext = hovertext, hoverinfo = hoverinfo, intensity = utilsforminds.numpy_array.push_arr_to_range(nparr_3D[x_this_cluster, y_this_cluster, z_this_cluster], vmin = vmin, vmax = vmax), colorbar = marker_kwargs_local["colorbar"], showscale = showscale, i = tri1, j = tri2, k = tri3, **alpha_shape_kwargs_local))
+                    tri1, tri2, tri3, volume = get_triangles_of_alpha_shape(x_this_cluster, y_this_cluster, z_this_cluster, alpha = best_alpha)
+                    plot_objects.append(graph_objs.Mesh3d(name = f"{alpha_shape_legend}-cluster-{cluster_label}", x = x_this_cluster, y = y_this_cluster, z = z_this_cluster, hovertext = hovertext, hoverinfo = hoverinfo, intensity = utilsforminds.numpy_array.push_arr_to_range(nparr_3D[x_this_cluster, y_this_cluster, z_this_cluster], vmin = vmin, vmax = vmax), colorbar = marker_kwargs_local["colorbar"], showscale = showscale, i = tri1, j = tri2, k = tri3, **alpha_shape_kwargs_local))
                 else:
-                    plot_objects.append(graph_objs.Mesh3d(name = alpha_shape_legend, x = x_this_cluster, y = y_this_cluster, z = z_this_cluster, hovertext = hovertext, hoverinfo = hoverinfo, intensity = utilsforminds.numpy_array.push_arr_to_range(nparr_3D[x_this_cluster, y_this_cluster, z_this_cluster], vmin = vmin, vmax = vmax), colorbar = marker_kwargs_local["colorbar"], showscale = showscale, **alpha_shape_kwargs_local))
+                    plot_objects.append(graph_objs.Mesh3d(name = f"{alpha_shape_legend}-cluster-{cluster_label}", x = x_this_cluster, y = y_this_cluster, z = z_this_cluster, hovertext = hovertext, hoverinfo = hoverinfo, intensity = utilsforminds.numpy_array.push_arr_to_range(nparr_3D[x_this_cluster, y_this_cluster, z_this_cluster], vmin = vmin, vmax = vmax), colorbar = marker_kwargs_local["colorbar"], showscale = showscale, **alpha_shape_kwargs_local))
                 showscale = False ## Only the first plot has colorbar.
         else:
+            best_alpha = optimize_alpha(x, y, z)
             if use_pyvista_alphashape:
-                tri1, tri2, tri3, volume = get_triangles_of_alpha_shape(x, y, z, alpha = alpha, value_arr_for_alphashape_optimization = value_arr_for_alphashape_optimization)
+                tri1, tri2, tri3, volume = get_triangles_of_alpha_shape(x, y, z, alpha = best_alpha)
                 plot_objects.append(graph_objs.Mesh3d(name = alpha_shape_legend, x = x, y = y, z = z, hovertext = hovertext, hoverinfo = hoverinfo, intensity = utilsforminds.numpy_array.push_arr_to_range(nparr_3D[x, y, z], vmin = vmin, vmax = vmax), colorbar = marker_kwargs_local["colorbar"], i = tri1, j = tri2, k = tri3, **alpha_shape_kwargs_local))
             else:
                 plot_objects.append(graph_objs.Mesh3d(name = alpha_shape_legend, x = x, y = y, z = z, hovertext = hovertext, hoverinfo = hoverinfo, intensity = utilsforminds.numpy_array.push_arr_to_range(nparr_3D[x, y, z], vmin = vmin, vmax = vmax), colorbar = marker_kwargs_local["colorbar"], **alpha_shape_kwargs_local))
 
-        if grid_formatter_to_save_tri is not None and not alpha_shape_clustering: ## Saving clustered alpha-shape will be implemented in the future in case we need.
-            if tri1 is None:
-                tri1, tri2, tri3, volume = get_triangles_of_alpha_shape(x, y, z, alpha = alpha, value_arr_for_alphashape_optimization = value_arr_for_alphashape_optimization)
-            with open(utilsforminds.strings.format_extension(path_to_save_static, "tri"), "w") as text_file:
-                for triangle_idx in range(tri1.shape[0]):
-                    line = ""
-                    for triangle in [tri1, tri2, tri3]:
-                        for position, position_idx in zip([x, y, z], range(3)):
-                            line = line + f"{grid_formatter_to_save_tri(position = position[triangle[triangle_idx]], axis = position_idx)} "
-                    text_file.write(line[:-1] + "\n")
+            if grid_formatter_to_save_tri is not None: ## Saving clustered alpha-shape will be implemented in the future in case we need.
+                if tri1 is None:
+                    tri1, tri2, tri3, volume = get_triangles_of_alpha_shape(x, y, z, alpha = best_alpha)
+                with open(utilsforminds.strings.format_extension(path_to_save, "tri"), "w") as text_file:
+                    for triangle_idx in range(tri1.shape[0]):
+                        line = ""
+                        for triangle in [tri1, tri2, tri3]:
+                            for position, position_idx in zip([x, y, z], range(3)):
+                                line = line + f"{grid_formatter_to_save_tri(position = position[triangle[triangle_idx]], axis = position_idx)} "
+                        text_file.write(line[:-1] + "\n")
         
         if save_info_txt and use_pyvista_alphashape and not alpha_shape_clustering: ## calculate and print alpha-shape information.
             ## calculate the volume of alpha-shape, https://stackoverflow.com/questions/61638966/find-volume-of-object-given-a-triangular-mesh
@@ -1434,18 +1487,17 @@ def plot_3D_plotly(nparr_3D, path_to_save_static : str, do_save_html : bool = Tr
                 for triangles in [tri1, tri2, tri3]:
                     if triangles[triangle_idx] not in indices_of_unique_vertices: indices_of_unique_vertices.append(triangles[triangle_idx])
             unique_amounts = nparr_3D[x[indices_of_unique_vertices], y[indices_of_unique_vertices], z[indices_of_unique_vertices]]
-            with open(utilsforminds.strings.format_extension(path_to_save_static, "txt"), "w") as text_file:
-                text_file.write(f"total grade: {np.sum(unique_amounts)}\navg grade: {np.mean(unique_amounts)}\nnumber of points: {unique_amounts.shape[0]}\nvolume: {volume}\nsurface area: {surface_area}\nnumber of triangulations: {tri1.shape[0]}\ngrade per volume: {np.sum(unique_amounts) / max(volume, 1e-8)}")
-            
+            with open(utilsforminds.strings.format_extension(path_to_save, "txt"), "a") as text_file:
+                text_file.write(f"total grade: {np.sum(unique_amounts)}\navg grade: {np.mean(unique_amounts)}\nnumber of points: {unique_amounts.shape[0]}\nvolume: {volume}\nsurface area: {surface_area}\nnumber of triangulations: {tri1.shape[0]}\ngrade per volume: {np.sum(unique_amounts) / max(volume, 1e-8)}\nalpha optimization: {value_arr_for_alphashape_optimization is not None or value_arr_for_alphashape_optimization}")           
 
-    scene = graph_objs.Scene(xaxis = {"range": [0, input_shape[0]], "tickvals": xyz_tickers_copied["x"]["tickvals"], "ticktext": xyz_tickers_copied["x"]["ticktext"], "tickangle": -90, **axis_kwargs_local},
+    scene = graph_objs.layout.Scene(xaxis = {"range": [0, input_shape[0]], "tickvals": xyz_tickers_copied["x"]["tickvals"], "ticktext": xyz_tickers_copied["x"]["ticktext"], "tickangle": -90, **axis_kwargs_local},
     yaxis = {"range": [0, input_shape[1]], "tickvals": xyz_tickers_copied["y"]["tickvals"], "ticktext":  xyz_tickers_copied["y"]["ticktext"], "tickangle": -90, **axis_kwargs_local},
     zaxis = {"range": [0, input_shape[2]], "tickvals": xyz_tickers_copied["z"]["tickvals"], "ticktext":  xyz_tickers_copied["z"]["ticktext"], "tickangle": 0, **axis_kwargs_local}, **scene_kwargs_local)
 
     # layout = graph_objs.Layout(title = title_copied, width = figsize_copied["width"], height = figsize_copied["height"], scene = scene, scene_camera = camera_copied)
     layout = graph_objs.Layout(title = title_copied, scene = scene, scene_camera = camera_copied, **layout_kwargs_local)
 
-    fig = graph_objs.Figure(data = graph_objs.Data(plot_objects), layout = layout)
+    fig = graph_objs.Figure(data = plot_objects, layout = layout)
 
     ## Set grid line and zero line
     if figsize_ratio is not None:
@@ -1456,10 +1508,10 @@ def plot_3D_plotly(nparr_3D, path_to_save_static : str, do_save_html : bool = Tr
 
     ## Save the result
     if do_save_html:
-        fig.write_html(utilsforminds.strings.format_extension(path_to_save_static, "html"))
-    fig.write_image(utilsforminds.strings.format_extension(path_to_save_static, "png"))
+        fig.write_html(utilsforminds.strings.format_extension(path_to_save, "html"))
+    fig.write_image(utilsforminds.strings.format_extension(path_to_save, "png"))
 
-def get_triangles_of_alpha_shape(x, y, z, alpha, value_arr_for_alphashape_optimization = None):
+def get_triangles_of_alpha_shape(x, y, z, alpha):
     """
     
     Returns
@@ -1467,11 +1519,7 @@ def get_triangles_of_alpha_shape(x, y, z, alpha, value_arr_for_alphashape_optimi
     tri1, tri2, tri3: 1D numpy array of indices of points.
         tri1[j], tri2[j], tri3[j] indicate the first, second, third point of j-th triangle. For example, (x[tri1[j]], y[tri1[j]], z[tri1[j]]) is the first point of triangle.
     """
-    if value_arr_for_alphashape_optimization is not None:
-        points = np.array(list(zip(x, y, z)))
-        value_flat_for_alphashape_optimization = value_arr_for_alphashape_optimization[x, y, z]
-        best_alpha = optimizealpha(points = points, value_flat_for_alphashape_optimization = value_flat_for_alphashape_optimization, lower = 0, upper = alpha * 100)
-    
+
     cloud = pv.PolyData(np.array(list(zip(x, y, z)))) # set up the pyvista point cloud structure
     #Extract the total simplicial structure of the alpha shape defined via pyvista
     # mesh = cloud.delaunay_3d(alpha= 1. / alpha_shape_kwargs_local["alphahull"]) ## (pyvista alpha = 1/alphahull; alphahull is an attribute of the Plotly Mesh3d)
