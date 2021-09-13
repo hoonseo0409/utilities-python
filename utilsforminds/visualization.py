@@ -54,11 +54,10 @@ from alphashape import optimizealpha as optimizealpha_original
 import shapely
 from shapely.geometry import MultiPoint
 import trimesh
-import rtree  # Needed by trimesh
 
 from utilsforminds.containers import merge_dictionaries
 
-from sklearn.cluster import OPTICS
+from sklearn import cluster
 from sklearn import svm, datasets
 from sklearn.metrics import roc_curve, auc
 from sklearn.model_selection import train_test_split
@@ -1418,7 +1417,8 @@ def plot_3D_plotly(nparr_3D, path_to_save_static : str, do_save_html : bool = Tr
             hoverinfo = None
         if alpha_shape_clustering:
             positions = np.stack([x, y, z], axis = -1)
-            cluster_labels = OPTICS(min_samples = min(positions.shape[0], 20)).fit_predict(positions) ## Change here if you wanna use different clustering.
+            # cluster_labels = cluster.OPTICS(min_samples = min(positions.shape[0], 20)).fit_predict(positions) ## Change here if you wanna use different clustering.
+            cluster_labels = cluster.DBSCAN(min_samples = min(positions.shape[0], 20)).fit_predict(positions)
             number_of_clusters_to_plot = 5
 
             smallest_number_of_points_in_cluster = -1
@@ -1616,7 +1616,7 @@ def deconv_smoothness_3D(nparr, deconv_list_of_displacement_and_proportion, mask
         nparr_deconv = (1. - mask_loc) * nparr_deconv + mask_loc * nparr
     return nparr_deconv
 
-def plotly_2D_contour(nparr, path_to_save, arr_filter = lambda x: x, vmin = None, vmax = None, layout_kwargs = None, figsize_ratio = None, contour_kwargs = None, scene_kwargs = None, axis_kwargs = None, colorbar_kwargs = None, fill_out_small_values_with_nan= True, points_to_plot = None, do_save_html = False, outline_boundary = False):
+def plotly_2D_contour(nparr, path_to_save, arr_filter = None, vmin = None, vmax = None, layout_kwargs = None, figsize_ratio = None, contour_kwargs = None, scene_kwargs = None, axis_kwargs = None, colorbar_kwargs = None, fill_out_small_values_with_nan= True, points_to_plot = None, do_save_html = False, outline_boundary = False, white_on_min= True):
     """Plot contours from nparr.
 
     Parameters
@@ -1625,9 +1625,12 @@ def plotly_2D_contour(nparr, path_to_save, arr_filter = lambda x: x, vmin = None
         This looks not work.
     """
     colorscale = deepcopy(plotly.colors.sequential.Rainbow)
-    colorscale[0] = 'rgb(255,255,255)' ## Set white color for zero value.
+    if white_on_min:
+        colorscale[0] = 'rgb(255,255,255)' ## Set white color for zero value.
+        if contour_kwargs is not None and "colorscale" in contour_kwargs.keys(): contour_kwargs["colorscale"][0] = 'rgb(255,255,255)'
 
-    nparr_local = arr_filter(nparr)
+    if arr_filter is not None: nparr_local = arr_filter(nparr)
+    else: nparr_local = nparr
     if fill_out_small_values_with_nan: nparr_local = np.where(nparr_local < vmin, np.nan, nparr_local)
 
     vmin = max(0., nparr_local.min()) if vmin is None else vmin
@@ -1636,7 +1639,7 @@ def plotly_2D_contour(nparr, path_to_save, arr_filter = lambda x: x, vmin = None
     axis_kwargs_local = {} if axis_kwargs is None else deepcopy(axis_kwargs)
     # scene_kwargs_local = merge_dictionaries([{"xaxis": {"title": "x", "range": [0, nparr.shape[0]], "tickvals": range(nparr.shape[0] // 5, nparr.shape[0], nparr.shape[0] // 5), "ticktext": range(nparr.shape[0] // 5, nparr.shape[0], nparr.shape[0] // 5), **axis_kwargs_local}, "yaxis": {"title": "y", "range": [0, nparr.shape[1]], "tickvals": range(nparr.shape[1] // 5, nparr.shape[1], nparr.shape[1] // 5), "ticktext": range(nparr.shape[1] // 5, nparr.shape[1], nparr.shape[1] // 5), **axis_kwargs_local}}, scene_kwargs])
     scene_kwargs_local = merge_dictionaries([dict(), scene_kwargs])
-    colorbar_kwargs_local = merge_dictionaries([{"titlefont": {"size": 30}}, colorbar_kwargs])
+    colorbar_kwargs_local = merge_dictionaries([{"titlefont": {"size": 30}, "title": "value"}, colorbar_kwargs])
     contour_kwargs_local = merge_dictionaries([{"colorscale": colorscale, "colorbar": colorbar_kwargs_local}, contour_kwargs]) ## "contours": {"start": vmin, "end": vmax},
     layout_kwargs_local = merge_dictionaries([{"title": None, "xaxis": {"title": "x", "tickvals" : [i * (nparr.shape[1] // 5) for i in range(1, 5)], "ticktext": [i * (nparr.shape[1] // 5) for i in range(1, 5)], "showgrid": False, "zeroline": False, "showline": False, "zerolinecolor": "black"}, "yaxis": {"title": "y", "tickvals" : [i * (nparr.shape[0] // 5) for i in range(1, 5)], "ticktext": [i * (nparr.shape[0] // 5) for i in range(1, 5)], "showgrid": False, "zeroline": False, "showline": False, "zerolinecolor": "black"}}, layout_kwargs]) ## 0 axis goes to vertical, 1 axis goes to horizontal, do not use range parameter as it create weird margins.
 
@@ -1646,7 +1649,7 @@ def plotly_2D_contour(nparr, path_to_save, arr_filter = lambda x: x, vmin = None
         x_, y_ = np.nonzero(points_to_plot)
         data.append(go.Scatter(x=y_, y=x_,
                     mode='markers',
-                    marker_symbol='cross', marker_color= "black", marker_size= 6))
+                    marker_symbol='cross-thin', marker_color= "green", marker_size= 6))
     scene = go.Scene(**scene_kwargs_local)
     layout = go.Layout(scene = scene, **layout_kwargs_local)
     # fig = go.Figure(data = go.Scatter(x=y_, y=x_,
@@ -1747,19 +1750,3 @@ def plot_ROC(path_to_save, y_true, list_of_y_pred, list_of_model_names = None, l
 
 if __name__ == '__main__':
     pass
-    # plot_bar_charts('dummy', {'Frank':[12.7, 0.4, 4.4, 5.3, 7.1, 3.2], 'Guido':[6.3, 10.3, 10, 0.3, 5.3, 2.9]}, ['RR', 'Lasso', 'SVR', 'CNN', 'SVR', 'LR'], ytitle="RMSE of Prediction of TRIAILB-A")
-    # test_list = []
-    # for i in range(15):
-    #     test_list.append({"label": f"my label_{i}", "ydata": [3.4, 3.2, 1.1, 0.3]})
-    # plot_xy_lines([1, 2, 3, 4], test_list, "dummy.eps")
-    x = np.array([1, 2, 0, 5])
-    y = np.array([0, -3, 7, 6])
-    z = np.array([9, 11, 15, 12])
-    positions = np.stack([x, y, z], axis = -1)
-    cluster_labels = OPTICS(min_samples = 2).fit_predict(positions)
-    for cluster_label in set(cluster_labels):
-        x_this_cluster = x[cluster_labels == cluster_label]
-        y_this_cluster = y[cluster_labels == cluster_label]
-        z_this_cluster = z[cluster_labels == cluster_label]
-        print(x_this_cluster)
-    print(cluster_labels)

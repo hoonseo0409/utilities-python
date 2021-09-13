@@ -82,6 +82,13 @@ def merge_dictionaries(list_of_dicts : list, use_last_when_overlapped = True, re
         merged_dict = merge_two_dicts_leaves_rec(merged_dict, list_of_dicts[dict_idx])
     return merged_dict
 
+def merge(*list_of_dicts):
+    """
+        Wrapper alias for merge_dictionaries.
+    """
+
+    return merge_dictionaries(list_of_dicts = list_of_dicts, use_last_when_overlapped = True, recursive_overwritting = True)
+
 def merge_lists(list_of_lists : list, use_last_when_overlapped = True):
     """Merge lists through deepcopy
 
