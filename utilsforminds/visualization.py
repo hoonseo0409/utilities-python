@@ -338,8 +338,8 @@ def plot2Ds(planeLst, titleLst, filePath, cbarLabel = 'amount', plotShape = [3, 
 
             ## Plot Sampled
 
-            plt.subplot(*(plotShape + [3]))
-            plt.title(titleLst[2], fontsize = title_font_size)
+            plt.subplot(*(plotShape + [2]))
+            plt.title(titleLst[1], fontsize = title_font_size)
 
             plt.xlabel(xlabel, fontsize = label_font_size)
             plt.ylabel(ylabel, fontsize = label_font_size)
@@ -361,8 +361,8 @@ def plot2Ds(planeLst, titleLst, filePath, cbarLabel = 'amount', plotShape = [3, 
             cbarInst.ax.tick_params(labelsize= cbar_font_size)
 
             ## Plot Recovered
-            plt.subplot(*(plotShape + [2]))
-            plt.title(titleLst[1], fontsize = title_font_size)
+            plt.subplot(*(plotShape + [3]))
+            plt.title(titleLst[2], fontsize = title_font_size)
 
             plt.xlabel(xlabel, fontsize = label_font_size)
             plt.ylabel(ylabel, fontsize = label_font_size)
