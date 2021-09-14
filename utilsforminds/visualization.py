@@ -87,9 +87,9 @@ def savePlotLstOfLsts(lstOfLsts, labelsLst, xlabel, ylabel, title, directory, sa
     if save_tikz:
         tikzplotlib.save(format_path_extension(directory, '.tex'))
 
-def plot2Ds(planeLst, titleLst, filePath, cbarLabel = 'amount', plotShape = [3, 1], subplot_length = 16., subplot_ratio = (1., 1.), planeMaskLst = None, axis = 2, axisInfo = None, vmin_vmax = None, method = 'imshow', convertXYaxis = False, rotate = 0, specific_value_color_dict = {"value": 0., "color": "white"}, label_font_size = 25, label_positions = [0., 1/3, 2/3], title_font_size = 25, cbar_font_size = 25, save_tikz = False):
+def plot2Ds(planeLst, titleLst, filePath, cbarLabel = 'amount', plotShape = [3, 1], subplot_length = 16., subplot_ratio = (1., 1.), planeMaskLst = None, axis = 2, axisInfo = None, vmin_vmax = None, method = 'imshow', convertXYaxis = False, rotate = 0, specific_value_color_dict = {"value": 0., "color": "white"}, label_font_size = 25, label_positions = [0., 1/3, 2/3], title_font_size = 25, cbar_font_size = 25, save_tikz = False, plot_obj_kwargs = None, plot_zeros_in_scatter = False):
     '''
-        If you want to provide mask matrix for scatter visualization, sequence should be (original matrix, recovered matrix) or (original matrix, recovered matrix, sparse matrix)
+        If you want to provide mask matrix for scatter visualization, sequence should be (original matrix, recovered matrix) or (original matrix, recovered matrix, sampled matrix), or (original matrix)
 
         Parameters
         ----------
@@ -102,6 +102,7 @@ def plot2Ds(planeLst, titleLst, filePath, cbarLabel = 'amount', plotShape = [3, 
         print(f"Warning: May be wrong file path: {filePath}")
     else:
         filePath_ = filePath
+    if plot_obj_kwargs is None: plot_obj_kwargs = {}
     
     # label_positions = [0/4, 1/4, 2/4, 3/4, 4/4]
     labels_colorbar_margin_size = 2.5 * (label_font_size / 25.)
@@ -132,12 +133,12 @@ def plot2Ds(planeLst, titleLst, filePath, cbarLabel = 'amount', plotShape = [3, 
     plotPlaneLst = []
     plotPlaneMaskLst = []
     for i in range(nPlots):
-        # plotPlaneLst.append(np.copy(planeLst[i]))
-        plotPlaneLst.append(np.transpose(planeLst[i]))
+        if method == 'imshow' or method == 'contour': plotPlaneLst.append(np.transpose(planeLst[i]))
+        elif method == "scatter": plotPlaneLst.append(np.flipud(planeLst[i]))
     if planeMaskLst is not None:
         for i in range(len(planeMaskLst)):
-            # plotPlaneMaskLst.append(np.copy(planeMaskLst[i]))
-            plotPlaneMaskLst.append(np.transpose(planeMaskLst[i]))
+            if method == 'imshow' or method == 'contour': plotPlaneMaskLst.append(np.transpose(planeMaskLst[i]))
+            elif method == "scatter": plotPlaneMaskLst.append(np.flipud(planeMaskLst[i]))
     
     # Set White color for unobserved points
     if specific_value_color_dict is not None:
@@ -165,10 +166,11 @@ def plot2Ds(planeLst, titleLst, filePath, cbarLabel = 'amount', plotShape = [3, 
 
     horiLabelIdc = [min(round(shape_[0] * position_proportion), shape_[0] - 1) for position_proportion in label_positions]
     vertLabelIdc = [min(round(shape_[1] - shape_[1] * position_proportion), shape_[1] - 1) for position_proportion in label_positions]
+    if method == "scatter": vertLabelIdc = [shape_[1] - idx for idx in reversed(vertLabelIdc)]
 
     if axisInfo is None:
         if method == 'imshow':
-            horiLabels = utilsforminds.helpers.reverseLst(horiLabelIdc) ## ??????????????????
+            horiLabels = list(reversed(vertLabelIdc)) ## ??????????????????
             vertLabels = vertLabelIdc
         elif method == 'contour' or method == 'scatter':
             horiLabels = horiLabelIdc
@@ -203,22 +205,24 @@ def plot2Ds(planeLst, titleLst, filePath, cbarLabel = 'amount', plotShape = [3, 
 
             if method == 'imshow':
                 if vmin_vmax is not None:
-                    img = plt.imshow(plotPlaneLst[i], vmin = vmin_, vmax = vmax_, aspect = 'auto')
+                    img = plt.imshow(plotPlaneLst[i], vmin = vmin_, vmax = vmax_, aspect = 'auto', **plot_obj_kwargs)
                 else:
                     img = plt.imshow(plotPlaneLst[i], aspect = 'auto')
-                cbarInst = plt.colorbar(fraction=0.046 * subplot_ratio[1] * nPlots / subplot_ratio[0], pad=0.04, aspect= 10 * subplot_ratio[1] * nPlots / subplot_ratio[0])
+                cbarInst = plt.colorbar(fraction=0.046 * subplot_ratio[1] * nPlots / subplot_ratio[0], pad=0.04, aspect= 10 * subplot_ratio[1] * nPlots / subplot_ratio[0], **plot_obj_kwargs)
                 cbarInst.set_label(cbarLabel, fontsize = cbar_font_size)
                 cbarInst.ax.tick_params(labelsize= cbar_font_size)
             elif method == 'contour':
                 if vmin_vmax is not None:
-                    img = plt.contour(np.flipud(plotPlaneLst[i]), vmin = vmin_, vmax = vmax_, linewidths = 2.0, colors = 'black', levels = [vmin_, vmin_ + (vmax_ - vmin_) * 1/8, vmin_ + (vmax_ - vmin_) * 2/8, vmin_ + (vmax_ - vmin_) * 3/8, vmin_ + (vmax_ - vmin_) * 4/8, vmin_ + (vmax_ - vmin_) * 5/8, vmin_ + (vmax_ - vmin_) * 6/8, vmin_ + (vmax_ - vmin_) * 7/8, vmax_])
+                    img = plt.contour(np.flipud(plotPlaneLst[i]), vmin = vmin_, vmax = vmax_, linewidths = 2.0, colors = 'black', levels = [vmin_, vmin_ + (vmax_ - vmin_) * 1/8, vmin_ + (vmax_ - vmin_) * 2/8, vmin_ + (vmax_ - vmin_) * 3/8, vmin_ + (vmax_ - vmin_) * 4/8, vmin_ + (vmax_ - vmin_) * 5/8, vmin_ + (vmax_ - vmin_) * 6/8, vmin_ + (vmax_ - vmin_) * 7/8, vmax_], **plot_obj_kwargs)
                 else:
-                    img = plt.contour(np.flipud(plotPlaneLst[i]), linewidths = 2.0, colors = 'black', levels = [vmin_, vmin_ + (vmax_ - vmin_) * 1/8, vmin_ + (vmax_ - vmin_) * 2/8, vmin_ + (vmax_ - vmin_) * 3/8, vmin_ + (vmax_ - vmin_) * 4/8, vmin_ + (vmax_ - vmin_) * 5/8, vmin_ + (vmax_ - vmin_) * 6/8, vmin_ + (vmax_ - vmin_) * 7/8, vmax_])
+                    img = plt.contour(np.flipud(plotPlaneLst[i]), linewidths = 2.0, colors = 'black', levels = [vmin_, vmin_ + (vmax_ - vmin_) * 1/8, vmin_ + (vmax_ - vmin_) * 2/8, vmin_ + (vmax_ - vmin_) * 3/8, vmin_ + (vmax_ - vmin_) * 4/8, vmin_ + (vmax_ - vmin_) * 5/8, vmin_ + (vmax_ - vmin_) * 6/8, vmin_ + (vmax_ - vmin_) * 7/8, vmax_], **plot_obj_kwargs)
     
     elif method == 'scatter':
         assert(nPlots == 2 or nPlots ==3)
-        pointSize = 5.0 * (80 * 80 / (shape_[0] * shape_[1])) ** 0.5
+        pointSize = 11.0 * (80 * 80 / (shape_[0] * shape_[1])) ** 0.5
+        # shape_ = (shape_[1], shape_[0])
         if nPlots == 2: # original, recovered
+            raise Exception("Deprecated Option")
             plt.subplot(*(plotShape + [1]))
             plt.title(titleLst[0], fontsize = title_font_size)
 
@@ -230,19 +234,19 @@ def plot2Ds(planeLst, titleLst, filePath, cbarLabel = 'amount', plotShape = [3, 
 
             if planeMaskLst is not None:
                 xCounterOriginal, yCounterOriginal = np.nonzero(np.where(plotPlaneMaskLst[0] >= 1., 1., 0.))
-                xZeroCounter, yZeroCounter = np.nonzero(np.where(plotPlaneMaskLst[0] < 1., 1., 0.))
+                if plot_zeros_in_scatter: xZeroCounter, yZeroCounter = np.nonzero(np.where(plotPlaneMaskLst[0] < 1., 1., 0.))
             else:
                 xCounterOriginal, yCounterOriginal = np.nonzero(np.where(plotPlaneLst[0] > 1e-8, 1., 0.))
-                xZeroCounter, yZeroCounter = np.nonzero(np.where(plotPlaneLst[0] > 1e-8, 0., 1.))
+                if plot_zeros_in_scatter: xZeroCounter, yZeroCounter = np.nonzero(np.where(plotPlaneLst[0] > 1e-8, 0., 1.))
             minArr = np.ones(shape_) * vmin_
 
             if vmin_vmax is not None:
-                img = plt.scatter(xZeroCounter, yZeroCounter, c = minArr[xZeroCounter, yZeroCounter], vmin = vmin_, vmax = vmax_, marker = 'x', s = pointSize) # param s = 5.0 sets size of dots for 150 * 150 * 150 mapping
-                img = plt.scatter(xCounterOriginal, yCounterOriginal, c = plotPlaneLst[0][xCounterOriginal, yCounterOriginal], vmin=vmin_, vmax=vmax_, marker = 'o', s = pointSize)
+                if plot_zeros_in_scatter: img = plt.scatter(xZeroCounter, yZeroCounter, c = minArr[xZeroCounter, yZeroCounter], vmin = vmin_, vmax = vmax_, marker = 'x', s = pointSize, **plot_obj_kwargs) # param s = 5.0 sets size of dots for 150 * 150 * 150 mapping
+                img = plt.scatter(xCounterOriginal, yCounterOriginal, c = plotPlaneLst[0][xCounterOriginal, yCounterOriginal], vmin=vmin_, vmax=vmax_, marker = 'o', s = pointSize, **plot_obj_kwargs)
             
             else:
-                img = plt.scatter(xZeroCounter, yZeroCounter, c = minArr[xZeroCounter, yZeroCounter], marker = 'x') # param s = 5.0 sets size of dots for 150 * 150 * 150 mapping
-                img = plt.scatter(xCounterOriginal, yCounterOriginal, c = plotPlaneLst[0][xCounterOriginal, yCounterOriginal], marker = 'o', s = pointSize)
+                if plot_zeros_in_scatter: img = plt.scatter(xZeroCounter, yZeroCounter, c = minArr[xZeroCounter, yZeroCounter], marker = 'x', **plot_obj_kwargs) # param s = 5.0 sets size of dots for 150 * 150 * 150 mapping
+                img = plt.scatter(xCounterOriginal, yCounterOriginal, c = plotPlaneLst[0][xCounterOriginal, yCounterOriginal], marker = 'o', s = pointSize, **plot_obj_kwargs)
             
             cbarInst = plt.colorbar(fraction=0.046 * subplot_ratio[1] * nPlots / subplot_ratio[0], pad=0.04, aspect= 10 * subplot_ratio[1] * nPlots / subplot_ratio[0])
             # cbarInst = plt.colorbar(cax = cax)
@@ -263,22 +267,22 @@ def plot2Ds(planeLst, titleLst, filePath, cbarLabel = 'amount', plotShape = [3, 
             if planeMaskLst is not None:
                 xCounterOriginal, yCounterOriginal = np.nonzero(np.where(plotPlaneMaskLst[0] >= 1., 1., 0.))
                 xCounterOnlyRecovered, yCounterOnlyRecovered = np.nonzero(np.where(plotPlaneMaskLst[0] < 1., np.where(plotPlaneMaskLst[1] >= 1., 1., 0.), 0.))
-                xZeroCounter, yZeroCounter = np.nonzero(np.where(plotPlaneMaskLst[1] < 1., np.where(plotPlaneMaskLst[0] < 1., 1., 0.), 0.))
+                if plot_zeros_in_scatter: xZeroCounter, yZeroCounter = np.nonzero(np.where(plotPlaneMaskLst[1] < 1., np.where(plotPlaneMaskLst[0] < 1., 1., 0.), 0.))
             else:
                 xCounterOriginal, yCounterOriginal = np.nonzero(np.where(plotPlaneLst[0] > 1e-8, 1., 0.))
                 xCounterOnlyRecovered, yCounterOnlyRecovered = np.nonzero(np.where(plotPlaneLst[0] <= 1e-8, np.where(plotPlaneLst[1] > 1e-8, 1., 0.), 0.))
-                xZeroCounter, yZeroCounter = np.nonzero(np.where(plotPlaneLst[1] <= 1e-8, np.where(plotPlaneLst[0] <= 1e-8, 1., 0.), 0.))
+                if plot_zeros_in_scatter: xZeroCounter, yZeroCounter = np.nonzero(np.where(plotPlaneLst[1] <= 1e-8, np.where(plotPlaneLst[0] <= 1e-8, 1., 0.), 0.))
             minArr = np.ones(shape_) * vmin_
 
             if vmin_vmax is not None:
-                img = plt.scatter(xZeroCounter, yZeroCounter, c = minArr[xZeroCounter, yZeroCounter], vmin=vmin_, vmax=vmax_, marker = 'x', s = pointSize)
-                img = plt.scatter(xCounterOriginal, yCounterOriginal, c = plotPlaneLst[0][xCounterOriginal, yCounterOriginal], vmin=vmin_, vmax=vmax_, marker = 'o', s = pointSize)
-                img = plt.scatter(xCounterOnlyRecovered, yCounterOnlyRecovered, c = plotPlaneLst[1][xCounterOnlyRecovered, yCounterOnlyRecovered], vmin=vmin_, vmax=vmax_, marker = '^', s = pointSize)
+                if plot_zeros_in_scatter: img = plt.scatter(xZeroCounter, yZeroCounter, c = minArr[xZeroCounter, yZeroCounter], vmin=vmin_, vmax=vmax_, marker = 'x', s = pointSize, **plot_obj_kwargs)
+                img = plt.scatter(xCounterOriginal, yCounterOriginal, c = plotPlaneLst[0][xCounterOriginal, yCounterOriginal], vmin=vmin_, vmax=vmax_, marker = 'o', s = pointSize, **plot_obj_kwargs)
+                img = plt.scatter(xCounterOnlyRecovered, yCounterOnlyRecovered, c = plotPlaneLst[1][xCounterOnlyRecovered, yCounterOnlyRecovered], vmin=vmin_, vmax=vmax_, marker = '^', s = pointSize, **plot_obj_kwargs)
 
             else:
-                img = plt.scatter(xZeroCounter, yZeroCounter, c = minArr[xZeroCounter, yZeroCounter], marker = 'x')
-                img = plt.scatter(xCounterOriginal, yCounterOriginal, c = plotPlaneLst[0][xCounterOriginal, yCounterOriginal], marker = 'o')
-                img = plt.scatter(xCounterOnlyRecovered, yCounterOnlyRecovered, c = plotPlaneLst[1][xCounterOnlyRecovered, yCounterOnlyRecovered], marker = '^')
+                if plot_zeros_in_scatter: img = plt.scatter(xZeroCounter, yZeroCounter, c = minArr[xZeroCounter, yZeroCounter], marker = 'x', **plot_obj_kwargs)
+                img = plt.scatter(xCounterOriginal, yCounterOriginal, c = plotPlaneLst[0][xCounterOriginal, yCounterOriginal], marker = 'o', **plot_obj_kwargs)
+                img = plt.scatter(xCounterOnlyRecovered, yCounterOnlyRecovered, c = plotPlaneLst[1][xCounterOnlyRecovered, yCounterOnlyRecovered], marker = '^', **plot_obj_kwargs)
 
             cbarInst = plt.colorbar(fraction=0.046 * subplot_ratio[1] * nPlots / subplot_ratio[0], pad=0.04, aspect= 10 * subplot_ratio[1] * nPlots / subplot_ratio[0])
             # cbarInst = plt.colorbar(cax = cax)
@@ -286,6 +290,30 @@ def plot2Ds(planeLst, titleLst, filePath, cbarLabel = 'amount', plotShape = [3, 
             cbarInst.ax.tick_params(labelsize= cbar_font_size)
 
         else: # nPlots == 3
+            ## Prepare array.
+            if planeMaskLst is not None:
+                xCounterOriginal, yCounterOriginal = np.nonzero(np.where(plotPlaneMaskLst[0] >= 1., 1., 0.))
+
+                if len(plotPlaneMaskLst) == 1:
+                    xCounterOnlyRecovered, yCounterOnlyRecovered = np.nonzero(np.where(plotPlaneMaskLst[0] < 1., np.where(plotPlaneLst[2] > 1e-8, 1., 0.), 0.))
+                elif len(plotPlaneMaskLst) == 2 or len(plotPlaneMaskLst) == 3:
+                    xCounterOnlyRecovered, yCounterOnlyRecovered = np.nonzero(np.where(plotPlaneMaskLst[0] < 1., np.where(plotPlaneMaskLst[1] >= 1., 1., 0.), 0.))
+                
+                if len(plotPlaneMaskLst) == 3:
+                    xCounterSampled, yCounterSampled = np.nonzero(np.where(plotPlaneMaskLst[2] >= 1., 1., 0.))
+                elif len(plotPlaneMaskLst) == 1 or len(plotPlaneMaskLst) == 2: 
+                    # xCounterSampled, yCounterSampled = np.nonzero(np.where(plotPlaneLst[1] > 0, 1., 0.))
+                    xCounterSampled, yCounterSampled = xCounterOriginal, yCounterOriginal
+                if plot_zeros_in_scatter: xZeroCounter, yZeroCounter = np.nonzero(np.where(plotPlaneMaskLst[0] < 1., 1., 0.))
+            else:
+                xCounterOriginal, yCounterOriginal = np.nonzero(np.where(plotPlaneLst[0] > 1e-8, 1., 0.))
+                xCounterOnlyRecovered, yCounterOnlyRecovered = np.nonzero(np.where(plotPlaneLst[0] <= 1e-8, np.where(plotPlaneLst[2] > 1e-8, 1., 0.), 0.))
+                xCounterSampled, yCounterSampled = np.nonzero(np.where(plotPlaneLst[1] > 1e-8, 1., 0.))
+                if plot_zeros_in_scatter: xZeroCounter, yZeroCounter = np.nonzero(np.where(plotPlaneLst[1] <= 1e-8, np.where(plotPlaneLst[0] <= 1e-8, 1., 0.), 0.))
+
+            minArr = np.ones(shape_) * vmin_
+
+            ## Plot Original
             plt.subplot(*(plotShape + [1]))
             plt.title(titleLst[0], fontsize = title_font_size)
 
@@ -295,61 +323,20 @@ def plot2Ds(planeLst, titleLst, filePath, cbarLabel = 'amount', plotShape = [3, 
             plt.xticks(horiLabelIdc, horiLabels, fontsize = label_font_size)
             plt.yticks(vertLabelIdc, vertLabels, fontsize = label_font_size)
 
-            if planeMaskLst is not None:
-                xCounterOriginal, yCounterOriginal = np.nonzero(np.where(plotPlaneMaskLst[0] >= 1., 1., 0.))
-                xZeroCounter, yZeroCounter = np.nonzero(np.where(plotPlaneMaskLst[0] < 1., 1., 0.))
-            else:
-                xCounterOriginal, yCounterOriginal = np.nonzero(np.where(plotPlaneLst[0] > 1e-8, 1., 0.))
-                xZeroCounter, yZeroCounter = np.nonzero(np.where(plotPlaneLst[0] > 1e-8, 0., 1.))
-            minArr = np.ones(shape_) * vmin_
-
             if vmin_vmax is not None:
-                img = plt.scatter(xZeroCounter, yZeroCounter, c = minArr[xZeroCounter, yZeroCounter], vmin = vmin_, vmax = vmax_, marker = 'x', s = 3.0) # param s = 5.0 sets size of dots for 150 * 150 * 150 mapping
-                img = plt.scatter(xCounterOriginal, yCounterOriginal, c = plotPlaneLst[0][xCounterOriginal, yCounterOriginal], vmin=vmin_, vmax=vmax_, marker = 'o', s = 3.0)
+                if plot_zeros_in_scatter: img = plt.scatter(xZeroCounter, yZeroCounter, c = minArr[xZeroCounter, yZeroCounter], vmin = vmin_, vmax = vmax_, marker = 'x', s = 3.0, **plot_obj_kwargs) # param s = 5.0 sets size of dots for 150 * 150 * 150 mapping
+                img = plt.scatter(xCounterOriginal, yCounterOriginal, c = plotPlaneLst[0][xCounterOriginal, yCounterOriginal], vmin=vmin_, vmax=vmax_, marker = 'o', s = 3.0, **plot_obj_kwargs)
             
             else:
-                img = plt.scatter(xZeroCounter, yZeroCounter, c = minArr[xZeroCounter, yZeroCounter], marker = 'x') # param s = 5.0 sets size of dots for 150 * 150 * 150 mapping
-                img = plt.scatter(xCounterOriginal, yCounterOriginal, c = plotPlaneLst[0][xCounterOriginal, yCounterOriginal], marker = 'o')
+                if plot_zeros_in_scatter: img = plt.scatter(xZeroCounter, yZeroCounter, c = minArr[xZeroCounter, yZeroCounter], marker = 'x', **plot_obj_kwargs) # param s = 5.0 sets size of dots for 150 * 150 * 150 mapping
+                img = plt.scatter(xCounterOriginal, yCounterOriginal, c = plotPlaneLst[0][xCounterOriginal, yCounterOriginal], marker = 'o', **plot_obj_kwargs)
             
             cbarInst = plt.colorbar(fraction=0.046 * subplot_ratio[1] * nPlots / subplot_ratio[0], pad=0.04, aspect= 10 * subplot_ratio[1] * nPlots / subplot_ratio[0])
             # cbarInst = plt.colorbar(cax = cax)
             cbarInst.set_label(cbarLabel, fontsize = cbar_font_size)
             cbarInst.ax.tick_params(labelsize= cbar_font_size)
 
-            plt.subplot(*(plotShape + [2]))
-            plt.title(titleLst[1], fontsize = title_font_size)
-
-            plt.xlabel(xlabel, fontsize = label_font_size)
-            plt.ylabel(ylabel, fontsize = label_font_size)
-
-            plt.xticks(horiLabelIdc, horiLabels, fontsize = label_font_size)
-            plt.yticks(vertLabelIdc, vertLabels, fontsize = label_font_size)
-
-            # xCounterOriginal, yCounterOriginal = np.nonzero(np.where(plotPlaneLst[0] >= 1., 1., 0.))
-            if planeMaskLst is not None:
-                xCounterOriginal, yCounterOriginal = np.nonzero(np.where(plotPlaneMaskLst[0] >= 1., 1., 0.))
-                xCounterOnlyRecovered, yCounterOnlyRecovered = np.nonzero(np.where(plotPlaneMaskLst[0] < 1., np.where(plotPlaneMaskLst[1] >= 1., 1., 0.), 0.))
-                xZeroCounter, yZeroCounter = np.nonzero(np.where(plotPlaneMaskLst[1] < 1., np.where(plotPlaneMaskLst[0] < 1., 1., 0.), 0.))
-            else:
-                xCounterOriginal, yCounterOriginal = np.nonzero(np.where(plotPlaneLst[0] > 1e-8, 1., 0.))
-                xCounterOnlyRecovered, yCounterOnlyRecovered = np.nonzero(np.where(plotPlaneLst[0] <= 1e-8, np.where(plotPlaneLst[1] > 1e-8, 1., 0.), 0.))
-                xZeroCounter, yZeroCounter = np.nonzero(np.where(plotPlaneLst[1] <= 1e-8, np.where(plotPlaneLst[0] <= 1e-8, 1., 0.), 0.))
-            minArr = np.ones(shape_) * vmin_
-
-            if vmin_vmax is not None:
-                img = plt.scatter(xZeroCounter, yZeroCounter, c = minArr[xZeroCounter, yZeroCounter], vmin=vmin_, vmax=vmax_, marker = 'x', s = pointSize)
-                img = plt.scatter(xCounterOriginal, yCounterOriginal, c = plotPlaneLst[0][xCounterOriginal, yCounterOriginal], vmin=vmin_, vmax=vmax_, marker = 'o', s = pointSize)
-                img = plt.scatter(xCounterOnlyRecovered, yCounterOnlyRecovered, c = plotPlaneLst[1][xCounterOnlyRecovered, yCounterOnlyRecovered], vmin=vmin_, vmax=vmax_, marker = '^', s = pointSize)
-
-            else:
-                img = plt.scatter(xZeroCounter, yZeroCounter, c = minArr[xZeroCounter, yZeroCounter], marker = 'x', s = pointSize)
-                img = plt.scatter(xCounterOriginal, yCounterOriginal, c = plotPlaneLst[0][xCounterOriginal, yCounterOriginal], marker = 'o', s = pointSize)
-                img = plt.scatter(xCounterOnlyRecovered, yCounterOnlyRecovered, c = plotPlaneLst[1][xCounterOnlyRecovered, yCounterOnlyRecovered], marker = '^', s = pointSize)
-
-            cbarInst = plt.colorbar(fraction=0.046 * subplot_ratio[1] * nPlots / subplot_ratio[0], pad=0.04, aspect= 10 * subplot_ratio[1] * nPlots / subplot_ratio[0])
-            # cbarInst = plt.colorbar(cax = cax)
-            cbarInst.set_label(cbarLabel, fontsize = cbar_font_size)
-            cbarInst.ax.tick_params(labelsize= cbar_font_size)
+            ## Plot Sampled
 
             plt.subplot(*(plotShape + [3]))
             plt.title(titleLst[2], fontsize = title_font_size)
@@ -360,21 +347,38 @@ def plot2Ds(planeLst, titleLst, filePath, cbarLabel = 'amount', plotShape = [3, 
             plt.xticks(horiLabelIdc, horiLabels, fontsize = label_font_size)
             plt.yticks(vertLabelIdc, vertLabels, fontsize = label_font_size)
 
-            if planeMaskLst is not None:
-                xCounterSampled, yCounterSampled = np.nonzero(np.where(plotPlaneMaskLst[2] >= 1., 1., 0.))
-                xZeroCounter, yZeroCounter = np.nonzero(np.where(plotPlaneMaskLst[2] < 1., 1., 0.))
+            if vmin_vmax is not None:
+                if plot_zeros_in_scatter: img = plt.scatter(xZeroCounter, yZeroCounter, c = minArr[xZeroCounter, yZeroCounter], vmin=vmin_, vmax=vmax_, marker = 'x', s = pointSize, **plot_obj_kwargs)
+                img = plt.scatter(xCounterSampled, yCounterSampled, c = plotPlaneLst[1][xCounterSampled, yCounterSampled], vmin=vmin_, vmax=vmax_, marker = 'o', s = pointSize, **plot_obj_kwargs)
+
             else:
-                xCounterSampled, yCounterSampled = np.nonzero(np.where(plotPlaneLst[2] > 1e-8, 1., 0.))
-                xZeroCounter, yZeroCounter = np.nonzero(np.where(plotPlaneLst[2] <= 1e-8, 1., 0.))
-            minArr = np.ones(shape_) * vmin_
+                if plot_zeros_in_scatter: img = plt.scatter(xZeroCounter, yZeroCounter, c = minArr[xZeroCounter, yZeroCounter], marker = 'x', s = pointSize, **plot_obj_kwargs)
+                img = plt.scatter(xCounterSampled, yCounterSampled, c = plotPlaneLst[1][xCounterSampled, yCounterSampled], marker = 'o', s = pointSize, **plot_obj_kwargs)
+
+            cbarInst = plt.colorbar(fraction=0.046 * subplot_ratio[1] * nPlots / subplot_ratio[0], pad=0.04, aspect= 10 * subplot_ratio[1] * nPlots / subplot_ratio[0])
+            # cbarInst = plt.colorbar(cax = cax)
+            cbarInst.set_label(cbarLabel, fontsize = cbar_font_size)
+            cbarInst.ax.tick_params(labelsize= cbar_font_size)
+
+            ## Plot Recovered
+            plt.subplot(*(plotShape + [2]))
+            plt.title(titleLst[1], fontsize = title_font_size)
+
+            plt.xlabel(xlabel, fontsize = label_font_size)
+            plt.ylabel(ylabel, fontsize = label_font_size)
+
+            plt.xticks(horiLabelIdc, horiLabels, fontsize = label_font_size)
+            plt.yticks(vertLabelIdc, vertLabels, fontsize = label_font_size)
 
             if vmin_vmax is not None:
-                img = plt.scatter(xZeroCounter, yZeroCounter, c = minArr[xZeroCounter, yZeroCounter], vmin=vmin_, vmax=vmax_, marker = 'x', s = pointSize)
-                img = plt.scatter(xCounterSampled, yCounterSampled, c = plotPlaneLst[2][xCounterSampled, yCounterSampled], vmin=vmin_, vmax=vmax_, marker = 'o', s = pointSize)
+                if plot_zeros_in_scatter: img = plt.scatter(xZeroCounter, yZeroCounter, c = minArr[xZeroCounter, yZeroCounter], vmin=vmin_, vmax=vmax_, marker = 'x', s = pointSize, **plot_obj_kwargs)
+                img = plt.scatter(xCounterOriginal, yCounterOriginal, c = plotPlaneLst[0][xCounterOriginal, yCounterOriginal], vmin=vmin_, vmax=vmax_, marker = 'o', s = pointSize, **plot_obj_kwargs)
+                img = plt.scatter(xCounterOnlyRecovered, yCounterOnlyRecovered, c = plotPlaneLst[2][xCounterOnlyRecovered, yCounterOnlyRecovered], vmin=vmin_, vmax=vmax_, marker = '^', s = pointSize, **plot_obj_kwargs)
 
             else:
-                img = plt.scatter(xZeroCounter, yZeroCounter, c = minArr[xZeroCounter, yZeroCounter], marker = 'x', s = pointSize)
-                img = plt.scatter(xCounterSampled, yCounterSampled, c = plotPlaneLst[2][xCounterSampled, yCounterSampled], marker = 'o', s = pointSize)
+                if plot_zeros_in_scatter: img = plt.scatter(xZeroCounter, yZeroCounter, c = minArr[xZeroCounter, yZeroCounter], marker = 'x', s = pointSize, **plot_obj_kwargs)
+                img = plt.scatter(xCounterOriginal, yCounterOriginal, c = plotPlaneLst[0][xCounterOriginal, yCounterOriginal], marker = 'o', s = pointSize, **plot_obj_kwargs)
+                img = plt.scatter(xCounterOnlyRecovered, yCounterOnlyRecovered, c = plotPlaneLst[2][xCounterOnlyRecovered, yCounterOnlyRecovered], marker = '^', s = pointSize, **plot_obj_kwargs)
 
             cbarInst = plt.colorbar(fraction=0.046 * subplot_ratio[1] * nPlots / subplot_ratio[0], pad=0.04, aspect= 10 * subplot_ratio[1] * nPlots / subplot_ratio[0])
             # cbarInst = plt.colorbar(cax = cax)
@@ -1649,7 +1653,7 @@ def plotly_2D_contour(nparr, path_to_save, arr_filter = None, vmin = None, vmax 
         x_, y_ = np.nonzero(points_to_plot)
         data.append(go.Scatter(x=y_, y=x_,
                     mode='markers',
-                    marker_symbol='cross-thin', marker_color= "green", marker_size= 6))
+                    marker_symbol='cross', marker_color= "black", marker_size= 4))
     scene = go.Scene(**scene_kwargs_local)
     layout = go.Layout(scene = scene, **layout_kwargs_local)
     # fig = go.Figure(data = go.Scatter(x=y_, y=x_,
