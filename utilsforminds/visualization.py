@@ -134,11 +134,11 @@ def plot2Ds(planeLst, titleLst, filePath, cbarLabel = 'amount', plotShape = [3, 
     plotPlaneMaskLst = []
     for i in range(nPlots):
         if method == 'imshow' or method == 'contour': plotPlaneLst.append(np.transpose(planeLst[i]))
-        elif method == "scatter": plotPlaneLst.append(np.flipud(planeLst[i]))
+        elif method == "scatter": plotPlaneLst.append(np.fliplr(planeLst[i]))
     if planeMaskLst is not None:
         for i in range(len(planeMaskLst)):
             if method == 'imshow' or method == 'contour': plotPlaneMaskLst.append(np.transpose(planeMaskLst[i]))
-            elif method == "scatter": plotPlaneMaskLst.append(np.flipud(planeMaskLst[i]))
+            elif method == "scatter": plotPlaneMaskLst.append(np.fliplr(planeMaskLst[i]))
     
     # Set White color for unobserved points
     if specific_value_color_dict is not None:
@@ -166,8 +166,8 @@ def plot2Ds(planeLst, titleLst, filePath, cbarLabel = 'amount', plotShape = [3, 
 
     horiLabelIdc = [min(round(shape_[0] * position_proportion), shape_[0] - 1) for position_proportion in label_positions]
     vertLabelIdc = [min(round(shape_[1] - shape_[1] * position_proportion), shape_[1] - 1) for position_proportion in label_positions]
-    if method == "scatter": vertLabelIdc = [shape_[1] - idx for idx in reversed(vertLabelIdc)]
 
+    if method == "scatter": vertLabelIdc = [shape_[1] - idx for idx in reversed(vertLabelIdc)]
     if axisInfo is None:
         if method == 'imshow':
             horiLabels = list(reversed(vertLabelIdc)) ## ??????????????????
@@ -179,6 +179,7 @@ def plot2Ds(planeLst, titleLst, filePath, cbarLabel = 'amount', plotShape = [3, 
         horiAxis, vertAxis = get_xy_axis_from_z(axis)
         horiLabels = [round(axisInfo[horiAxis]["min"] + (axisInfo[horiAxis]["max"] - axisInfo[horiAxis]["min"]) * position_proportion) for position_proportion in label_positions]
         vertLabels = [round(axisInfo[vertAxis]["min"] + (axisInfo[vertAxis]["max"] - axisInfo[vertAxis]["min"]) * position_proportion) for position_proportion in label_positions]
+    if method == "scatter": vertLabels = list(reversed(vertLabels))
     
     axis_label_names_dict = {0: "East(m)", 1: "North(m)", 2: "Elevation(m)"}
     xlabel = axis_label_names_dict[get_xy_axis_from_z(axis)[0]]
@@ -218,8 +219,8 @@ def plot2Ds(planeLst, titleLst, filePath, cbarLabel = 'amount', plotShape = [3, 
                     img = plt.contour(np.flipud(plotPlaneLst[i]), linewidths = 2.0, colors = 'black', levels = [vmin_, vmin_ + (vmax_ - vmin_) * 1/8, vmin_ + (vmax_ - vmin_) * 2/8, vmin_ + (vmax_ - vmin_) * 3/8, vmin_ + (vmax_ - vmin_) * 4/8, vmin_ + (vmax_ - vmin_) * 5/8, vmin_ + (vmax_ - vmin_) * 6/8, vmin_ + (vmax_ - vmin_) * 7/8, vmax_], **plot_obj_kwargs)
     
     elif method == 'scatter':
-        assert(nPlots == 2 or nPlots ==3)
-        pointSize = 11.0 * (80 * 80 / (shape_[0] * shape_[1])) ** 0.5
+        assert(nPlots ==3)
+        pointSize = 12.0 * (80 * 80 / (shape_[0] * shape_[1])) ** 0.5
         # shape_ = (shape_[1], shape_[0])
         if nPlots == 2: # original, recovered
             raise Exception("Deprecated Option")
@@ -323,6 +324,9 @@ def plot2Ds(planeLst, titleLst, filePath, cbarLabel = 'amount', plotShape = [3, 
             plt.xticks(horiLabelIdc, horiLabels, fontsize = label_font_size)
             plt.yticks(vertLabelIdc, vertLabels, fontsize = label_font_size)
 
+            plt.xlim(0, shape_[0])
+            plt.ylim(0, shape_[1])
+
             if vmin_vmax is not None:
                 if plot_zeros_in_scatter: img = plt.scatter(xZeroCounter, yZeroCounter, c = minArr[xZeroCounter, yZeroCounter], vmin = vmin_, vmax = vmax_, marker = 'x', s = 3.0, **plot_obj_kwargs) # param s = 5.0 sets size of dots for 150 * 150 * 150 mapping
                 img = plt.scatter(xCounterOriginal, yCounterOriginal, c = plotPlaneLst[0][xCounterOriginal, yCounterOriginal], vmin=vmin_, vmax=vmax_, marker = 'o', s = 3.0, **plot_obj_kwargs)
@@ -347,6 +351,9 @@ def plot2Ds(planeLst, titleLst, filePath, cbarLabel = 'amount', plotShape = [3, 
             plt.xticks(horiLabelIdc, horiLabels, fontsize = label_font_size)
             plt.yticks(vertLabelIdc, vertLabels, fontsize = label_font_size)
 
+            plt.xlim(0, shape_[0])
+            plt.ylim(0, shape_[1])
+
             if vmin_vmax is not None:
                 if plot_zeros_in_scatter: img = plt.scatter(xZeroCounter, yZeroCounter, c = minArr[xZeroCounter, yZeroCounter], vmin=vmin_, vmax=vmax_, marker = 'x', s = pointSize, **plot_obj_kwargs)
                 img = plt.scatter(xCounterSampled, yCounterSampled, c = plotPlaneLst[1][xCounterSampled, yCounterSampled], vmin=vmin_, vmax=vmax_, marker = 'o', s = pointSize, **plot_obj_kwargs)
@@ -369,6 +376,9 @@ def plot2Ds(planeLst, titleLst, filePath, cbarLabel = 'amount', plotShape = [3, 
 
             plt.xticks(horiLabelIdc, horiLabels, fontsize = label_font_size)
             plt.yticks(vertLabelIdc, vertLabels, fontsize = label_font_size)
+
+            plt.xlim(0, shape_[0])
+            plt.ylim(0, shape_[1])
 
             if vmin_vmax is not None:
                 if plot_zeros_in_scatter: img = plt.scatter(xZeroCounter, yZeroCounter, c = minArr[xZeroCounter, yZeroCounter], vmin=vmin_, vmax=vmax_, marker = 'x', s = pointSize, **plot_obj_kwargs)
@@ -1421,9 +1431,10 @@ def plot_3D_plotly(nparr_3D, path_to_save_static : str, do_save_html : bool = Tr
             hoverinfo = None
         if alpha_shape_clustering:
             positions = np.stack([x, y, z], axis = -1)
-            # cluster_labels = cluster.OPTICS(min_samples = min(positions.shape[0], 20)).fit_predict(positions) ## Change here if you wanna use different clustering.
-            cluster_labels = cluster.DBSCAN(min_samples = min(positions.shape[0], 20)).fit_predict(positions)
             number_of_clusters_to_plot = 5
+
+            # cluster_labels = cluster.OPTICS(min_samples = min(positions.shape[0], 20)).fit_predict(positions) ## Change here if you wanna use different clustering.
+            cluster_labels = cluster.Birch(n_clusters= number_of_clusters_to_plot).fit_predict(positions)
 
             smallest_number_of_points_in_cluster = -1
             cluster_labels_to_plot = []
