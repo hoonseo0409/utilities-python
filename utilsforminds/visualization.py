@@ -56,6 +56,7 @@ from shapely.geometry import MultiPoint
 import trimesh
 
 from utilsforminds.containers import merge_dictionaries
+from utilsforminds.containers import merge
 
 from sklearn import cluster
 from sklearn import svm, datasets
@@ -1307,7 +1308,7 @@ def optimizealpha(points, value_flat_for_alphashape_optimization,
     return best_alpha
 
 @decorators.grid_of_functions(param_to_grid= "alphahull", param_formatter_dict= {"path_to_save_static": lambda **kwargs: kwargs["path_to_save_static"].split(".")[0] + "_" + str(kwargs["alphahull"] * 100)}, grid_condition= lambda **kwargs: True if ("kinds_to_plot" in kwargs.keys() and "alphashape" in kwargs["kinds_to_plot"]) else False)
-def plot_3D_plotly(nparr_3D, path_to_save_static : str, do_save_html : bool = True, grid_formatter_to_save_tri = None, save_info_txt = False, kinds_to_plot : list = None, marker_kwargs : dict = None, vmin = None, vmax = None, alpha_shape_kwargs : dict = None, alphahull: float = 0.65, points_decider = lambda x: x > 1e-8, observation_mask_nparr_3D = None, title= None, points_legends : dict = None, alpha_shape_legend = "alpha-shape", scene_kwargs : dict = None, xyz_tickers = None, axis_kwargs : dict = None, layout_kwargs : dict = None, figsize_ratio : dict = None, camera = None, showgrid = False, zeroline = True, showline = False, transparent_bacground = True, colorbar_kwargs = None, get_hovertext = None, alpha_shape_clustering = False, use_pyvista_alphashape = True, additional_gos = None, coordinate_info= None, layout_legend = None, value_arr_for_alphashape_optimization = None):
+def plot_3D_plotly(nparr_3D, path_to_save_static : str, do_save_html : bool = True, grid_formatter_to_save_tri = None, save_info_txt = False, kinds_to_plot : list = None, marker_kwargs : dict = None, vmin = None, vmax = None, alpha_shape_kwargs : dict = None, alphahull: float = 0.65, points_decider = lambda x: x > 1e-8, observation_mask_nparr_3D = None, title= None, points_legends : dict = None, alpha_shape_legend = "alpha-shape", scene_kwargs : dict = None, xyz_tickers = None, axis_kwargs : dict = None, layout_kwargs : dict = None, figsize_ratio : dict = None, camera = None, showgrid = False, zeroline = True, showline = False, transparent_bacground = True, colorbar_kwargs = None, get_hovertext = None, alpha_shape_clustering = False, use_pyvista_alphashape = True, additional_gos = None, coordinate_info= None, layout_legend = None, value_arr_for_alphashape_optimization = None, marker_symbols = None):
     """
     
     Parameters
@@ -1353,6 +1354,7 @@ def plot_3D_plotly(nparr_3D, path_to_save_static : str, do_save_html : bool = Tr
     scene_kwargs_local = utilsforminds.containers.merge_dictionaries([{"xaxis_title": "x", "yaxis_title": "y", "zaxis_title": "z"}, scene_kwargs])
     axis_kwargs_local = utilsforminds.containers.merge_dictionaries([{"showgrid": showgrid, "zeroline": zeroline, "showline": showline, "zerolinecolor": "black", "backgroundcolor": "rgb(255, 255, 255)"}, axis_kwargs])
     layout_legend_local = utilsforminds.containers.merge_dictionaries([dict(orientation= "h"), layout_legend])
+    marker_symbols_local = merge(dict(nonmask= "circle", mask= "cross"), marker_symbols)
 
     if xyz_tickers is None:
         xyz_tickers_copied = {
@@ -1381,7 +1383,7 @@ def plot_3D_plotly(nparr_3D, path_to_save_static : str, do_save_html : bool = Tr
         observation_mask_nparr_3D_added = np.where(nparr_3D_whole == 1., np.where(observation_mask_nparr_3D, 0., 1.), 0.)
         nparr_3D_non_mask = np.where(nparr_3D_whole, np.where(observation_mask_nparr_3D_added, 0., 1.), 0.)
     if "scatter" in kinds_to_plot:
-        for is_main, mask_to_plot, marker_symbol, points_legend in zip([True, False], [nparr_3D_non_mask, observation_mask_nparr_3D_added], ["circle", "cross"], [points_legends_local[1], points_legends_local[0]]):
+        for is_main, mask_to_plot, marker_symbol, points_legend in zip([True, False], [nparr_3D_non_mask, observation_mask_nparr_3D_added], [marker_symbols_local["nonmask"], marker_symbols_local["mask"]], [points_legends_local[1], points_legends_local[0]]):
             x, y, z = mask_to_plot.nonzero()
             colors_arr = utilsforminds.numpy_array.push_arr_to_range(nparr_3D[x, y, z], vmin = vmin, vmax = vmax) ## don't need maybe, because of cmin and cmax.
             if get_hovertext is not None:
