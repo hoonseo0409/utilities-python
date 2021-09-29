@@ -47,7 +47,7 @@ def getNewDirectoryName(parentDir, newDir, root_dir = None):
     assert(root_dir + parentDir)
 
     duplicatedNameNum = 0
-    while(os.path.isdir(root_dir + parentDir + newDir + str(duplicatedNameNum))):
+    while(os.path.isdir(root_dir + parentDir + newDir + str(duplicatedNameNum)) and duplicatedNameNum < 1000):
         duplicatedNameNum = duplicatedNameNum + 1
     newDir = newDir + str(duplicatedNameNum)
 
