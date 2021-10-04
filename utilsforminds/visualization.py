@@ -40,6 +40,7 @@ import plotly.graph_objs as graph_objs
 import plotly.graph_objs as go
 import plotly.tools as tls
 import plotly
+import plotly.express as px
 import pyvista as pv
 
 # import logging
@@ -1765,5 +1766,54 @@ def plot_ROC(path_to_save, y_true, list_of_y_pred, list_of_model_names = None, l
     plt.tight_layout()
     plt.savefig(path_to_save + "." + extension, format = extension)
 
+def plot_multiple_matrices(list_of_matrices, imshow_kwargs = None):
+    """
+        https://plotly.com/python/imshow/
+    """
+    imshow_kwargs_local = merge(dict(labels= dict(x= "time steps", y= "features of participants")), 
+    imshow_kwargs)
+    axis_kwargs_local = {"showgrid": False, "zeroline": False, "showline": False, "zerolinecolor": "black", "backgroundcolor": "rgb(255, 255, 255)"}
+
+    width = 1
+    height = 0
+    matrices_ranges = []
+    
+    for matrix in list_of_matrices:
+        matrices_ranges.append(dict(x0= width, x1= width + matrix.shape[0], y0= 1, y1= 1 + matrix.shape[1]))
+        width += matrix.shape[0] + 1
+        if matrix.shape[1] > height: height= matrix.shape[1]
+    height += 2 ## For padding.
+    merged_matrices = np.zeros((width, height)) * np.nan
+    for matrix, matrix_range in zip(list_of_matrices, matrices_ranges):
+        merged_matrices[matrix_range["x0"]:matrix_range["x1"], matrix_range["y0"]:matrix_range["y1"]] = matrix
+
+    # fig = graph_objs.Figure(data = px.imshow(merged_matrices, **imshow_kwargs_local), layout= dict(dragmode='drawrect',
+    #     newshape=dict(line_color='cyan'),
+    #     scene= dict(xaxis= {"range": [0, width], "tickvals": [30], "ticktext": ["hi"], **axis_kwargs_local}, yaxis= axis_kwargs_local)))
+    fig = px.imshow(merged_matrices, **imshow_kwargs_local)
+
+    # Shape defined programatically
+    for matrix_range in matrices_ranges:
+        fig.add_shape(
+            type='rect',
+            x0= matrix_range["y0"], x1= matrix_range["y1"], y0= matrix_range["x0"], y1= matrix_range["x1"],
+            xref='x', yref='y',
+            line_color='cyan'
+        )
+    ## Define dragmode, newshape parameters, amd add modebar buttons
+    fig.update_layout(
+        dragmode='drawrect',
+        newshape=dict(line_color='cyan'),
+        plot_bgcolor= "rgba(0, 0, 0, 0)",
+        paper_bgcolor= "rgba(0, 0, 0, 0)",
+        )
+
+    # fig.update_layout(coloraxis_showscale=False)
+    # fig.update_xaxes(showticklabels=False, showgrid= False, zeroline= False, showline= False, zerolinecolor= "black", backgroundcolor= "rgb(255, 255, 255)")
+    # fig.update_yaxes(showticklabels=False, showgrid= False, zeroline= False, showline= False, zerolinecolor= "black", backgroundcolor= "rgb(255, 255, 255)")
+
+    fig.show()
+
 if __name__ == '__main__':
-    pass
+    test_list_of_arrays = [np.random.rand(60, 3), np.random.rand(60, 1), np.random.rand(60, 20), np.random.rand(60, 27), np.random.rand(60, 15), np.random.rand(60, 80), np.random.rand(60, 54), np.random.rand(60, 2), np.random.rand(60, 15)]
+    plot_multiple_matrices(test_list_of_arrays)
