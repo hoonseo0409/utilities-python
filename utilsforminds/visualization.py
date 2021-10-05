@@ -1766,37 +1766,46 @@ def plot_ROC(path_to_save, y_true, list_of_y_pred, list_of_model_names = None, l
     plt.tight_layout()
     plt.savefig(path_to_save + "." + extension, format = extension)
 
-def plot_multiple_matrices(list_of_matrices, imshow_kwargs = None):
+def plot_multiple_matrices(container_of_matrices, path_to_save: str, imshow_kwargs = None):
     """
         https://plotly.com/python/imshow/
+
+    Parameters
+    ----------
+    container_of_matrices : list of arrays.
+        For example, [np.random.rand(60, 3), np.random.rand(60, 1), np.random.rand(60, 20), np.random.rand(60, 27), np.random.rand(60, 15), np.random.rand(60, 80), np.random.rand(60, 54), np.random.rand(60, 2), np.random.rand(60, 15)]
     """
-    imshow_kwargs_local = merge(dict(labels= dict(x= "time steps", y= "features of participants")), 
+
+    imshow_kwargs_local = merge(dict(labels= dict(x= "x", y= "y")), 
     imshow_kwargs)
-    axis_kwargs_local = {"showgrid": False, "zeroline": False, "showline": False, "zerolinecolor": "black", "backgroundcolor": "rgb(255, 255, 255)"}
+    if isinstance(container_of_matrices, list): num_matrices = len(container_of_matrices)
+    else: raise Exception("Unsupported input type")
+    if len(container_of_matrices[0].shape) == 2:
+        container_of_matrices_local = container_of_matrices
+    elif len(container_of_matrices[0].shape) == 1:
+        container_of_matrices_local = [vec.reshape((1, vec.shape[0])) for vec in container_of_matrices]
 
     width = 1
     height = 0
     matrices_ranges = []
     
-    for matrix in list_of_matrices:
+    for matrix_idx in range(num_matrices):
+        matrix = container_of_matrices_local[matrix_idx]
         matrices_ranges.append(dict(x0= width, x1= width + matrix.shape[0], y0= 1, y1= 1 + matrix.shape[1]))
         width += matrix.shape[0] + 1
         if matrix.shape[1] > height: height= matrix.shape[1]
     height += 2 ## For padding.
     merged_matrices = np.zeros((width, height)) * np.nan
-    for matrix, matrix_range in zip(list_of_matrices, matrices_ranges):
-        merged_matrices[matrix_range["x0"]:matrix_range["x1"], matrix_range["y0"]:matrix_range["y1"]] = matrix
+    for matrix_idx in range(num_matrices):
+        merged_matrices[matrices_ranges[matrix_idx]["x0"]:matrices_ranges[matrix_idx]["x1"], matrices_ranges[matrix_idx]["y0"]:matrices_ranges[matrix_idx]["y1"]] = container_of_matrices_local[matrix_idx]
 
-    # fig = graph_objs.Figure(data = px.imshow(merged_matrices, **imshow_kwargs_local), layout= dict(dragmode='drawrect',
-    #     newshape=dict(line_color='cyan'),
-    #     scene= dict(xaxis= {"range": [0, width], "tickvals": [30], "ticktext": ["hi"], **axis_kwargs_local}, yaxis= axis_kwargs_local)))
     fig = px.imshow(merged_matrices, **imshow_kwargs_local)
 
     # Shape defined programatically
     for matrix_range in matrices_ranges:
         fig.add_shape(
             type='rect',
-            x0= matrix_range["y0"], x1= matrix_range["y1"], y0= matrix_range["x0"], y1= matrix_range["x1"],
+            x0= matrix_range["y0"]-0.5, x1= matrix_range["y1"]-0.5, y0= matrix_range["x0"]-0.5, y1= matrix_range["x1"]-0.5,
             xref='x', yref='y',
             line_color='cyan'
         )
@@ -1804,16 +1813,17 @@ def plot_multiple_matrices(list_of_matrices, imshow_kwargs = None):
     fig.update_layout(
         dragmode='drawrect',
         newshape=dict(line_color='cyan'),
-        plot_bgcolor= "rgba(0, 0, 0, 0)",
-        paper_bgcolor= "rgba(0, 0, 0, 0)",
+        plot_bgcolor= "rgba(0, 0, 0, 0)", ## Set white background https://community.plotly.com/t/having-a-transparent-background-in-plotly-express/30205
+        paper_bgcolor= "rgba(0, 0, 0, 0)", ## Set white background https://community.plotly.com/t/having-a-transparent-background-in-plotly-express/30205
         )
 
     # fig.update_layout(coloraxis_showscale=False)
-    # fig.update_xaxes(showticklabels=False, showgrid= False, zeroline= False, showline= False, zerolinecolor= "black", backgroundcolor= "rgb(255, 255, 255)")
-    # fig.update_yaxes(showticklabels=False, showgrid= False, zeroline= False, showline= False, zerolinecolor= "black", backgroundcolor= "rgb(255, 255, 255)")
+    fig.update_xaxes(showticklabels=False)
+    fig.update_yaxes(showticklabels=False)
 
-    fig.show()
+    # fig.show()
+    fig.write_html(utilsforminds.strings.format_extension(path_to_save, "html"))
 
 if __name__ == '__main__':
     test_list_of_arrays = [np.random.rand(60, 3), np.random.rand(60, 1), np.random.rand(60, 20), np.random.rand(60, 27), np.random.rand(60, 15), np.random.rand(60, 80), np.random.rand(60, 54), np.random.rand(60, 2), np.random.rand(60, 15)]
-    plot_multiple_matrices(test_list_of_arrays)
+    plot_multiple_matrices(test_list_of_arrays, path_to_save= "ss")
