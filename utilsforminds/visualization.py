@@ -68,6 +68,8 @@ from sklearn.multiclass import OneVsRestClassifier
 from sklearn.metrics import roc_auc_score
 
 from scipy import interp
+
+from math import degrees, cos, radians
 # from meshplex import MeshTri
 
 axis_rotation_dict = {0: 0, 1: 0, 2: 0}
@@ -1212,6 +1214,7 @@ def _testalpha(points, alpha: float, value_flat_for_alphashape_optimization: np.
         bool: True if the resulting alpha shape is a single polygon that
             intersects all the input data points.
     """
+
     try:
         polygon = alphashape.alphashape(points, alpha = alpha)
     except Exception as e:
@@ -1309,7 +1312,7 @@ def optimizealpha(points, value_flat_for_alphashape_optimization,
     return best_alpha
 
 @decorators.grid_of_functions(param_to_grid= "alphahull", param_formatter_dict= {"path_to_save_static": lambda **kwargs: kwargs["path_to_save_static"].split(".")[0] + "_" + str(kwargs["alphahull"] * 100)}, grid_condition= lambda **kwargs: True if ("kinds_to_plot" in kwargs.keys() and "alphashape" in kwargs["kinds_to_plot"]) else False)
-def plot_3D_plotly(nparr_3D, path_to_save_static : str, do_save_html : bool = True, grid_formatter_to_save_tri = None, save_info_txt = False, kinds_to_plot : list = None, marker_kwargs : dict = None, vmin = None, vmax = None, alpha_shape_kwargs : dict = None, alphahull: float = 0.65, points_decider = lambda x: x > 1e-8, observation_mask_nparr_3D = None, title= None, points_legends : dict = None, alpha_shape_legend = "alpha-shape", scene_kwargs : dict = None, xyz_tickers = None, axis_kwargs : dict = None, layout_kwargs : dict = None, figsize_ratio : dict = None, camera = None, showgrid = False, zeroline = True, showline = False, transparent_bacground = True, colorbar_kwargs = None, get_hovertext = None, alpha_shape_clustering = False, use_pyvista_alphashape = True, additional_gos = None, coordinate_info= None, layout_legend = None, value_arr_for_alphashape_optimization = None, marker_symbols = None):
+def plot_3D_plotly(nparr_3D, path_to_save_static : str, do_save_html : bool = True, grid_formatter_to_save_tri = None, save_info_txt = False, kinds_to_plot : list = None, marker_kwargs : dict = None, vmin = None, vmax = None, alpha_shape_kwargs : dict = None, alphahull: float = 0.65, points_decider = lambda x: x > 1e-8, observation_mask_nparr_3D = None, title= None, points_legends : dict = None, alpha_shape_legend = "alpha-shape", scene_kwargs : dict = None, xyz_tickers = None, axis_kwargs : dict = None, layout_kwargs : dict = None, figsize_ratio : dict = None, camera = None, showgrid = False, zeroline = True, showline = False, transparent_bacground = True, colorbar_kwargs = None, get_hovertext = None, alpha_shape_clustering = False, use_pyvista_alphashape = True, additional_gos = None, coordinate_info= None, layout_legend = None, value_arr_for_alphashape_optimization = None, marker_symbols = None, pyvista_alpha_model_kwargs = None):
     """
     
     Parameters
@@ -1402,6 +1405,7 @@ def plot_3D_plotly(nparr_3D, path_to_save_static : str, do_save_html : bool = Tr
         if use_pyvista_alphashape:
             alpha = 1. / max(alpha_shape_kwargs_local["alphahull"], 1e-16)
             del alpha_shape_kwargs_local["alphahull"]
+            pyvista_alpha_model_kwargs_loc = merge(dict(model = "optimize_alpha", kwargs = dict()), pyvista_alpha_model_kwargs)
         mask_nparr_3D_alphashape = nparr_3D_whole
         x, y, z = mask_nparr_3D_alphashape.nonzero()
         # if do_normalize_coordinates:
@@ -1425,6 +1429,70 @@ def plot_3D_plotly(nparr_3D, path_to_save_static : str, do_save_html : bool = Tr
             with open(utilsforminds.strings.format_extension(path_to_save, "txt"), "a") as text_file:
                 text_file.write(f"alpha: {best_alpha}\n")
             return best_alpha
+        
+        def get_alpha(x_loc, y_loc, z_loc):
+            if pyvista_alpha_model_kwargs_loc["model"] == "optimize_alpha":
+                return optimize_alpha(x_loc, y_loc, z_loc)
+            elif pyvista_alpha_model_kwargs_loc["model"] == "weighted_alpha":
+                if pyvista_alpha_model_kwargs_loc["kwargs"]["kinds"] == "local_density":
+                    ## Calculate the array of local densities
+                    window = pyvista_alpha_model_kwargs_loc["kwargs"]["window"]
+                    window_size = (window[0][1] + window[0][0]) * (window[1][1] + window[1][0]) * (window[2][1] + window[2][0])
+                    global_density = np.count_nonzero(nparr_3D_whole) / (nparr_3D_whole.shape[0] * nparr_3D_whole.shape[1] * nparr_3D_whole.shape[2])
+                    local_densities = np.zeros(shape= nparr_3D_whole.shape)
+                    num_points = x_loc.shape[0]
+                    for point_idx in range(num_points):
+                        point = [x_loc[point_idx], y_loc[point_idx], z_loc[point_idx]]
+                        local_densities[point[0], point[1], point[2]] += np.count_nonzero(nparr_3D_whole[max(0, point[0] - window[0][0]):min(nparr_3D_whole.shape[0], point[0] + window[0][1]), max(0, point[1] - window[1][0]):min(nparr_3D_whole.shape[1], point[1] + window[1][1]), max(0, point[2] - window[2][0]):min(nparr_3D_whole.shape[2], point[2] + window[2][1])])
+                def get_alpha_value(indices_four_points, circumradius):
+                    """The callable which will be given to alpha shape construction function.
+
+                    This function is passed to alphashape package. Currently alpha = circumradius / cosine(theta)
+                    
+                    Parameters
+                    ----------
+                    indices_four_points : np array
+                        Array of four (three in 2D points input) integers indicating the indices of four points constituting the simplex (triangle in 2D, tetrahedron in 3D), for example [3, 4, 0, 2].
+                    circumradius : float
+                        The circumradius of circumcircle (https://artofproblemsolving.com/wiki/index.php/Circumradius).
+                    
+                    Returns
+                    -------
+                    alphahull : float, 1 / alpha_radius
+                    """
+
+                    if pyvista_alpha_model_kwargs_loc["kwargs"]["kinds"] == "angular":
+                        if "theta" in pyvista_alpha_model_kwargs_loc["kwargs"].keys():
+                            theta = pyvista_alpha_model_kwargs_loc["kwargs"]["theta"]
+                        else:
+                            theta = 60
+                        
+                        # alpha_radius = circumradius / cos(radians(theta))
+                        alpha_radius = circumradius
+                        alphahull = 1 / alpha_radius
+                    
+                    elif pyvista_alpha_model_kwargs_loc["kwargs"]["kinds"] == "local_density":
+                        num_points = 0
+                        for idx in indices_four_points:
+                            assert(local_densities[x_loc[idx], y_loc[idx], z_loc[idx]] > 0)
+                            assert(nparr_3D_whole[x_loc[idx], y_loc[idx], z_loc[idx]] != 0)
+                            num_points += local_densities[x_loc[idx], y_loc[idx], z_loc[idx]]
+                        density_ratio = ((num_points / (window_size * 4)) / global_density) ** (1/3)
+                        alpha_radius = pyvista_alpha_model_kwargs_loc["kwargs"]["alpha_radius"] / density_ratio
+                        # print(f"alpha_radius: {alpha_radius}")
+                        alphahull = 1 / alpha_radius
+                        
+                    elif pyvista_alpha_model_kwargs_loc["kwargs"]["kinds"] == "constant":
+                        if "alpha_radius" in pyvista_alpha_model_kwargs_loc["kwargs"].keys():
+                            alpha_radius = pyvista_alpha_model_kwargs_loc["kwargs"]["alpha_radius"]
+                        else:
+                            alpha_radius = 1.1
+                        alphahull = 1 / alpha_radius
+                    else:
+                        raise Exception(f"Unsupported kinds: {pyvista_alpha_model_kwargs_loc['kwargs']['kinds']}")
+                    return alphahull ## 1 / * because alphashape package use alpha parameter in the meaning of alphahull not alpha-radius, in my guess..
+                return get_alpha_value
+
 
         if get_hovertext is not None:
             hovertext = get_hovertext(x = x, y = y, z = z, value = nparr_3D[x, y, z])
@@ -1459,24 +1527,24 @@ def plot_3D_plotly(nparr_3D, path_to_save_static : str, do_save_html : bool = Tr
                 x_this_cluster = x[cluster_labels == cluster_label]
                 y_this_cluster = y[cluster_labels == cluster_label]
                 z_this_cluster = z[cluster_labels == cluster_label]
-                best_alpha = optimize_alpha(x_this_cluster, y_this_cluster, z_this_cluster)
+                best_alpha = get_alpha(x_this_cluster, y_this_cluster, z_this_cluster)
                 if use_pyvista_alphashape:
-                    tri1, tri2, tri3, volume = get_triangles_of_alpha_shape(x_this_cluster, y_this_cluster, z_this_cluster, alpha = best_alpha)
+                    tri1, tri2, tri3, volume = get_triangles_of_alpha_shape(x_this_cluster, y_this_cluster, z_this_cluster, alpha = best_alpha, model= pyvista_alpha_model_kwargs_loc["model"])
                     plot_objects.append(graph_objs.Mesh3d(name = f"{alpha_shape_legend}-cluster-{cluster_label}", x = x_this_cluster, y = y_this_cluster, z = z_this_cluster, hovertext = hovertext, hoverinfo = hoverinfo, intensity = utilsforminds.numpy_array.push_arr_to_range(nparr_3D[x_this_cluster, y_this_cluster, z_this_cluster], vmin = vmin, vmax = vmax), colorbar = marker_kwargs_local["colorbar"], showscale = showscale, i = tri1, j = tri2, k = tri3, **alpha_shape_kwargs_local))
                 else:
                     plot_objects.append(graph_objs.Mesh3d(name = f"{alpha_shape_legend}-cluster-{cluster_label}", x = x_this_cluster, y = y_this_cluster, z = z_this_cluster, hovertext = hovertext, hoverinfo = hoverinfo, intensity = utilsforminds.numpy_array.push_arr_to_range(nparr_3D[x_this_cluster, y_this_cluster, z_this_cluster], vmin = vmin, vmax = vmax), colorbar = marker_kwargs_local["colorbar"], showscale = showscale, **alpha_shape_kwargs_local))
                 showscale = False ## Only the first plot has colorbar.
         else:
-            best_alpha = optimize_alpha(x, y, z)
+            best_alpha = get_alpha(x, y, z)
             if use_pyvista_alphashape:
-                tri1, tri2, tri3, volume = get_triangles_of_alpha_shape(x, y, z, alpha = best_alpha)
+                tri1, tri2, tri3, volume = get_triangles_of_alpha_shape(x, y, z, alpha = best_alpha, model= pyvista_alpha_model_kwargs_loc["model"])
                 plot_objects.append(graph_objs.Mesh3d(name = alpha_shape_legend, x = x, y = y, z = z, hovertext = hovertext, hoverinfo = hoverinfo, intensity = utilsforminds.numpy_array.push_arr_to_range(nparr_3D[x, y, z], vmin = vmin, vmax = vmax), colorbar = marker_kwargs_local["colorbar"], i = tri1, j = tri2, k = tri3, **alpha_shape_kwargs_local))
             else:
                 plot_objects.append(graph_objs.Mesh3d(name = alpha_shape_legend, x = x, y = y, z = z, hovertext = hovertext, hoverinfo = hoverinfo, intensity = utilsforminds.numpy_array.push_arr_to_range(nparr_3D[x, y, z], vmin = vmin, vmax = vmax), colorbar = marker_kwargs_local["colorbar"], **alpha_shape_kwargs_local))
 
             if grid_formatter_to_save_tri is not None: ## Saving clustered alpha-shape will be implemented in the future in case we need.
                 if tri1 is None:
-                    tri1, tri2, tri3, volume = get_triangles_of_alpha_shape(x, y, z, alpha = best_alpha)
+                    tri1, tri2, tri3, volume = get_triangles_of_alpha_shape(x, y, z, alpha = best_alpha, model= pyvista_alpha_model_kwargs_loc["model"])
                 with open(utilsforminds.strings.format_extension(path_to_save, "tri"), "w") as text_file:
                     for triangle_idx in range(tri1.shape[0]):
                         line = ""
@@ -1529,7 +1597,7 @@ def plot_3D_plotly(nparr_3D, path_to_save_static : str, do_save_html : bool = Tr
         fig.write_html(utilsforminds.strings.format_extension(path_to_save, "html"))
     fig.write_image(utilsforminds.strings.format_extension(path_to_save, "png"))
 
-def get_triangles_of_alpha_shape(x, y, z, alpha):
+def get_triangles_of_alpha_shape(x, y, z, alpha, model= "optimize_alpha"):
     """
     
     Returns
@@ -1538,34 +1606,53 @@ def get_triangles_of_alpha_shape(x, y, z, alpha):
         tri1[j], tri2[j], tri3[j] indicate the first, second, third point of j-th triangle. For example, (x[tri1[j]], y[tri1[j]], z[tri1[j]]) is the first point of triangle.
     """
 
-    cloud = pv.PolyData(np.array(list(zip(x, y, z)))) # set up the pyvista point cloud structure
-    #Extract the total simplicial structure of the alpha shape defined via pyvista
-    # mesh = cloud.delaunay_3d(alpha= 1. / alpha_shape_kwargs_local["alphahull"]) ## (pyvista alpha = 1/alphahull; alphahull is an attribute of the Plotly Mesh3d)
-    mesh = cloud.delaunay_3d(alpha= alpha, progress_bar= True)
+    assert(model in ["weighted_alpha", "optimize_alpha"])
 
-    # #and select its simplexes of dimension 0, 1, 2, 3:
-    # unconnected_points3d = []  #isolated 0-simplices
-    # edges = [] # isolated edges, 1-simplices
-    # faces = []  # triangles that are not faces of some tetrahedra
-    # tetrahedra = []  # 3-simplices
-    # for k  in tqdm(mesh.offset):  #HERE WE CAN ACCESS mesh.offset
-    #     length = mesh.cells[k] 
-    #     if length == 2:
-    #         edges.append(list(mesh.cells[k+1: k+length+1]))
-    #     elif length ==3:
-    #         faces.append(list(mesh.cells[k+1: k+length+1]))
-    #     elif length == 4:
-    #         tetrahedra.append(list(mesh.cells[k+1: k+length+1]))
-    #     elif length == 1:
-    #         unconnected_points3d.append(mesh.cells[k+1])
+    if model == "optimize_alpha":
+        cloud = pv.PolyData(np.array(list(zip(x, y, z)))) # set up the pyvista point cloud structure
+        #Extract the total simplicial structure of the alpha shape defined via pyvista
+        # mesh = cloud.delaunay_3d(alpha= 1. / alpha_shape_kwargs_local["alphahull"]) ## (pyvista alpha = 1/alphahull; alphahull is an attribute of the Plotly Mesh3d)
+        mesh = cloud.delaunay_3d(alpha= alpha, progress_bar= True)
 
-    # get faces of the mesh
-    boundary_mesh = mesh.extract_geometry()
-    boundary_faces = boundary_mesh.faces.reshape((-1,4))[:, 1:]  
-    # get indices from mesh triangles
-    # boundary_points= points3d[boundary_faces]
-    tri1, tri2, tri3 = boundary_faces.T ## x1, y1, z1 is index (in x, y, z) of point of triangle, so there can be duplication, because it is combination of three indices.
-    return tri1, tri2, tri3, boundary_mesh.volume
+        # #and select its simplexes of dimension 0, 1, 2, 3:
+        # unconnected_points3d = []  #isolated 0-simplices
+        # edges = [] # isolated edges, 1-simplices
+        # faces = []  # triangles that are not faces of some tetrahedra
+        # tetrahedra = []  # 3-simplices
+        # for k  in tqdm(mesh.offset):  #HERE WE CAN ACCESS mesh.offset
+        #     length = mesh.cells[k] 
+        #     if length == 2:
+        #         edges.append(list(mesh.cells[k+1: k+length+1]))
+        #     elif length ==3:
+        #         faces.append(list(mesh.cells[k+1: k+length+1]))
+        #     elif length == 4:
+        #         tetrahedra.append(list(mesh.cells[k+1: k+length+1]))
+        #     elif length == 1:
+        #         unconnected_points3d.append(mesh.cells[k+1])
+
+        # get faces of the mesh
+        boundary_mesh = mesh.extract_geometry()
+        boundary_faces = boundary_mesh.faces.reshape((-1,4))[:, 1:]  
+        # get indices from mesh triangles
+        # boundary_points= points3d[boundary_faces]
+        tri1, tri2, tri3 = boundary_faces.T ## x1, y1, z1 is index (in x, y, z) of point of triangle, so there can be duplication, because it is combination of three indices.
+        return tri1, tri2, tri3, boundary_mesh.volume
+    elif model == "weighted_alpha":
+        positions = np.stack([x, y, z], axis = -1)
+        alpha_shape = alphashape.alphashape(points= positions, alpha= alpha)
+        faces = alpha_shape.faces ## faces are indices for "alpha_shape.vertices" NOT for "positions", don't confuse this.
+
+        # fig = plt.figure()
+        # ax = plt.axes(projection='3d')
+        # ax.plot_trisurf(*zip(*alpha_shape.vertices), triangles=alpha_shape.faces)
+        # plt.show()
+        # alpha_shape.show()
+
+        vertices = alpha_shape.vertices
+        index_map_vertices_to_positions = np.argwhere(np.all(vertices.reshape(vertices.shape[0],1,-1) == positions,2)) ## ref: https://stackoverflow.com/questions/55612617/match-rows-of-two-2d-arrays-and-get-a-row-indices-map-using-numpy
+        assert(np.all(index_map_vertices_to_positions[:, 0] == np.arange(vertices.shape[0])))
+        index_map_vertices_to_positions = index_map_vertices_to_positions[:, 1]
+        return index_map_vertices_to_positions[faces[:, 0]], index_map_vertices_to_positions[faces[:, 1]], index_map_vertices_to_positions[faces[:, 2]], alpha_shape.volume
 
 def get_new_position_from_origin_and_displacement(origin, displacement, whole_space_shape = None, off_limit_position = "boundary"):
     """
@@ -1825,5 +1912,19 @@ def plot_multiple_matrices(container_of_matrices, path_to_save: str, imshow_kwar
     fig.write_html(utilsforminds.strings.format_extension(path_to_save, "html"))
 
 if __name__ == '__main__':
-    test_list_of_arrays = [np.random.rand(60, 3), np.random.rand(60, 1), np.random.rand(60, 20), np.random.rand(60, 27), np.random.rand(60, 15), np.random.rand(60, 80), np.random.rand(60, 54), np.random.rand(60, 2), np.random.rand(60, 15)]
-    plot_multiple_matrices(test_list_of_arrays, path_to_save= "ss")
+    pass
+    points_2d = [(0., 0.), (0., 1.), (1., 1.), (1., 0.),
+          (0.5, 0.25), (0.5, 0.75), (0.25, 0.5), (0.75, 0.5)]
+    points_3d = [
+    (0., 0., 0.), (0., 0., 1.), (0., 1., 0.),
+    (1., 0., 0.), (1., 1., 0.), (1., 0., 1.),
+    (0., 1., 1.), (1., 1., 1.), (.25, .5, .5),
+    (.5, .25, .5), (.5, .5, .25), (.75, .5, .5),
+    (.5, .75, .5), (.5, .5, .75)
+    ]
+    # alpha_shape = alphashape.alphashape(
+    # points_2d,
+    # lambda ind, r: 1.0 + any(np.array(points_2d)[ind][:,0] == 0.0))
+    alpha_shape = alphashape.alphashape(points_3d, 1.1)
+    pass
+
