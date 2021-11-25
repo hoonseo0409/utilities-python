@@ -803,7 +803,10 @@ def get_proportional_ranked_value(amount_arr, counter_arr = None, proportion = 0
         rank = int(proportion * num_of_nonzero)
     else:
         rank = proportion
-    return np.partition(amount_arr.flatten(), -1 * rank)[-1 * rank]
+    if rank == 0:
+        return np.max(amount_arr)
+    else:
+        return np.partition(amount_arr.flatten(), -1 * rank)[-1 * rank]
 
 def collect_idx_of_dense_slices_along_axis(arr, axis, get_dense_slice_threshold = 0, nonzero_threshold = 1e-8, return_first_slice_when_empty = True):
     """Get list of indices of dense(the number of nonzero entries are larger than get_dense_slice_threshold) slices along axis
@@ -1226,10 +1229,4 @@ def get_current_utc_timestamp():
 
 if __name__ == '__main__':
     pass
-    arr = np.arange(24).reshape(3, 2, 4)
-    # print(arr)
-    print(getSlicesV2(arr, {2: [1, 3], 0:1}))
-    # print(arr[1, :, 1:3])
-    print("after")
-    getSlicesV2(arr, {2: [1, 3], 0:1}, assign = 99)
-    print(getSlicesV2(arr, {2: [1, 3], 0:1}))
+    print(get_proportional_ranked_value(np.array([0, 0, 0, 0, 0, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]), proportion = 0.3))

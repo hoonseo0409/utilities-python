@@ -1332,7 +1332,7 @@ def plot_3D_plotly(nparr_3D, path_to_save_static : str, do_save_html : bool = Tr
         while os.path.exists(utilsforminds.strings.format_extension(f'{path_to_save_static}_{suffix}', 'png')):
             suffix += 1
             if suffix > 100:
-                raise Exception("Check code.")
+                raise Exception("Exceeds the number of tries while generating file name, please check code.")
         path_to_save = f"{path_to_save_static}_{suffix}"
     path_to_save = path_to_save_static
     title_copied = "" if title is None else title
@@ -1429,7 +1429,8 @@ def plot_3D_plotly(nparr_3D, path_to_save_static : str, do_save_html : bool = Tr
             with open(utilsforminds.strings.format_extension(path_to_save, "txt"), "a") as text_file:
                 text_file.write(f"alpha: {best_alpha}\n")
             return best_alpha
-        
+
+        alphas_radius_list = []
         def get_alpha(x_loc, y_loc, z_loc):
             if pyvista_alpha_model_kwargs_loc["model"] == "optimize_alpha":
                 return optimize_alpha(x_loc, y_loc, z_loc)
@@ -1490,6 +1491,10 @@ def plot_3D_plotly(nparr_3D, path_to_save_static : str, do_save_html : bool = Tr
                         alphahull = 1 / alpha_radius
                     else:
                         raise Exception(f"Unsupported kinds: {pyvista_alpha_model_kwargs_loc['kwargs']['kinds']}")
+                    
+                    ## Constraint the maximum alpha radius.
+                    # alpha_radius = min(alpha_radius, 5)
+                    # alphahull = 1 / alpha_radius
                     return alphahull ## 1 / * because alphashape package use alpha parameter in the meaning of alphahull not alpha-radius, in my guess..
                 return get_alpha_value
 
@@ -1538,6 +1543,17 @@ def plot_3D_plotly(nparr_3D, path_to_save_static : str, do_save_html : bool = Tr
             best_alpha = get_alpha(x, y, z)
             if use_pyvista_alphashape:
                 tri1, tri2, tri3, volume = get_triangles_of_alpha_shape(x, y, z, alpha = best_alpha, model= pyvista_alpha_model_kwargs_loc["model"])
+
+                ## Plot the histgram of alpha radiuses.
+                # if pyvista_alpha_model_kwargs_loc["kwargs"]["kinds"] == "angular":
+                #     fig_histo = go.Figure(data=[go.Histogram(x= alpha_radius_list, xbins=dict(start= 0, end= 20, size= 0.5))])
+                # else:
+                #     fig_histo = go.Figure(data=[go.Histogram(x= alpha_radius_list)])
+                # fig_histo.update_layout(xaxis= dict(tickfont= dict(size= 30)))
+                # fig_histo.update_layout(yaxis= dict(tickfont= dict(size= 30)))
+                # # fig_histo.show()
+                # fig_histo.write_html(utilsforminds.strings.format_extension(path_to_save.split(".")[:-1][0] + "_histo" , "html"))
+
                 plot_objects.append(graph_objs.Mesh3d(name = alpha_shape_legend, x = x, y = y, z = z, hovertext = hovertext, hoverinfo = hoverinfo, intensity = utilsforminds.numpy_array.push_arr_to_range(nparr_3D[x, y, z], vmin = vmin, vmax = vmax), colorbar = marker_kwargs_local["colorbar"], i = tri1, j = tri2, k = tri3, **alpha_shape_kwargs_local))
             else:
                 plot_objects.append(graph_objs.Mesh3d(name = alpha_shape_legend, x = x, y = y, z = z, hovertext = hovertext, hoverinfo = hoverinfo, intensity = utilsforminds.numpy_array.push_arr_to_range(nparr_3D[x, y, z], vmin = vmin, vmax = vmax), colorbar = marker_kwargs_local["colorbar"], **alpha_shape_kwargs_local))
@@ -1913,18 +1929,13 @@ def plot_multiple_matrices(container_of_matrices, path_to_save: str, imshow_kwar
 
 if __name__ == '__main__':
     pass
-    points_2d = [(0., 0.), (0., 1.), (1., 1.), (1., 0.),
-          (0.5, 0.25), (0.5, 0.75), (0.25, 0.5), (0.75, 0.5)]
-    points_3d = [
-    (0., 0., 0.), (0., 0., 1.), (0., 1., 0.),
-    (1., 0., 0.), (1., 1., 0.), (1., 0., 1.),
-    (0., 1., 1.), (1., 1., 1.), (.25, .5, .5),
-    (.5, .25, .5), (.5, .5, .25), (.75, .5, .5),
-    (.5, .75, .5), (.5, .5, .75)
-    ]
-    # alpha_shape = alphashape.alphashape(
-    # points_2d,
-    # lambda ind, r: 1.0 + any(np.array(points_2d)[ind][:,0] == 0.0))
-    alpha_shape = alphashape.alphashape(points_3d, 1.1)
-    pass
+    import plotly.graph_objects as go
+
+    import numpy as np
+    np.random.seed(1)
+
+    x = np.random.randn(500).tolist()
+
+    fig = go.Figure(data=[go.Histogram(x=x)])
+    fig.show()
 
