@@ -1312,7 +1312,7 @@ def optimizealpha(points, value_flat_for_alphashape_optimization,
     return best_alpha
 
 @decorators.grid_of_functions(param_to_grid= "alphahull", param_formatter_dict= {"path_to_save_static": lambda **kwargs: kwargs["path_to_save_static"].split(".")[0] + "_" + str(kwargs["alphahull"] * 100)}, grid_condition= lambda **kwargs: True if ("kinds_to_plot" in kwargs.keys() and "alphashape" in kwargs["kinds_to_plot"]) else False)
-def plot_3D_plotly(nparr_3D, path_to_save_static : str, do_save_html : bool = True, grid_formatter_to_save_tri = None, save_info_txt = False, kinds_to_plot : list = None, marker_kwargs : dict = None, vmin = None, vmax = None, alpha_shape_kwargs : dict = None, alphahull: float = 0.65, points_decider = lambda x: x > 1e-8, observation_mask_nparr_3D = None, title= None, points_legends : dict = None, alpha_shape_legend = "alpha-shape", scene_kwargs : dict = None, xyz_tickers = None, axis_kwargs : dict = None, layout_kwargs : dict = None, figsize_ratio : dict = None, camera = None, showgrid = False, zeroline = True, showline = False, transparent_bacground = True, colorbar_kwargs = None, get_hovertext = None, alpha_shape_clustering = False, use_pyvista_alphashape = True, additional_gos = None, coordinate_info= None, layout_legend = None, value_arr_for_alphashape_optimization = None, marker_symbols = None, pyvista_alpha_model_kwargs = None):
+def plot_3D_plotly(nparr_3D, path_to_save_static : str, do_save_html : bool = True, grid_formatter_to_save_tri = None, save_info_txt = False, kinds_to_plot : list = None, marker_kwargs : dict = None, vmin = None, vmax = None, alpha_shape_kwargs : dict = None, alphahull: float = 0.65, points_decider = lambda x: x > 1e-8, observation_mask_nparr_3D = None, title= None, points_legends : dict = None, alpha_shape_legend = "alpha-shape", scene_kwargs : dict = None, xyz_tickers = None, axis_kwargs : dict = None, layout_kwargs : dict = None, figsize_ratio : dict = None, camera = None, showgrid = False, zeroline = True, showline = False, transparent_bacground = True, colorbar_kwargs = None, get_hovertext = None, alpha_shape_clustering = False, use_pyvista_alphashape = True, additional_gos = None, coordinate_info= None, layout_legend = None, value_arr_for_alphashape_optimization = None, marker_symbols = None, pyvista_alpha_model_kwargs = None, **kwargs):
     """
     
     Parameters
@@ -1479,8 +1479,8 @@ def plot_3D_plotly(nparr_3D, path_to_save_static : str, do_save_html : bool = Tr
                             assert(nparr_3D_whole[x_loc[idx], y_loc[idx], z_loc[idx]] != 0)
                             num_points += local_densities[x_loc[idx], y_loc[idx], z_loc[idx]]
                         density_ratio = ((num_points / (window_size * 4)) / global_density) ** (1/3)
-                        alpha_radius = pyvista_alpha_model_kwargs_loc["kwargs"]["alpha_radius"] / density_ratio
-                        # print(f"alpha_radius: {alpha_radius}")
+                        alpha_radius = max(pyvista_alpha_model_kwargs_loc["kwargs"]["alpha_radius"] / max(density_ratio, 1e-16), 0.5)
+                        # print(f"alpha_radius: {pyvista_alpha_model_kwargs_loc['kwargs']['alpha_radius'] / max(density_ratio, 1e-16)}")
                         alphahull = 1 / alpha_radius
                         
                     elif pyvista_alpha_model_kwargs_loc["kwargs"]["kinds"] == "constant":
