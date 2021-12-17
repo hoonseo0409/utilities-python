@@ -71,6 +71,7 @@ from scipy import interp
 
 from math import degrees, cos, radians
 # from meshplex import MeshTri
+import gemgis as gg
 
 axis_rotation_dict = {0: 0, 1: 0, 2: 0}
 axis_name_dict = {0: 'Easting', 1: 'Northing', 2: 'Elevation'}
@@ -1394,7 +1395,7 @@ def plot_3D_plotly(nparr_3D, path_to_save_static : str, do_save_html : bool = Tr
         nparr_3D_whole = np.zeros(nparr_3D.shape)
         # nparr_3D_whole[x, y, z] = nparr_3D[x, y, z]
         nparr_3D_whole[x, y, z] = 1.0
-        nparr_3D_whole = deconv_smoothness_3D(nparr = nparr_3D_whole, deconv_list_of_displacement_and_proportion = [{"displacement": [1, 0, 0], "proportion": 1.0}, {"displacement": [0, 1, 0], "proportion": 1.0}, {"displacement": [0, 0, 1], "proportion": 1.0}, {"displacement": [-1, 0, 0], "proportion": 1.0}, {"displacement": [0, -1, 0], "proportion": 1.0}, {"displacement": [0, 0, -1], "proportion": 1.0}])
+        if "deconv" in kwargs.keys() and kwargs["deconv"]: nparr_3D_whole = deconv_smoothness_3D(nparr = nparr_3D_whole, deconv_list_of_displacement_and_proportion = [{"displacement": [1, 0, 0], "proportion": 1.0}, {"displacement": [0, 1, 0], "proportion": 1.0}, {"displacement": [0, 0, 1], "proportion": 1.0}, {"displacement": [-1, 0, 0], "proportion": 1.0}, {"displacement": [0, -1, 0], "proportion": 1.0}, {"displacement": [0, 0, -1], "proportion": 1.0}])
     else:
         nparr_3D_whole = np.where(points_decider(nparr_3D), 1., 0.)
 
@@ -1562,41 +1563,38 @@ def plot_3D_plotly(nparr_3D, path_to_save_static : str, do_save_html : bool = Tr
                 showscale = False ## Only the first plot has colorbar.
         else: ## without clustering
             if "mesh_dict" in kwargs.keys():
-                # volume = 1.0
-                # Location = kwargs["mesh_dict"]["Location"]
-                # Tri = kwargs["mesh_dict"]["Tri"]
-                # axisInfo = kwargs["axisInfo"]
-                # mesh_dict_grid = dict(point = dict(), tri = dict())
-                # for coord in range(3):
-                #     assert(np.all(Location[:, coord] >= axisInfo[coord]["min"]))
-                #     assert(np.all(Location[:, coord] <= axisInfo[coord]["max"]))
-                #     mesh_dict_grid["point"][coord] = (np.floor((Location[:, coord] - axisInfo[coord]["min"]) / axisInfo[coord]["grid"])).astype(int)
-                #     mesh_dict_grid["tri"][coord] = Tri[:, coord]
-                # x, y, z = mesh_dict_grid["point"][0], mesh_dict_grid["point"][1], mesh_dict_grid["point"][2]
-                # tri1, tri2, tri3 = mesh_dict_grid["tri"][0], mesh_dict_grid["tri"][1], mesh_dict_grid["tri"][2]
 
                 ## Their alpha-shape
-                plot_objects.append(graph_objs.Scatter3d(mode = 'markers', name = "Msh", x = x, y = y, z = z, marker = graph_objs.Marker(symbol = "circle", **(utilsforminds.containers.copy_dict_and_delete_element(marker_kwargs_local, ["colorbar"]))), hovertext = hovertext, hoverinfo = hoverinfo, showlegend = True)) ## parameter, e.g. x, y, .. can be used in hovertemplate.
-                plot_objects.append(graph_objs.Mesh3d(name = alpha_shape_legend + "_msh", x = x, y = y, z = z, hovertext = hovertext, hoverinfo = hoverinfo, i = tri1, j = tri2, k = tri3, **alpha_shape_kwargs_local))
+                plot_objects.append(graph_objs.Scatter3d(mode = 'markers', name = "Msh", x = mesh_dict_grid["point"][0], y = mesh_dict_grid["point"][1], z = mesh_dict_grid["point"][2], marker = graph_objs.Marker(symbol = "circle", **(utilsforminds.containers.copy_dict_and_delete_element(marker_kwargs_local, ["colorbar"]))), hovertext = hovertext, hoverinfo = hoverinfo, showlegend = True)) ## parameter, e.g. x, y, .. can be used in hovertemplate.
+
+                if not("deconv" in kwargs.keys() and kwargs["deconv"]):
+                    plot_objects.append(graph_objs.Mesh3d(name = alpha_shape_legend + "_msh", x = mesh_dict_grid["point"][0], y = mesh_dict_grid["point"][1], z = mesh_dict_grid["point"][2], hovertext = hovertext, hoverinfo = hoverinfo, i = tri1, j = tri2, k = tri3, **alpha_shape_kwargs_local))
+                    volume = gg.visualization.create_polydata_from_msh(kwargs["mesh_dict"]).volume
+                    # volume = volume * coordinate_info[0]["grid"] * coordinate_info[1]["grid"] * coordinate_info[2]["grid"] ## The coordinates in wargs["mesh_dict"] are already in physical coordinates.
+                    with open(utilsforminds.strings.format_extension(path_to_save, "txt"), "a") as text_file:
+                        text_file.write(f"The volume of Leapfrog mesh: {volume}-m^3\n")
 
                 ## Our alpha-shape
                 best_alpha = get_alpha(x, y, z)
                 tri1, tri2, tri3, volume = get_triangles_of_alpha_shape(x, y, z, alpha = best_alpha, model= pyvista_alpha_model_kwargs_loc["model"])
+
+                ## Plot the histgram of alpha radiuses.
+                # for axis in range(3): assert(axisInfo[axis]["grid"] == axisInfo[(axis + 1) % 2]["grid"])
+                # alpha_radius_list_cp = [radius * axisInfo[0]["grid"] for radius in alpha_radius_list]
+                # if pyvista_alpha_model_kwargs_loc["kwargs"]["kinds"] == "angular":
+                #     fig_histo = go.Figure(data=[go.Histogram(x= alpha_radius_list_cp, xbins=dict(start= 0, end= 20 * axisInfo[0]["grid"], size= 0.5 * axisInfo[0]["grid"]))])
+                # else:
+                #     fig_histo = go.Figure(data=[go.Histogram(x= alpha_radius_list_cp)])
+                # fig_histo.update_layout(xaxis= dict(tickfont= dict(size= 30)))
+                # fig_histo.update_layout(yaxis= dict(tickfont= dict(size= 30)))
+                # # fig_histo.show()
+                # fig_histo.write_html(utilsforminds.strings.format_extension(path_to_save.split(".")[:-1][0] + "_histo" , "html"))
+                
                 plot_objects.append(graph_objs.Mesh3d(name = alpha_shape_legend, x = x, y = y, z = z, hovertext = hovertext, hoverinfo = hoverinfo, intensity = utilsforminds.numpy_array.push_arr_to_range(nparr_3D[x, y, z], vmin = vmin, vmax = vmax), colorbar = marker_kwargs_local["colorbar"], i = tri1, j = tri2, k = tri3, **alpha_shape_kwargs_local))
             else:
                 best_alpha = get_alpha(x, y, z)
                 if use_pyvista_alphashape:
                     tri1, tri2, tri3, volume = get_triangles_of_alpha_shape(x, y, z, alpha = best_alpha, model= pyvista_alpha_model_kwargs_loc["model"])
-
-                    ## Plot the histgram of alpha radiuses.
-                    # if pyvista_alpha_model_kwargs_loc["kwargs"]["kinds"] == "angular":
-                    #     fig_histo = go.Figure(data=[go.Histogram(x= alpha_radius_list, xbins=dict(start= 0, end= 20, size= 0.5))])
-                    # else:
-                    #     fig_histo = go.Figure(data=[go.Histogram(x= alpha_radius_list)])
-                    # fig_histo.update_layout(xaxis= dict(tickfont= dict(size= 30)))
-                    # fig_histo.update_layout(yaxis= dict(tickfont= dict(size= 30)))
-                    # # fig_histo.show()
-                    # fig_histo.write_html(utilsforminds.strings.format_extension(path_to_save.split(".")[:-1][0] + "_histo" , "html"))
 
                     plot_objects.append(graph_objs.Mesh3d(name = alpha_shape_legend, x = x, y = y, z = z, hovertext = hovertext, hoverinfo = hoverinfo, intensity = utilsforminds.numpy_array.push_arr_to_range(nparr_3D[x, y, z], vmin = vmin, vmax = vmax), colorbar = marker_kwargs_local["colorbar"], i = tri1, j = tri2, k = tri3, **alpha_shape_kwargs_local))
                 else:
@@ -1970,6 +1968,73 @@ def plot_multiple_matrices(container_of_matrices, path_to_save: str, imshow_kwar
 
     # fig.show()
     fig.write_html(utilsforminds.strings.format_extension(path_to_save, "html"))
+
+def get_intersection_values(x1, y1, z1, tri11, tri21, tri31, x2, y2, z2, tri12, tri22, tri32):
+    """
+    !!!NOT FINISHED YET!!!!
+    * Needs reworking to be more efficient *
+
+    Parameters
+    ----------
+    x1 = x indices of original triangulation
+    y1 = y indices of original triangulation
+    z1 = z indices of original triangulation
+    tri11 = original triangulation value, point 1
+    tri21 = original triangulation value, point 2
+    tri31 = original triangulation value, point 3
+    x2 = compared x indices from our alphashape
+    y2 = compared y indices from our alphashape
+    z2 = compared z indices from our alphashape
+    tri12 = compared triangulation value, point 1
+    tri22 = compared triangulation value, point 2
+    tri32 = compared triangulation value, point 3
+
+    Returns
+    -------
+    Triangulation points that are similar between our model and the company's model, within the overlapping area.
+
+    """
+
+    overlap = []
+
+    original_indices = np.array(list(zip(x1, y1, z1)))
+    compared_indices = np.array(list(zip(x2, y2, z2)))
+
+    # stores the overlapping window between the original and compared data points into the overlap list
+    for coordinate in compared_indices:
+        if coordinate in original_indices:
+            overlap.append(coordinate)
+
+    # What data is in a triangulation point?
+
+    overlap_x, overlap_y, overlap_z = np.hsplit(np.array(overlap), 3)
+
+    # Find the bounds of the window, and appends them to a list of all triangulation points within those bounds.
+    x_max = np.amax(overlap_x)
+    y_max = np.amax(overlap_y)
+    z_max = np.amax(overlap_z)
+    x_min = np.amin(overlap_x)
+    y_min = np.amin(overlap_y)
+    z_min = np.amin(overlap_z)
+
+    original_triangulation = np.array(list(zip(tri11, tri21, tri31)))
+    compared_triangulation = np.array(list(zip(tri12, tri22, tri32)))
+
+    triangulation_overlap = []
+
+    # compares the triangulation points that are equal
+    for triangulation_coordinate in compared_triangulation:
+        if triangulation_coordinate in original_triangulation:
+
+            # checking to see if coordinate is inside bounds
+            x = triangulation_coordinate[0]
+            y = triangulation_coordinate[1]
+            z = triangulation_coordinate[2]
+
+            if (x < x_max and x > x_min) and (y < y_max and y > y_min) and (z < z_max and z > z_min):
+                triangulation_overlap.append(triangulation_coordinate)
+
+    return triangulation_overlap
 
 if __name__ == '__main__':
     pass
