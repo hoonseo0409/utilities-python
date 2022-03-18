@@ -55,6 +55,7 @@ from alphashape import optimizealpha as optimizealpha_original
 import shapely
 from shapely.geometry import MultiPoint
 import trimesh
+import meshio
 
 from utilsforminds.containers import merge_dictionaries
 from utilsforminds.containers import merge
@@ -67,7 +68,7 @@ from sklearn.preprocessing import label_binarize
 from sklearn.multiclass import OneVsRestClassifier
 from sklearn.metrics import roc_auc_score
 
-from scipy import interp
+from scipy import interp, interpolate
 
 from math import degrees, cos, radians
 # from meshplex import MeshTri
@@ -1180,6 +1181,25 @@ def get_xy_axis_from_z(zaxis = 0):
     else:
         raise Exception(ValueError)
 
+def check_points_inside_mesh(points_to_test, points_of_mesh, faces_of_mesh):
+    """Check whether each point is inside mesh.
+
+    Parameters
+    ----------
+    points_to_test: points ((n, 3) float)
+    points_of_mesh: (n, ) sequence of (m, d) float
+    faces_of_mesh: (n, ) sequence of (p, j) int
+    """
+
+    ## Example: mesh = trimesh.Trimesh(vertices=[[0, 0, 0], [0, 0, 1], [0, 1, 0]], faces=[[0, 1, 2]])
+
+    mesh = trimesh.Trimesh(vertices = points_of_mesh, faces= faces_of_mesh)
+    signed_distacnes_of_points = trimesh.proximity.signed_distance(mesh, points_to_test)
+    
+    bools_vertices_inside = np.where(signed_distacnes_of_points <= 0, True, False)
+    points = points_to_test[bools_vertices_inside, :]
+    return points[:, 0], points[:, 1], points[:, 2]
+
 def get_volume_of_alpha_shape(points, alpha):
     """
     
@@ -1313,7 +1333,7 @@ def optimizealpha(points, value_flat_for_alphashape_optimization,
     return best_alpha
 
 @decorators.grid_of_functions(param_to_grid= "alphahull", param_formatter_dict= {"path_to_save_static": lambda **kwargs: kwargs["path_to_save_static"].split(".")[0] + "_" + str(kwargs["alphahull"] * 100)}, grid_condition= lambda **kwargs: True if ("kinds_to_plot" in kwargs.keys() and "alphashape" in kwargs["kinds_to_plot"]) else False)
-def plot_3D_plotly(nparr_3D, path_to_save_static : str, do_save_html : bool = True, grid_formatter_to_save_tri = None, save_info_txt = False, kinds_to_plot : list = None, marker_kwargs : dict = None, vmin = None, vmax = None, alpha_shape_kwargs : dict = None, alphahull: float = 0.65, points_decider = lambda x: x > 1e-8, observation_mask_nparr_3D = None, title= None, points_legends : dict = None, alpha_shape_legend = "alpha-shape", scene_kwargs : dict = None, xyz_tickers = None, axis_kwargs : dict = None, layout_kwargs : dict = None, figsize_ratio : dict = None, camera = None, showgrid = False, zeroline = True, showline = False, transparent_bacground = True, colorbar_kwargs = None, get_hovertext = None, alpha_shape_clustering = False, use_pyvista_alphashape = True, additional_gos = None, coordinate_info= None, layout_legend = None, value_arr_for_alphashape_optimization = None, marker_symbols = None, pyvista_alpha_model_kwargs = None, **kwargs):
+def plot_3D_plotly(nparr_3D, path_to_save_static : str, do_save_html : bool = True, grid_formatter_to_save_tri = None, save_info_txt = False, kinds_to_plot : list = None, marker_kwargs : dict = None, vmin = None, vmax = None, alpha_shape_kwargs : dict = None, alphahull: float = 0.65, points_decider = lambda x: x > 1e-8, observation_mask_nparr_3D = None, title= None, points_legends : dict = None, alpha_shape_legend = "alpha-shape", scene_kwargs : dict = None, xyz_tickers = None, axis_kwargs : dict = None, showaxis = True, layout_kwargs : dict = None, figsize_ratio : dict = None, camera = None, showgrid = False, zeroline = True, showline = False, transparent_bacground = True, colorbar_kwargs = None, get_hovertext = None, alpha_shape_clustering = False, use_pyvista_alphashape = True, additional_gos = None, coordinate_info= None, layout_legend = None, value_arr_for_alphashape_optimization = None, marker_symbols = None, pyvista_alpha_model_kwargs = None, **kwargs):
     """
     
     Parameters
@@ -1323,11 +1343,12 @@ def plot_3D_plotly(nparr_3D, path_to_save_static : str, do_save_html : bool = Tr
     """
 
     assert(len(nparr_3D.shape) == 3)
-    assert(use_pyvista_alphashape) ## optimization of alpha currently only implemented over pyvista.
+    # assert(use_pyvista_alphashape) ## optimization of alpha currently only implemented over pyvista.
     input_shape = deepcopy(nparr_3D.shape)
     tri1 = None ## To check whether triangulation is already calculated.
     
     ## assign default values
+    path_to_save_static, file_extension = os.path.splitext(path_to_save_static)
     suffix = 0
     if os.path.exists(utilsforminds.strings.format_extension(path_to_save_static, 'png')):
         while os.path.exists(utilsforminds.strings.format_extension(f'{path_to_save_static}_{suffix}', 'png')):
@@ -1399,6 +1420,9 @@ def plot_3D_plotly(nparr_3D, path_to_save_static : str, do_save_html : bool = Tr
     else:
         nparr_3D_whole = np.where(points_decider(nparr_3D), 1., 0.)
 
+    if "density_filter" in kwargs.keys() and kwargs["density_filter"] is not None:
+        nparr_3D_whole = filter_array3d_with_density(nparr_3D_whole, **kwargs["density_filter"])
+
     if observation_mask_nparr_3D is None:
         observation_mask_nparr_3D_added = np.zeros(input_shape)
         nparr_3D_non_mask = nparr_3D_whole
@@ -1453,72 +1477,73 @@ def plot_3D_plotly(nparr_3D, path_to_save_static : str, do_save_html : bool = Tr
             return best_alpha
 
         alphas_radius_list = []
-        def get_alpha(x_loc, y_loc, z_loc):
-            if pyvista_alpha_model_kwargs_loc["model"] == "optimize_alpha":
-                return optimize_alpha(x_loc, y_loc, z_loc)
-            elif pyvista_alpha_model_kwargs_loc["model"] == "weighted_alpha":
-                if pyvista_alpha_model_kwargs_loc["kwargs"]["kinds"] == "local_density":
-                    ## Calculate the array of local densities
-                    window = pyvista_alpha_model_kwargs_loc["kwargs"]["window"]
-                    window_size = (window[0][1] + window[0][0]) * (window[1][1] + window[1][0]) * (window[2][1] + window[2][0])
-                    global_density = np.count_nonzero(nparr_3D_whole) / (nparr_3D_whole.shape[0] * nparr_3D_whole.shape[1] * nparr_3D_whole.shape[2])
-                    local_densities = np.zeros(shape= nparr_3D_whole.shape)
-                    num_points = x_loc.shape[0]
-                    for point_idx in range(num_points):
-                        point = [x_loc[point_idx], y_loc[point_idx], z_loc[point_idx]]
-                        local_densities[point[0], point[1], point[2]] += np.count_nonzero(nparr_3D_whole[max(0, point[0] - window[0][0]):min(nparr_3D_whole.shape[0], point[0] + window[0][1]), max(0, point[1] - window[1][0]):min(nparr_3D_whole.shape[1], point[1] + window[1][1]), max(0, point[2] - window[2][0]):min(nparr_3D_whole.shape[2], point[2] + window[2][1])])
-                def get_alpha_value(indices_four_points, circumradius):
-                    """The callable which will be given to alpha shape construction function.
+        if use_pyvista_alphashape:
+            def get_alpha(x_loc, y_loc, z_loc):
+                if pyvista_alpha_model_kwargs_loc["model"] == "optimize_alpha":
+                    return optimize_alpha(x_loc, y_loc, z_loc)
+                elif pyvista_alpha_model_kwargs_loc["model"] == "weighted_alpha":
+                    if pyvista_alpha_model_kwargs_loc["kwargs"]["kinds"] == "local_density":
+                        ## Calculate the array of local densities
+                        window = pyvista_alpha_model_kwargs_loc["kwargs"]["window"]
+                        window_size = (window[0][1] + window[0][0]) * (window[1][1] + window[1][0]) * (window[2][1] + window[2][0])
+                        global_density = np.count_nonzero(nparr_3D_whole) / (nparr_3D_whole.shape[0] * nparr_3D_whole.shape[1] * nparr_3D_whole.shape[2])
+                        local_densities = np.zeros(shape= nparr_3D_whole.shape)
+                        num_points = x_loc.shape[0]
+                        for point_idx in range(num_points):
+                            point = [x_loc[point_idx], y_loc[point_idx], z_loc[point_idx]]
+                            local_densities[point[0], point[1], point[2]] += np.count_nonzero(nparr_3D_whole[max(0, point[0] - window[0][0]):min(nparr_3D_whole.shape[0], point[0] + window[0][1]), max(0, point[1] - window[1][0]):min(nparr_3D_whole.shape[1], point[1] + window[1][1]), max(0, point[2] - window[2][0]):min(nparr_3D_whole.shape[2], point[2] + window[2][1])])
+                    def get_alpha_value(indices_four_points, circumradius):
+                        """The callable which will be given to alpha shape construction function.
 
-                    This function is passed to alphashape package. Currently alpha = circumradius / cosine(theta)
-                    
-                    Parameters
-                    ----------
-                    indices_four_points : np array
-                        Array of four (three in 2D points input) integers indicating the indices of four points constituting the simplex (triangle in 2D, tetrahedron in 3D), for example [3, 4, 0, 2].
-                    circumradius : float
-                        The circumradius of circumcircle (https://artofproblemsolving.com/wiki/index.php/Circumradius).
-                    
-                    Returns
-                    -------
-                    alphahull : float, 1 / alpha_radius
-                    """
+                        This function is passed to alphashape package. Currently alpha = circumradius / cosine(theta)
+                        
+                        Parameters
+                        ----------
+                        indices_four_points : np array
+                            Array of four (three in 2D points input) integers indicating the indices of four points constituting the simplex (triangle in 2D, tetrahedron in 3D), for example [3, 4, 0, 2].
+                        circumradius : float
+                            The circumradius of circumcircle (https://artofproblemsolving.com/wiki/index.php/Circumradius).
+                        
+                        Returns
+                        -------
+                        alphahull : float, 1 / alpha_radius
+                        """
 
-                    if pyvista_alpha_model_kwargs_loc["kwargs"]["kinds"] == "angular":
-                        if "theta" in pyvista_alpha_model_kwargs_loc["kwargs"].keys():
-                            theta = pyvista_alpha_model_kwargs_loc["kwargs"]["theta"]
-                        else:
-                            theta = 60
+                        if pyvista_alpha_model_kwargs_loc["kwargs"]["kinds"] == "angular":
+                            if "theta" in pyvista_alpha_model_kwargs_loc["kwargs"].keys():
+                                theta = pyvista_alpha_model_kwargs_loc["kwargs"]["theta"]
+                            else:
+                                theta = 60
+                            
+                            # alpha_radius = circumradius / cos(radians(theta))
+                            alpha_radius = circumradius
+                            alphahull = 1 / alpha_radius
                         
-                        # alpha_radius = circumradius / cos(radians(theta))
-                        alpha_radius = circumradius
-                        alphahull = 1 / alpha_radius
-                    
-                    elif pyvista_alpha_model_kwargs_loc["kwargs"]["kinds"] == "local_density":
-                        num_points = 0
-                        for idx in indices_four_points:
-                            assert(local_densities[x_loc[idx], y_loc[idx], z_loc[idx]] > 0)
-                            assert(nparr_3D_whole[x_loc[idx], y_loc[idx], z_loc[idx]] != 0)
-                            num_points += local_densities[x_loc[idx], y_loc[idx], z_loc[idx]]
-                        density_ratio = ((num_points / (window_size * 4)) / global_density) ** (1/3)
-                        alpha_radius = max(pyvista_alpha_model_kwargs_loc["kwargs"]["alpha_radius"] / max(density_ratio, 1e-16), 0.5)
-                        # print(f"alpha_radius: {pyvista_alpha_model_kwargs_loc['kwargs']['alpha_radius'] / max(density_ratio, 1e-16)}")
-                        alphahull = 1 / alpha_radius
-                        
-                    elif pyvista_alpha_model_kwargs_loc["kwargs"]["kinds"] == "constant":
-                        if "alpha_radius" in pyvista_alpha_model_kwargs_loc["kwargs"].keys():
-                            alpha_radius = pyvista_alpha_model_kwargs_loc["kwargs"]["alpha_radius"]
+                        elif pyvista_alpha_model_kwargs_loc["kwargs"]["kinds"] == "local_density":
+                            num_points = 0
+                            for idx in indices_four_points:
+                                assert(local_densities[x_loc[idx], y_loc[idx], z_loc[idx]] > 0)
+                                assert(nparr_3D_whole[x_loc[idx], y_loc[idx], z_loc[idx]] != 0)
+                                num_points += local_densities[x_loc[idx], y_loc[idx], z_loc[idx]]
+                            density_ratio = ((num_points / (window_size * 4)) / global_density) ** (1/3)
+                            alpha_radius = max(pyvista_alpha_model_kwargs_loc["kwargs"]["alpha_radius"] / max(density_ratio, 1e-16), 0.5)
+                            # print(f"alpha_radius: {pyvista_alpha_model_kwargs_loc['kwargs']['alpha_radius'] / max(density_ratio, 1e-16)}")
+                            alphahull = 1 / alpha_radius
+                            
+                        elif pyvista_alpha_model_kwargs_loc["kwargs"]["kinds"] == "constant":
+                            if "alpha_radius" in pyvista_alpha_model_kwargs_loc["kwargs"].keys():
+                                alpha_radius = pyvista_alpha_model_kwargs_loc["kwargs"]["alpha_radius"]
+                            else:
+                                alpha_radius = 1.1
+                            alphahull = 1 / alpha_radius
                         else:
-                            alpha_radius = 1.1
-                        alphahull = 1 / alpha_radius
-                    else:
-                        raise Exception(f"Unsupported kinds: {pyvista_alpha_model_kwargs_loc['kwargs']['kinds']}")
-                    
-                    ## Constraint the maximum alpha radius.
-                    # alpha_radius = min(alpha_radius, 5)
-                    # alphahull = 1 / alpha_radius
-                    return alphahull ## 1 / * because alphashape package use alpha parameter in the meaning of alphahull not alpha-radius, in my guess..
-                return get_alpha_value
+                            raise Exception(f"Unsupported kinds: {pyvista_alpha_model_kwargs_loc['kwargs']['kinds']}")
+                        
+                        ## Constraint the maximum alpha radius.
+                        # alpha_radius = min(alpha_radius, 5)
+                        # alphahull = 1 / alpha_radius
+                        return alphahull ## 1 / * because alphashape package use alpha parameter in the meaning of alphahull not alpha-radius, in my guess..
+                    return get_alpha_value
 
 
         if get_hovertext is not None:
@@ -1592,8 +1617,8 @@ def plot_3D_plotly(nparr_3D, path_to_save_static : str, do_save_html : bool = Tr
                 
                 plot_objects.append(graph_objs.Mesh3d(name = alpha_shape_legend, x = x, y = y, z = z, hovertext = hovertext, hoverinfo = hoverinfo, intensity = utilsforminds.numpy_array.push_arr_to_range(nparr_3D[x, y, z], vmin = vmin, vmax = vmax), colorbar = marker_kwargs_local["colorbar"], i = tri1, j = tri2, k = tri3, **alpha_shape_kwargs_local))
             else:
-                best_alpha = get_alpha(x, y, z)
                 if use_pyvista_alphashape:
+                    best_alpha = get_alpha(x, y, z)
                     tri1, tri2, tri3, volume = get_triangles_of_alpha_shape(x, y, z, alpha = best_alpha, model= pyvista_alpha_model_kwargs_loc["model"])
 
                     plot_objects.append(graph_objs.Mesh3d(name = alpha_shape_legend, x = x, y = y, z = z, hovertext = hovertext, hoverinfo = hoverinfo, intensity = utilsforminds.numpy_array.push_arr_to_range(nparr_3D[x, y, z], vmin = vmin, vmax = vmax), colorbar = marker_kwargs_local["colorbar"], i = tri1, j = tri2, k = tri3, **alpha_shape_kwargs_local))
@@ -1611,17 +1636,18 @@ def plot_3D_plotly(nparr_3D, path_to_save_static : str, do_save_html : bool = Tr
                 #                     line = line + f"{grid_formatter_to_save_tri(position = position[triangle[triangle_idx]], axis = position_idx)} "
                 #             text_file.write(line[:-1] + "\n")
         
+        if coordinate_info is not None: 
+            x_physical, y_physical, z_physical= x * coordinate_info[0]["grid"] + coordinate_info[0]["min"], y * coordinate_info[1]["grid"] + coordinate_info[1]["min"], z * coordinate_info[2]["grid"] + coordinate_info[2]["min"]
+            volume = volume * coordinate_info[0]["grid"] * coordinate_info[1]["grid"] * coordinate_info[2]["grid"]
+        else:
+            x_physical, y_physical, z_physical= x, y, z
+
+        faces= np.concatenate([[tri1], [tri2], [tri3]], axis=0).T
+        verts= np.concatenate([[x_physical], [y_physical], [z_physical]], axis=0).T
+        # volume = sum(MeshTri(verts, faces).cell_volumes) ## analyze mesh: https://github.com/mikedh/trimesh
+        
         if save_info_txt and use_pyvista_alphashape and not alpha_shape_clustering: ## calculate and print alpha-shape information.
             ## calculate the volume of alpha-shape, https://stackoverflow.com/questions/61638966/find-volume-of-object-given-a-triangular-mesh
-            if coordinate_info is not None: 
-                x_physical, y_physical, z_physical= x * coordinate_info[0]["grid"] + coordinate_info[0]["min"], y * coordinate_info[1]["grid"] + coordinate_info[1]["min"], z * coordinate_info[2]["grid"] + coordinate_info[2]["min"]
-                volume = volume * coordinate_info[0]["grid"] * coordinate_info[1]["grid"] * coordinate_info[2]["grid"]
-            else:
-                x_physical, y_physical, z_physical= x, y, z
-
-            faces= np.concatenate([[tri1], [tri2], [tri3]], axis=0).T
-            verts= np.concatenate([[x_physical], [y_physical], [z_physical]], axis=0).T
-            # volume = sum(MeshTri(verts, faces).cell_volumes) ## analyze mesh: https://github.com/mikedh/trimesh
 
             surface_area = 0.
             indices_of_unique_vertices = []
@@ -1631,17 +1657,105 @@ def plot_3D_plotly(nparr_3D, path_to_save_static : str, do_save_html : bool = Tr
                 for triangles in [tri1, tri2, tri3]:
                     if triangles[triangle_idx] not in indices_of_unique_vertices: indices_of_unique_vertices.append(triangles[triangle_idx])
             unique_amounts = nparr_3D[x[indices_of_unique_vertices], y[indices_of_unique_vertices], z[indices_of_unique_vertices]]
+            if False:
+                all_vertices = np.stack([x, y, z], axis = 1)
+                i_in, j_in, k_in = utilsforminds.visualization.check_points_inside_mesh(points_to_test = all_vertices, points_of_mesh = all_vertices, faces_of_mesh = np.stack([tri1, tri2, tri3], axis = 1))
+                unique_amounts = nparr_3D[i_in, j_in, k_in]
             with open(utilsforminds.strings.format_extension(path_to_save, "txt"), "a") as text_file:
-                text_file.write(f"total grade: {np.sum(unique_amounts)}\navg grade: {np.mean(unique_amounts)}\nnumber of points: {unique_amounts.shape[0]}\nvolume: {volume}\nsurface area: {surface_area}\nnumber of triangulations: {tri1.shape[0]}\ngrade per volume: {np.sum(unique_amounts) / max(volume, 1e-8)}\nalpha optimization: {value_arr_for_alphashape_optimization is not None or value_arr_for_alphashape_optimization}")           
+                text_file.write(f"total grade: {np.sum(unique_amounts)}\navg grade: {np.mean(unique_amounts)}\nnumber of points: {unique_amounts.shape[0]}\nvolume: {volume}\nsurface area: {surface_area}\nnumber of triangulations: {tri1.shape[0]}\ngrade per volume physical: {np.sum(unique_amounts) / max(volume, 1e-8)}\ngrade per volume grids: {np.sum(unique_amounts) / max(volume / (coordinate_info[0]['grid'] * coordinate_info[1]['grid'] * coordinate_info[2]['grid']), 1e-8)}\nalpha optimization: {value_arr_for_alphashape_optimization is not None or value_arr_for_alphashape_optimization}") 
 
-    scene = graph_objs.layout.Scene(xaxis = {"range": [0, input_shape[0]], "tickvals": xyz_tickers_copied["x"]["tickvals"], "ticktext": xyz_tickers_copied["x"]["ticktext"], "tickangle": -90, **axis_kwargs_local},
+    if "export_meshes" in kwargs.keys() and kwargs["export_meshes"]:
+        mesh_path = utilsforminds.strings.format_extension(path_to_save, "obj")
+        # points = [list(data['Location'][pidx]) for pidx in range(data['Location'].shape[0])]
+        # cells = [
+        #     ("triangle", [list(data['Tri'][tidx]) for tidx in range(data['Tri'].shape[0])])
+        # ]
+        points = verts
+        cells = [("triangle", faces)]
+
+        mesh = meshio.Mesh(
+            points,
+            cells,
+            # # Optionally provide extra data on points, cells, etc.
+            # point_data={"T": [0.3, -1.2, 0.5, 0.7, 0.0, -3.0]},
+            # # Each item in cell data must match the cells array
+            # cell_data={"a": [[0.1, 0.2], [0.4]]},
+        )
+        mesh.write(
+            mesh_path,  # str, os.PathLike, or buffer/open file
+            file_format="obj",  # optional if first argument is a path; inferred from extension
+        )          
+
+    if not showaxis: axis_kwargs_local["visible"] = False ## This is how to toggle off axis.
+    scene_kwargs = dict(xaxis = {"range": [0, input_shape[0]], "tickvals": xyz_tickers_copied["x"]["tickvals"], "ticktext": xyz_tickers_copied["x"]["ticktext"], "tickangle": -90, **axis_kwargs_local},
     yaxis = {"range": [0, input_shape[1]], "tickvals": xyz_tickers_copied["y"]["tickvals"], "ticktext":  xyz_tickers_copied["y"]["ticktext"], "tickangle": -90, **axis_kwargs_local},
     zaxis = {"range": [0, input_shape[2]], "tickvals": xyz_tickers_copied["z"]["tickvals"], "ticktext":  xyz_tickers_copied["z"]["ticktext"], "tickangle": 0, **axis_kwargs_local}, **scene_kwargs_local)
+    scene = graph_objs.layout.Scene(**scene_kwargs)
+
+    if False:
+        scene_kwargs_without_axis = deepcopy(scene_kwargs)
+        for key in ["xaxis", "yaxis", "zaxis"]:
+            scene_kwargs_without_axis[key]["visible"] = False
 
     # layout = graph_objs.Layout(title = title_copied, width = figsize_copied["width"], height = figsize_copied["height"], scene = scene, scene_camera = camera_copied)
     layout = graph_objs.Layout(title = title_copied, scene = scene, scene_camera = camera_copied, **layout_kwargs_local)
 
     fig = graph_objs.Figure(data = plot_objects, layout = layout)
+
+    ## Adds button to toggle the axis, https://plotly.com/python/custom-buttons/
+    # buttons = list([
+    #             dict(label="Toggle ON axis",
+    #                  method="update",
+    #                  args=[
+    #                        {"xaxes": {"visible": True, "showticklabels": True}, "yaxes": {"visible": True, "showticklabels": True}, "zaxes": {"visible": True, "showticklabels": True}}
+    #                        ]),
+    #             dict(label="Toggle OFF axis",
+    #                  method="update",
+    #                  args=[
+    #                        {"xaxes": {"visible": False, "showticklabels": False}, "yaxes": {"visible": False, "showticklabels": False}, "zaxes": {"visible": False, "showticklabels": False}}
+    #                        ]),
+    #         ])
+
+    # buttons = [
+    #     dict(method = "relayout",
+    #            args = [{'xaxis.visible': False, "xaxis.zeroline": False, 'yaxis.visible': False, 'zaxis.visible': False,
+    #                     "xaxis.showticklabels": False, "yaxis.showticklabels": False, "zaxis.showticklabels": False},
+    #                       ],
+    #            label = 'Toggle OFF axis'),
+    #     dict(method = "relayout",
+    #            args = [{'xaxis.visible': True, 'yaxis.visible': True, 'zaxis.visible': True,
+    #                     "xaxis.showticklabels": True, "yaxis.showticklabels": True, "zaxis.showticklabels": True},
+    #                       ],
+    #            label = 'Toggle ON axis')
+    # ]
+
+    if False:
+        buttons = [
+            dict(method = "relayout",
+                args = [{"visible": [True, False]}, scene_kwargs
+                            ],
+                label = 'Toggle ON axis'),
+            dict(method = "relayout",
+                args = [{"visible": [False, True]}, scene_kwargs_without_axis
+                            ],
+                label = 'Toggle OFF axis')
+        ]
+
+        fig.update_layout(
+        updatemenus=[
+            dict(
+                # type="buttons",
+                # direction="right",
+                # active=0,
+                # x=0.57,
+                # y=1.2,
+                active=0,
+                x= -0.25, y=1, 
+                xanchor='left', 
+                yanchor='top',
+                buttons= buttons,
+            )
+        ])
 
     ## Set grid line and zero line
     if figsize_ratio is not None:
@@ -1653,7 +1767,7 @@ def plot_3D_plotly(nparr_3D, path_to_save_static : str, do_save_html : bool = Tr
     ## Save the result
     if do_save_html:
         fig.write_html(utilsforminds.strings.format_extension(path_to_save, "html"))
-    fig.write_image(utilsforminds.strings.format_extension(path_to_save, "png"))
+    # fig.write_image(utilsforminds.strings.format_extension(path_to_save, "png"))
 
 def get_triangles_of_alpha_shape(x, y, z, alpha, model= "optimize_alpha"):
     """
@@ -2035,6 +2149,109 @@ def get_intersection_values(x1, y1, z1, tri11, tri21, tri31, x2, y2, z2, tri12, 
                 triangulation_overlap.append(triangulation_coordinate)
 
     return triangulation_overlap
+
+def get_boundary(arr_3D, max_or_min = "max", axis = 2, separate_by_mean = True, range_around_mean = 0, surface_mean_splits = 1):
+    if axis == 2:
+        first_axis = 0
+        second_axis = 1
+    else:
+        raise NotImplementedError()
+    surface = np.zeros((arr_3D.shape[first_axis], arr_3D.shape[second_axis]))
+
+    ## Grids for local mean calculation:
+    surface_means = np.zeros((arr_3D.shape[first_axis], arr_3D.shape[second_axis]))
+    grid_size = [arr_3D.shape[first_axis] // surface_mean_splits, arr_3D.shape[second_axis] // surface_mean_splits]
+    grid_ranges = [[], []]
+    for axis_ in [0, 1]:
+        current_pos = 0
+        for i in range(1000):
+            if current_pos + grid_size[axis_] < arr_3D.shape[axis_]:
+                grid_ranges[axis_].append([current_pos, current_pos + grid_size[axis_]])
+            else:
+                grid_ranges[axis_].append([current_pos, arr_3D.shape[axis_]])
+                break
+            current_pos += grid_size[axis_]
+    for first_grid in grid_ranges[0]:
+        for second_grid in grid_ranges[1]:
+            local_space = helpers.getSlicesV2(arr_3D, {first_axis: first_grid, second_axis: second_grid})
+            nonzero_elevations = local_space.nonzero()[axis]
+            if nonzero_elevations.shape[0] > 0:
+                surface_means[first_grid[0]:first_grid[1], second_grid[0]:second_grid[1]] = np.mean(nonzero_elevations)
+            else:
+                surface_means[first_grid[0]:first_grid[1], second_grid[0]:second_grid[1]] = np.NaN
+
+    # surface[:] = np.NaN
+    for first_idx in range(arr_3D.shape[first_axis]):
+        for second_idx in range(arr_3D.shape[second_axis]):
+            local_z_mean = surface_means[first_idx, second_idx]
+            line = helpers.getSlicesV2(arr_3D, {first_axis: first_idx, second_axis: second_idx})
+            line_nonzeros_elevations = line.nonzero()[0]
+            num_nonzeros = line_nonzeros_elevations.shape[0]
+            if num_nonzeros >= 2:
+                if max_or_min == "max" and not np.isnan(local_z_mean) and np.max(line_nonzeros_elevations) >= (local_z_mean + abs(local_z_mean) * range_around_mean):
+                    surface[first_idx, second_idx] = np.max(line_nonzeros_elevations)
+                elif max_or_min == "min" and not np.isnan(local_z_mean) and np.min(line_nonzeros_elevations) <= (local_z_mean - abs(local_z_mean) * range_around_mean):
+                    surface[first_idx, second_idx] = np.min(line_nonzeros_elevations)
+                else:
+                    surface[first_idx, second_idx] = np.NaN
+            elif num_nonzeros == 1:
+                if not separate_by_mean or (not np.isnan(local_z_mean) and ((max_or_min == "max" and line_nonzeros_elevations[0] >= (local_z_mean + abs(local_z_mean) * range_around_mean)) or (max_or_min == "min" and line_nonzeros_elevations[0] <= (local_z_mean - abs(local_z_mean) * range_around_mean)))):
+                    surface[first_idx, second_idx] = line_nonzeros_elevations[0]
+                else:
+                    surface[first_idx, second_idx] = np.NaN
+            else:
+                surface[first_idx, second_idx] = np.NaN
+
+    x_surf = np.argwhere(~np.isnan(surface))[:, 0]
+    y_surf = np.argwhere(~np.isnan(surface))[:, 1]
+    surface_mask = np.copy(surface)
+    surface_mask[~np.isnan(surface)] = 1
+    surface_mask[np.isnan(surface)] = 0
+    x_grid, y_grid = np.mgrid[0:surface.shape[0], 0:surface.shape[1]]
+    elevations = surface[x_surf, y_surf]
+    interpolated_surface = interpolate.griddata(points = (x_surf, y_surf), values= elevations, xi= (x_grid, y_grid), method= "nearest")
+    surface[np.isnan(surface)] = 0
+    interpolated_surface = surface * surface_mask + interpolated_surface * (1 - surface_mask)
+    return interpolated_surface
+    
+def apply_boundary(arr_mask, boundary, max_or_min = "max", axis = 2):
+    assert(max_or_min in ["max", "min"])
+    if axis == 2:
+        first_axis = 0
+        second_axis = 1
+    else:
+        raise NotImplementedError()
+    nonzeros = arr_mask.nonzero()
+    arr_mask_bounded = np.zeros(arr_mask.shape)
+
+    for idx in range(nonzeros[0].shape[0]):
+        if (max_or_min == "max" and boundary[nonzeros[first_axis][idx], nonzeros[second_axis][idx]] >= nonzeros[axis][idx]) or (max_or_min == "min" and boundary[nonzeros[first_axis][idx], nonzeros[second_axis][idx]] <= nonzeros[axis][idx]):
+            helpers.getSlicesV2(arr_mask_bounded, {first_axis: nonzeros[first_axis][idx], second_axis: nonzeros[second_axis][idx], axis: nonzeros[axis][idx]}, assign = 1)
+    # arr_3D_bounded = arr_3D * arr_mask_bounded
+    return arr_mask_bounded
+
+    # if "interpolated_surface" in terrain_plots: terrain_geos.append(go.Surface(z= interpolated_surface.T, colorscale= "haline", opacity = 0.5, showscale= False, name= "surface", showlegend= True))
+
+def filter_array3d_with_density(array, window = None, density_threshold = 0.03):
+    if window is None:
+        window = [4, 4, 4]
+    # if stride is None:
+    #     stride = [2, 2, 2]
+    num_threshold = round((window[0] * window[1] * window[2]) * density_threshold)
+    if num_threshold == 0:
+        print("WARNING in filter_array3d_with_density: num_threshold is zero, filter will not affect." )
+        return array
+    num_windows = [int(array.shape[axis] / window[axis]) for axis in range(3)]
+
+    output_cpy = np.copy(array)
+    for i in range(num_windows[0]):
+        for j in range(num_windows[1]):
+            for k in range(num_windows[2]):
+                local_slice = [slice(i * window[0], (i + 1) * window[0]), slice(j * window[1], (j + 1) * window[1]), slice(k * window[2], (k + 1) * window[2])]
+                if np.count_nonzero(array[local_slice]) < num_threshold:
+                    output_cpy[local_slice] = 0
+    return output_cpy
+
 
 if __name__ == '__main__':
     pass
