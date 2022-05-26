@@ -1893,6 +1893,28 @@ def deconv_smoothness_3D(nparr, deconv_list_of_displacement_and_proportion, mask
         nparr_deconv = (1. - mask_loc) * nparr_deconv + mask_loc * nparr
     return nparr_deconv
 
+def get_errors_window_wise(predicted_amounts, true_amounts, sampled_counts, true_counts, window = None, pos_on_window = None):
+    if window is None:
+        window = np.ones((3, 3, 3))
+    if pos_on_window is None:
+        pos_on_window = (1, 1, 1)
+    for i in range(3):
+        assert(window.shape[i] > pos_on_window[i])
+    
+    imputed_locations_mask = np.where(true_counts - sampled_counts >= 1, 1, 0)
+    errors_points = np.abs(predicted_amounts - true_amounts) * imputed_locations_mask
+
+    errors_window = np.zeros(predicted_amounts.shape)
+
+    x_arr, y_arr, z_arr = imputed_locations_mask.nonzero()
+    for x, y, z in zip(x_arr, y_arr, z_arr):
+        slice_start_end = []
+        for pos, dim in zip([x, y, z], range(3)):
+            slice_start_end.append([max(0, pos - pos_on_window[dim]) - pos, min(imputed_locations_mask.shape[dim], pos + (window.shape[dim] - pos_on_window[dim])) - pos])
+
+        errors_window[x, y, z] = np.sum(errors_points[slice_start_end[0][0] + x : slice_start_end[0][1] + x, slice_start_end[1][0] : slice_start_end[1][1] + y, slice_start_end[2][0] + z : slice_start_end[2][1] + z]) / np.sum(imputed_locations_mask[slice_start_end[0][0] + x : slice_start_end[0][1] + x, slice_start_end[1][0] + y : slice_start_end[1][1] + y, slice_start_end[2][0] + z : slice_start_end[2][1] + z])
+    return errors_window
+
 def plotly_2D_contour(nparr, path_to_save, arr_filter = None, vmin = None, vmax = None, layout_kwargs = None, figsize_ratio = None, contour_kwargs = None, scene_kwargs = None, axis_kwargs = None, colorbar_kwargs = None, fill_out_small_values_with_nan= True, points_to_plot = None, do_save_html = False, outline_boundary = False, white_on_min= True):
     """Plot contours from nparr.
 
@@ -1983,7 +2005,7 @@ def plot_ROC(path_to_save, y_true, list_of_y_pred, list_of_model_names = None, l
         roc_auc_list[model_idx]["micro"] = auc(fpr_list[model_idx]["micro"], tpr_list[model_idx]["micro"])
 
         if n_classes == 2: ## Plot of a ROC curve for a specific class
-            plt.plot(fpr_list[model_idx][0], tpr_list[model_idx][0], color = next(colors), lw= linewidth, label= f"{list_of_model_names[model_idx]}area = {roc_auc_list[model_idx][0]:0.2f}")
+            plt.plot(fpr_list[model_idx][0], tpr_list[model_idx][0], color = next(colors), lw= linewidth, label= f"{list_of_model_names[model_idx]}AUC = {roc_auc_list[model_idx][0]:0.2f}")
         
         else: ## Compute macro-average ROC curve and ROC area
             # First aggregate all false positive rates

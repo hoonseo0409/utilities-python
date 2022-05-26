@@ -1,4 +1,4 @@
-__all__ = ['helpers', 'visualization', 'biomarkers', 'lofting', 'math', 'decorators', 'containers', 'strings', 'numpy_array']
+__all__ = ['helpers', 'visualization', 'biomarkers', 'lofting', 'math', 'decorators', 'containers', 'strings', 'numpy_array', 'tensors']
 
 from . import helpers
 from . import visualization
@@ -9,3 +9,4 @@ from . import decorators
 from . import containers
 from . import strings
 from . import numpy_array
+from . import tensors
