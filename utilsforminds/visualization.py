@@ -1196,7 +1196,7 @@ def check_points_inside_mesh(points_to_test, points_of_mesh, faces_of_mesh):
     mesh = trimesh.Trimesh(vertices = points_of_mesh, faces= faces_of_mesh)
     signed_distacnes_of_points = trimesh.proximity.signed_distance(mesh, points_to_test)
     
-    bools_vertices_inside = np.where(signed_distacnes_of_points <= 0, True, False)
+    bools_vertices_inside = np.where(signed_distacnes_of_points > 0, True, False)
     points = points_to_test[bools_vertices_inside, :]
     return points[:, 0], points[:, 1], points[:, 2]
 
@@ -1333,7 +1333,7 @@ def optimizealpha(points, value_flat_for_alphashape_optimization,
     return best_alpha
 
 @decorators.grid_of_functions(param_to_grid= "alphahull", param_formatter_dict= {"path_to_save_static": lambda **kwargs: kwargs["path_to_save_static"].split(".")[0] + "_" + str(kwargs["alphahull"] * 100)}, grid_condition= lambda **kwargs: True if ("kinds_to_plot" in kwargs.keys() and "alphashape" in kwargs["kinds_to_plot"]) else False)
-def plot_3D_plotly(nparr_3D, path_to_save_static : str, do_save_html : bool = True, grid_formatter_to_save_tri = None, save_info_txt = False, kinds_to_plot : list = None, marker_kwargs : dict = None, vmin = None, vmax = None, alpha_shape_kwargs : dict = None, alphahull: float = 0.65, points_decider = lambda x: x > 1e-8, observation_mask_nparr_3D = None, title= None, points_legends : dict = None, alpha_shape_legend = "alpha-shape", scene_kwargs : dict = None, xyz_tickers = None, axis_kwargs : dict = None, showaxis = True, layout_kwargs : dict = None, figsize_ratio : dict = None, camera = None, showgrid = False, zeroline = True, showline = False, transparent_bacground = True, colorbar_kwargs = None, get_hovertext = None, alpha_shape_clustering = False, use_pyvista_alphashape = True, additional_gos = None, coordinate_info= None, layout_legend = None, value_arr_for_alphashape_optimization = None, marker_symbols = None, pyvista_alpha_model_kwargs = None, **kwargs):
+def plot_3D_plotly(nparr_3D, path_to_save_static : str, do_save_html : bool = True, grid_formatter_to_save_tri = None, save_info_txt = False, kinds_to_plot : list = None, marker_kwargs : dict = None, vmin = None, vmax = None, alpha_shape_kwargs : dict = None, alphahull: float = 0.65, alpha_shape_eval_kwargs = None, points_decider = lambda x: x > 1e-8, observation_mask_nparr_3D = None, title= None, points_legends : dict = None, alpha_shape_legend = "alpha-shape", scene_kwargs : dict = None, xyz_tickers = None, axis_kwargs : dict = None, showaxis = True, layout_kwargs : dict = None, figsize_ratio : dict = None, camera = None, showgrid = False, zeroline = True, showline = False, transparent_bacground = True, colorbar_kwargs = None, get_hovertext = None, alpha_shape_clustering = False, use_pyvista_alphashape = True, additional_gos = None, coordinate_info= None, layout_legend = None, value_arr_for_alphashape_optimization = None, marker_symbols = None, pyvista_alpha_model_kwargs = None, **kwargs):
     """
     
     Parameters
@@ -1365,7 +1365,7 @@ def plot_3D_plotly(nparr_3D, path_to_save_static : str, do_save_html : bool = Tr
             assert(kind in ["scatter", "alphashape"])
         kinds_to_plot = deepcopy(kinds_to_plot)
 
-    marker_kwargs_local = {"colorscale": 'Rainbow', "size": 2.}
+    marker_kwargs_local = {"colorscale": 'Rainbow', "size": 3.} ## "size": 2.
     if vmin is not None:
         marker_kwargs_local["cmin"] = vmin
     if vmax is not None:
@@ -1636,6 +1636,43 @@ def plot_3D_plotly(nparr_3D, path_to_save_static : str, do_save_html : bool = Tr
                 #                     line = line + f"{grid_formatter_to_save_tri(position = position[triangle[triangle_idx]], axis = position_idx)} "
                 #             text_file.write(line[:-1] + "\n")
         
+        if alpha_shape_eval_kwargs is not None:
+            if alpha_shape_eval_kwargs["type"] == "grades_inside":
+                true_counter_arr = alpha_shape_eval_kwargs["geotensor"].counterTensorDict[alpha_shape_eval_kwargs["symbol"]]
+                true_amount_arr = alpha_shape_eval_kwargs["geotensor"].dataTensorDict[alpha_shape_eval_kwargs["symbol"]]
+                sampled_counter_arr = alpha_shape_eval_kwargs["geotensor"].sampledCounterTensorDict[alpha_shape_eval_kwargs["symbol"]]
+                not_sampled_counter_arr = np.where(true_counter_arr > 0, np.where(sampled_counter_arr > 0, 0., 1.), 0.)
+
+                x_in, y_in, z_in = check_points_inside_mesh(points_to_test = np.stack(np.nonzero(not_sampled_counter_arr), axis = 1), points_of_mesh = np.stack([x, y, z], axis = 1), faces_of_mesh = np.stack([tri1, tri2, tri3], axis = 1))
+                mask_3d_in = np.zeros(not_sampled_counter_arr.shape)
+                mask_3d_in[x_in, y_in, z_in] = 1.
+                mask_3d_out = np.where(not_sampled_counter_arr > 0, np.where(mask_3d_in > 0, 0., 1.), 0.)
+                
+                true_amount_1d_arr = (true_amount_arr - alpha_shape_eval_kwargs["threshold"])[np.nonzero(not_sampled_counter_arr)]
+                vmin = np.percentile(true_amount_1d_arr, 5)
+                marker_kwargs_local_2 = deepcopy(marker_kwargs_local)
+                marker_kwargs_local_2["cmin"] = vmin
+                vmax = np.percentile(true_amount_1d_arr, 95)
+                marker_kwargs_local_2["cmax"] = vmax
+                for is_main, mask_to_plot, marker_symbol, points_legend in zip([True, False], [mask_3d_in, mask_3d_out], ["circle", "cross"], ["inside", "outside"]):
+                    x_loc, y_loc, z_loc = mask_to_plot.nonzero()
+                    true_amount_1d_inout_arr = (true_amount_arr - alpha_shape_eval_kwargs["threshold"])[x_loc, y_loc, z_loc]
+                    with open(utilsforminds.strings.format_extension(path_to_save, "txt"), "a") as text_file:
+                        text_file.write(f"{points_legend}: total number of points: {x_loc.shape[0]}, average score: {np.mean(true_amount_1d_inout_arr)}.\n")
+
+                    colors_arr = utilsforminds.numpy_array.push_arr_to_range(true_amount_1d_inout_arr, vmin = vmin, vmax = vmax) ## don't need maybe, because of cmin and cmax.
+                    if get_hovertext is not None:
+                        hovertext = get_hovertext(x = x_loc, y = y_loc, z = z_loc, value = colors_arr)
+                        hoverinfo = "text"
+                    else:
+                        hovertext = None
+                        hoverinfo = None
+                    if is_main: ## Only plot one colorbar.
+                        marker_kwargs_copied = deepcopy(marker_kwargs_local_2)
+                    else:
+                        marker_kwargs_copied = utilsforminds.containers.copy_dict_and_delete_element(marker_kwargs_local_2, ["colorbar"])
+                    plot_objects.append(graph_objs.Scatter3d(mode = 'markers', name = points_legend, x = x_loc, y = y_loc, z = z_loc, marker = graph_objs.Marker(color = colors_arr, symbol = marker_symbol, **marker_kwargs_copied), hovertext = hovertext, hoverinfo = hoverinfo, showlegend = True)) ## parameter, e.g. x, y, .. can be used in hovertemplate.
+
         if coordinate_info is not None: 
             x_physical, y_physical, z_physical= x * coordinate_info[0]["grid"] + coordinate_info[0]["min"], y * coordinate_info[1]["grid"] + coordinate_info[1]["min"], z * coordinate_info[2]["grid"] + coordinate_info[2]["min"]
             volume = volume * coordinate_info[0]["grid"] * coordinate_info[1]["grid"] * coordinate_info[2]["grid"]
@@ -1659,7 +1696,7 @@ def plot_3D_plotly(nparr_3D, path_to_save_static : str, do_save_html : bool = Tr
             unique_amounts = nparr_3D[x[indices_of_unique_vertices], y[indices_of_unique_vertices], z[indices_of_unique_vertices]]
             if False:
                 all_vertices = np.stack([x, y, z], axis = 1)
-                i_in, j_in, k_in = utilsforminds.visualization.check_points_inside_mesh(points_to_test = all_vertices, points_of_mesh = all_vertices, faces_of_mesh = np.stack([tri1, tri2, tri3], axis = 1))
+                i_in, j_in, k_in = check_points_inside_mesh(points_to_test = all_vertices, points_of_mesh = all_vertices, faces_of_mesh = np.stack([tri1, tri2, tri3], axis = 1))
                 unique_amounts = nparr_3D[i_in, j_in, k_in]
             with open(utilsforminds.strings.format_extension(path_to_save, "txt"), "a") as text_file:
                 text_file.write(f"total grade: {np.sum(unique_amounts)}\navg grade: {np.mean(unique_amounts)}\nnumber of points: {unique_amounts.shape[0]}\nvolume: {volume}\nsurface area: {surface_area}\nnumber of triangulations: {tri1.shape[0]}\ngrade per volume physical: {np.sum(unique_amounts) / max(volume, 1e-8)}\ngrade per volume grids: {np.sum(unique_amounts) / max(volume / (coordinate_info[0]['grid'] * coordinate_info[1]['grid'] * coordinate_info[2]['grid']), 1e-8)}\nalpha optimization: {value_arr_for_alphashape_optimization is not None or value_arr_for_alphashape_optimization}") 
