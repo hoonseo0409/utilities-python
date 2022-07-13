@@ -35,6 +35,7 @@ import moviepy.editor as mpy
 from copy import deepcopy
 import tikzplotlib
 from itertools import product, combinations
+from time import time
 
 import plotly.graph_objs as graph_objs
 import plotly.graph_objs as go
@@ -56,6 +57,7 @@ import shapely
 from shapely.geometry import MultiPoint
 import trimesh
 import meshio
+import open3d as o3d
 
 from utilsforminds.containers import merge_dictionaries
 from utilsforminds.containers import merge
@@ -1333,7 +1335,7 @@ def optimizealpha(points, value_flat_for_alphashape_optimization,
     return best_alpha
 
 @decorators.grid_of_functions(param_to_grid= "alphahull", param_formatter_dict= {"path_to_save_static": lambda **kwargs: kwargs["path_to_save_static"].split(".")[0] + "_" + str(kwargs["alphahull"] * 100)}, grid_condition= lambda **kwargs: True if ("kinds_to_plot" in kwargs.keys() and "alphashape" in kwargs["kinds_to_plot"]) else False)
-def plot_3D_plotly(nparr_3D, path_to_save_static : str, do_save_html : bool = True, grid_formatter_to_save_tri = None, save_info_txt = False, kinds_to_plot : list = None, marker_kwargs : dict = None, vmin = None, vmax = None, alpha_shape_kwargs : dict = None, alphahull: float = 0.65, alpha_shape_eval_kwargs = None, points_decider = lambda x: x > 1e-8, observation_mask_nparr_3D = None, title= None, points_legends : dict = None, alpha_shape_legend = "alpha-shape", scene_kwargs : dict = None, xyz_tickers = None, axis_kwargs : dict = None, showaxis = True, layout_kwargs : dict = None, figsize_ratio : dict = None, camera = None, showgrid = False, zeroline = True, showline = False, transparent_bacground = True, colorbar_kwargs = None, get_hovertext = None, alpha_shape_clustering = False, use_pyvista_alphashape = True, additional_gos = None, coordinate_info= None, layout_legend = None, value_arr_for_alphashape_optimization = None, marker_symbols = None, pyvista_alpha_model_kwargs = None, **kwargs):
+def plot_3D_plotly(nparr_3D, path_to_save_static : str, do_save_html : bool = True, grid_formatter_to_save_tri = None, save_info_txt = False, kinds_to_plot : list = None, marker_kwargs : dict = None, vmin = None, vmax = None, alpha_shape_kwargs : dict = None, alphahull: float = 0.65, alpha_shape_eval_kwargs = None, points_decider = lambda x: x > 1e-8, observation_mask_nparr_3D = None, title= None, points_legends : dict = None, alpha_shape_legend = "alpha-shape", scene_kwargs : dict = None, xyz_tickers = None, axis_kwargs : dict = None, showaxis = True, layout_kwargs : dict = None, figsize_ratio : dict = None, camera = None, showgrid = False, zeroline = True, showline = False, transparent_bacground = True, colorbar_kwargs = None, get_hovertext = None, alpha_shape_clustering = False, mesh_method = "weighted_alpha", additional_gos = None, coordinate_info= None, layout_legend = None, value_arr_for_alphashape_optimization = None, marker_symbols = None, kwargs_filter_points_with_density = None, points_filter_model = "poisson", model_kwargs = None, **kwargs):
     """
     
     Parameters
@@ -1343,6 +1345,10 @@ def plot_3D_plotly(nparr_3D, path_to_save_static : str, do_save_html : bool = Tr
     """
 
     assert(len(nparr_3D.shape) == 3)
+    print(f"Start visualization for {path_to_save_static}")
+    if_valid_grid = points_filter_model != "poisson" and mesh_method != "poisson"
+    # assert(mesh_method in ["pyvista", "poisson"])
+
     # assert(use_pyvista_alphashape) ## optimization of alpha currently only implemented over pyvista.
     input_shape = deepcopy(nparr_3D.shape)
     tri1 = None ## To check whether triangulation is already calculated.
@@ -1432,27 +1438,33 @@ def plot_3D_plotly(nparr_3D, path_to_save_static : str, do_save_html : bool = Tr
         nparr_3D_non_mask = np.where(nparr_3D_whole, np.where(observation_mask_nparr_3D_added, 0., 1.), 0.)
     if "scatter" in kinds_to_plot:
         for is_main, mask_to_plot, marker_symbol, points_legend in zip([True, False], [nparr_3D_non_mask, observation_mask_nparr_3D_added], [marker_symbols_local["nonmask"], marker_symbols_local["mask"]], [points_legends_local[1], points_legends_local[0]]):
-            x, y, z = mask_to_plot.nonzero()
-            colors_arr = utilsforminds.numpy_array.push_arr_to_range(nparr_3D[x, y, z], vmin = vmin, vmax = vmax) ## don't need maybe, because of cmin and cmax.
-            if get_hovertext is not None:
-                hovertext = get_hovertext(x = x, y = y, z = z, value = colors_arr)
-                hoverinfo = "text"
-            else:
-                hovertext = None
-                hoverinfo = None
-            if is_main: ## Only plot one colorbar.
-                marker_kwargs_copied = marker_kwargs_local
-            else:
-                marker_kwargs_copied = utilsforminds.containers.copy_dict_and_delete_element(marker_kwargs_local, ["colorbar"])
-            plot_objects.append(graph_objs.Scatter3d(mode = 'markers', name = points_legend, x = x, y = y, z = z, marker = graph_objs.Marker(color = colors_arr, symbol = marker_symbol, **marker_kwargs_copied), hovertext = hovertext, hoverinfo = hoverinfo, showlegend = True)) ## parameter, e.g. x, y, .. can be used in hovertemplate.
+            if np.count_nonzero(mask_to_plot) > 0:
+                x, y, z = filter_points_with_density(*mask_to_plot.nonzero(), model= points_filter_model, kwargs_filter_points_with_density= kwargs_filter_points_with_density)
+                if if_valid_grid:
+                    colors_arr = utilsforminds.numpy_array.push_arr_to_range(nparr_3D[x, y, z], vmin = vmin, vmax = vmax) ## don't need maybe, because of cmin and cmax.
+                else:
+                    colors_arr = "black"
+                if get_hovertext is not None and if_valid_grid:
+                    hovertext = get_hovertext(x = x, y = y, z = z, value = colors_arr)
+                    hoverinfo = "text"
+                else:
+                    hovertext = None
+                    hoverinfo = None
+                if is_main: ## Only plot one colorbar.
+                    marker_kwargs_copied = marker_kwargs_local
+                else:
+                    marker_kwargs_copied = utilsforminds.containers.copy_dict_and_delete_element(marker_kwargs_local, ["colorbar"])
+                plot_objects.append(graph_objs.Scatter3d(mode = 'markers', name = points_legend, x = x, y = y, z = z, marker = graph_objs.Marker(color = colors_arr, symbol = marker_symbol, **marker_kwargs_copied), hovertext = hovertext, hoverinfo = hoverinfo, showlegend = True)) ## parameter, e.g. x, y, .. can be used in hovertemplate.
     if "alphashape" in kinds_to_plot:
-        if use_pyvista_alphashape:
+        if mesh_method == "optimize_alpha" or mesh_method == "weighted_alpha":
             alpha = 1. / max(alpha_shape_kwargs_local["alphahull"], 1e-16)
             del alpha_shape_kwargs_local["alphahull"]
-            pyvista_alpha_model_kwargs_loc = merge(dict(model = "optimize_alpha", kwargs = dict()), pyvista_alpha_model_kwargs)
+            # model_kwargs_loc = merge(dict(model = "optimize_alpha", kwargs = dict()), model_kwargs)
+        else:
+            alpha = None
 
         # mask_nparr_3D_alphashape = nparr_3D_whole
-        x, y, z = nparr_3D_whole.nonzero()
+        x, y, z = filter_points_with_density(*nparr_3D_whole.nonzero(), model= points_filter_model, kwargs_filter_points_with_density= kwargs_filter_points_with_density)
 
         # if do_normalize_coordinates:
         #     def min_max_scale(arr):
@@ -1477,14 +1489,14 @@ def plot_3D_plotly(nparr_3D, path_to_save_static : str, do_save_html : bool = Tr
             return best_alpha
 
         alphas_radius_list = []
-        if use_pyvista_alphashape:
+        if mesh_method == "optimize_alpha" or mesh_method == "weighted_alpha":
             def get_alpha(x_loc, y_loc, z_loc):
-                if pyvista_alpha_model_kwargs_loc["model"] == "optimize_alpha":
+                if mesh_method == "optimize_alpha":
                     return optimize_alpha(x_loc, y_loc, z_loc)
-                elif pyvista_alpha_model_kwargs_loc["model"] == "weighted_alpha":
-                    if pyvista_alpha_model_kwargs_loc["kwargs"]["kinds"] == "local_density":
+                elif mesh_method == "weighted_alpha":
+                    if model_kwargs["kinds"] == "local_density":
                         ## Calculate the array of local densities
-                        window = pyvista_alpha_model_kwargs_loc["kwargs"]["window"]
+                        window = model_kwargs["window"]
                         window_size = (window[0][1] + window[0][0]) * (window[1][1] + window[1][0]) * (window[2][1] + window[2][0])
                         global_density = np.count_nonzero(nparr_3D_whole) / (nparr_3D_whole.shape[0] * nparr_3D_whole.shape[1] * nparr_3D_whole.shape[2])
                         local_densities = np.zeros(shape= nparr_3D_whole.shape)
@@ -1509,9 +1521,9 @@ def plot_3D_plotly(nparr_3D, path_to_save_static : str, do_save_html : bool = Tr
                         alphahull : float, 1 / alpha_radius
                         """
 
-                        if pyvista_alpha_model_kwargs_loc["kwargs"]["kinds"] == "angular":
-                            if "theta" in pyvista_alpha_model_kwargs_loc["kwargs"].keys():
-                                theta = pyvista_alpha_model_kwargs_loc["kwargs"]["theta"]
+                        if model_kwargs["kinds"] == "angular":
+                            if "theta" in model_kwargs.keys():
+                                theta = model_kwargs["theta"]
                             else:
                                 theta = 60
                             
@@ -1519,25 +1531,25 @@ def plot_3D_plotly(nparr_3D, path_to_save_static : str, do_save_html : bool = Tr
                             alpha_radius = circumradius
                             alphahull = 1 / alpha_radius
                         
-                        elif pyvista_alpha_model_kwargs_loc["kwargs"]["kinds"] == "local_density":
+                        elif model_kwargs["kinds"] == "local_density":
                             num_points = 0
                             for idx in indices_four_points:
                                 assert(local_densities[x_loc[idx], y_loc[idx], z_loc[idx]] > 0)
                                 assert(nparr_3D_whole[x_loc[idx], y_loc[idx], z_loc[idx]] != 0)
                                 num_points += local_densities[x_loc[idx], y_loc[idx], z_loc[idx]]
                             density_ratio = ((num_points / (window_size * 4)) / global_density) ** (1/3)
-                            alpha_radius = max(pyvista_alpha_model_kwargs_loc["kwargs"]["alpha_radius"] / max(density_ratio, 1e-16), 0.5)
-                            # print(f"alpha_radius: {pyvista_alpha_model_kwargs_loc['kwargs']['alpha_radius'] / max(density_ratio, 1e-16)}")
+                            alpha_radius = max(model_kwargs["alpha_radius"] / max(density_ratio, 1e-16), 0.5)
+                            # print(f"alpha_radius: {model_kwargs['kwargs']['alpha_radius'] / max(density_ratio, 1e-16)}")
                             alphahull = 1 / alpha_radius
                             
-                        elif pyvista_alpha_model_kwargs_loc["kwargs"]["kinds"] == "constant":
-                            if "alpha_radius" in pyvista_alpha_model_kwargs_loc["kwargs"].keys():
-                                alpha_radius = pyvista_alpha_model_kwargs_loc["kwargs"]["alpha_radius"]
+                        elif model_kwargs["kinds"] == "constant":
+                            if "alpha_radius" in model_kwargs.keys():
+                                alpha_radius = model_kwargs["alpha_radius"]
                             else:
                                 alpha_radius = 1.1
                             alphahull = 1 / alpha_radius
                         else:
-                            raise Exception(f"Unsupported kinds: {pyvista_alpha_model_kwargs_loc['kwargs']['kinds']}")
+                            raise Exception(f"Unsupported kinds: {model_kwargs['kinds']}")
                         
                         ## Constraint the maximum alpha radius.
                         # alpha_radius = min(alpha_radius, 5)
@@ -1546,7 +1558,7 @@ def plot_3D_plotly(nparr_3D, path_to_save_static : str, do_save_html : bool = Tr
                     return get_alpha_value
 
 
-        if get_hovertext is not None:
+        if get_hovertext is not None and if_valid_grid:
             hovertext = get_hovertext(x = x, y = y, z = z, value = nparr_3D[x, y, z])
             hoverinfo = "text"
         else:
@@ -1579,12 +1591,26 @@ def plot_3D_plotly(nparr_3D, path_to_save_static : str, do_save_html : bool = Tr
                 x_this_cluster = x[cluster_labels == cluster_label]
                 y_this_cluster = y[cluster_labels == cluster_label]
                 z_this_cluster = z[cluster_labels == cluster_label]
-                best_alpha = get_alpha(x_this_cluster, y_this_cluster, z_this_cluster)
-                if use_pyvista_alphashape:
-                    tri1, tri2, tri3, volume = get_triangles_of_alpha_shape(x_this_cluster, y_this_cluster, z_this_cluster, alpha = best_alpha, model= pyvista_alpha_model_kwargs_loc["model"])
-                    plot_objects.append(graph_objs.Mesh3d(name = f"{alpha_shape_legend}-cluster-{cluster_label}", x = x_this_cluster, y = y_this_cluster, z = z_this_cluster, hovertext = hovertext, hoverinfo = hoverinfo, intensity = utilsforminds.numpy_array.push_arr_to_range(nparr_3D[x_this_cluster, y_this_cluster, z_this_cluster], vmin = vmin, vmax = vmax), colorbar = marker_kwargs_local["colorbar"], showscale = showscale, i = tri1, j = tri2, k = tri3, **alpha_shape_kwargs_local))
+                if mesh_method == "optimize_alpha" or mesh_method == "weighted_alpha":
+                    best_alpha = get_alpha(x_this_cluster, y_this_cluster, z_this_cluster)
                 else:
-                    plot_objects.append(graph_objs.Mesh3d(name = f"{alpha_shape_legend}-cluster-{cluster_label}", x = x_this_cluster, y = y_this_cluster, z = z_this_cluster, hovertext = hovertext, hoverinfo = hoverinfo, intensity = utilsforminds.numpy_array.push_arr_to_range(nparr_3D[x_this_cluster, y_this_cluster, z_this_cluster], vmin = vmin, vmax = vmax), colorbar = marker_kwargs_local["colorbar"], showscale = showscale, **alpha_shape_kwargs_local))
+                    best_alpha = None
+
+                if mesh_method is None:
+                    if if_valid_grid:
+                        plot_objects.append(graph_objs.Mesh3d(name = f"{alpha_shape_legend}-cluster-{cluster_label}", x = x_this_cluster, y = y_this_cluster, z = z_this_cluster, hovertext = hovertext, hoverinfo = hoverinfo, intensity = utilsforminds.numpy_array.push_arr_to_range(nparr_3D[x_this_cluster, y_this_cluster, z_this_cluster], vmin = vmin, vmax = vmax), colorbar = marker_kwargs_local["colorbar"], showscale = showscale, **alpha_shape_kwargs_local))
+                    else:
+                        plot_objects.append(graph_objs.Mesh3d(name = f"{alpha_shape_legend}-cluster-{cluster_label}", x = x_this_cluster, y = y_this_cluster, z = z_this_cluster, **alpha_shape_kwargs_local))
+                else:
+                    result_dict = get_triangles_of_alpha_shape(x_this_cluster, y_this_cluster, z_this_cluster, alpha = (best_alpha if if_valid_grid else alpha), model= mesh_method)
+                    tri1, tri2, tri3, volume = result_dict["tri1"], result_dict["tri2"], result_dict["tri3"], result_dict["volume"]
+                    if mesh_method == "poisson":
+                        x_this_cluster, y_this_cluster, z_this_cluster = result_dict["x"], result_dict["y"], result_dict["z"]
+
+                    if if_valid_grid:
+                        plot_objects.append(graph_objs.Mesh3d(name = f"{alpha_shape_legend}-cluster-{cluster_label}", x = x_this_cluster, y = y_this_cluster, z = z_this_cluster, hovertext = hovertext, hoverinfo = hoverinfo, intensity = utilsforminds.numpy_array.push_arr_to_range(nparr_3D[x_this_cluster, y_this_cluster, z_this_cluster], vmin = vmin, vmax = vmax), colorbar = marker_kwargs_local["colorbar"], showscale = showscale, i = tri1, j = tri2, k = tri3, **alpha_shape_kwargs_local))
+                    else: ## poisson, not if_valid_grid
+                        plot_objects.append(graph_objs.Mesh3d(name = alpha_shape_legend, x = x_this_cluster, y = y_this_cluster, z = z_this_cluster, i = tri1, j = tri2, k = tri3, **alpha_shape_kwargs_local))
                 showscale = False ## Only the first plot has colorbar.
         else: ## without clustering
             if "mesh_dict" in kwargs.keys():
@@ -1600,13 +1626,15 @@ def plot_3D_plotly(nparr_3D, path_to_save_static : str, do_save_html : bool = Tr
                         text_file.write(f"The volume of Leapfrog mesh: {volume}-m^3\n")
 
                 ## Our alpha-shape
+                raise Exception(NotImplementedError)
                 best_alpha = get_alpha(x, y, z)
-                tri1, tri2, tri3, volume = get_triangles_of_alpha_shape(x, y, z, alpha = best_alpha, model= pyvista_alpha_model_kwargs_loc["model"])
+                result_dict = get_triangles_of_alpha_shape(x, y, z, alpha = best_alpha, model= mesh_method)
+                tri1, tri2, tri3, volume = result_dict["tri1"], result_dict["tri2"], result_dict["tri3"], result_dict["volume"]
 
                 ## Plot the histgram of alpha radiuses.
                 # for axis in range(3): assert(axisInfo[axis]["grid"] == axisInfo[(axis + 1) % 2]["grid"])
                 # alpha_radius_list_cp = [radius * axisInfo[0]["grid"] for radius in alpha_radius_list]
-                # if pyvista_alpha_model_kwargs_loc["kwargs"]["kinds"] == "angular":
+                # if model_kwargs["kinds"] == "angular":
                 #     fig_histo = go.Figure(data=[go.Histogram(x= alpha_radius_list_cp, xbins=dict(start= 0, end= 20 * axisInfo[0]["grid"], size= 0.5 * axisInfo[0]["grid"]))])
                 # else:
                 #     fig_histo = go.Figure(data=[go.Histogram(x= alpha_radius_list_cp)])
@@ -1617,17 +1645,29 @@ def plot_3D_plotly(nparr_3D, path_to_save_static : str, do_save_html : bool = Tr
                 
                 plot_objects.append(graph_objs.Mesh3d(name = alpha_shape_legend, x = x, y = y, z = z, hovertext = hovertext, hoverinfo = hoverinfo, intensity = utilsforminds.numpy_array.push_arr_to_range(nparr_3D[x, y, z], vmin = vmin, vmax = vmax), colorbar = marker_kwargs_local["colorbar"], i = tri1, j = tri2, k = tri3, **alpha_shape_kwargs_local))
             else:
-                if use_pyvista_alphashape:
-                    best_alpha = get_alpha(x, y, z)
-                    tri1, tri2, tri3, volume = get_triangles_of_alpha_shape(x, y, z, alpha = best_alpha, model= pyvista_alpha_model_kwargs_loc["model"])
-
-                    plot_objects.append(graph_objs.Mesh3d(name = alpha_shape_legend, x = x, y = y, z = z, hovertext = hovertext, hoverinfo = hoverinfo, intensity = utilsforminds.numpy_array.push_arr_to_range(nparr_3D[x, y, z], vmin = vmin, vmax = vmax), colorbar = marker_kwargs_local["colorbar"], i = tri1, j = tri2, k = tri3, **alpha_shape_kwargs_local))
+                if mesh_method is None:
+                    if if_valid_grid:
+                        plot_objects.append(graph_objs.Mesh3d(name = alpha_shape_legend, x = x, y = y, z = z, hovertext = hovertext, hoverinfo = hoverinfo, intensity = utilsforminds.numpy_array.push_arr_to_range(nparr_3D[x, y, z], vmin = vmin, vmax = vmax), colorbar = marker_kwargs_local["colorbar"], **alpha_shape_kwargs_local))
+                    else:
+                        plot_objects.append(graph_objs.Mesh3d(name = alpha_shape_legend, x = x, y = y, z = z, **alpha_shape_kwargs_local))
                 else:
-                    plot_objects.append(graph_objs.Mesh3d(name = alpha_shape_legend, x = x, y = y, z = z, hovertext = hovertext, hoverinfo = hoverinfo, intensity = utilsforminds.numpy_array.push_arr_to_range(nparr_3D[x, y, z], vmin = vmin, vmax = vmax), colorbar = marker_kwargs_local["colorbar"], **alpha_shape_kwargs_local))
+                    if mesh_method == "optimize_alpha" or mesh_method == "weighted_alpha":
+                        best_alpha = get_alpha(x, y, z)
+                    else:
+                        best_alpha = None
+                    result_dict = get_triangles_of_alpha_shape(x, y, z, alpha = (best_alpha if if_valid_grid else alpha), model= mesh_method)
+                    tri1, tri2, tri3, volume = result_dict["tri1"], result_dict["tri2"], result_dict["tri3"], result_dict["volume"]
+                    if mesh_method == "poisson":
+                        x, y, z = result_dict["x"], result_dict["y"], result_dict["z"]
+
+                    if if_valid_grid:
+                        plot_objects.append(graph_objs.Mesh3d(name = alpha_shape_legend, x = x, y = y, z = z, hovertext = hovertext, hoverinfo = hoverinfo, intensity = utilsforminds.numpy_array.push_arr_to_range(nparr_3D[x, y, z], vmin = vmin, vmax = vmax), colorbar = marker_kwargs_local["colorbar"], i = tri1, j = tri2, k = tri3, **alpha_shape_kwargs_local))
+                    else: ## poisson, not if_valid_grid
+                        plot_objects.append(graph_objs.Mesh3d(name = alpha_shape_legend, x = x, y = y, z = z, i = tri1, j = tri2, k = tri3, **alpha_shape_kwargs_local))
 
                 # if grid_formatter_to_save_tri is not None: ## Saving clustered alpha-shape will be implemented in the future in case we need.
                 #     if tri1 is None:
-                #         tri1, tri2, tri3, volume = get_triangles_of_alpha_shape(x, y, z, alpha = best_alpha, model= pyvista_alpha_model_kwargs_loc["model"])
+                #         tri1, tri2, tri3, volume = get_triangles_of_alpha_shape(x, y, z, alpha = best_alpha, model= mesh_method)
                 #     with open(utilsforminds.strings.format_extension(path_to_save, "tri"), "w") as text_file:
                 #         for triangle_idx in range(tri1.shape[0]):
                 #             line = ""
@@ -1636,7 +1676,7 @@ def plot_3D_plotly(nparr_3D, path_to_save_static : str, do_save_html : bool = Tr
                 #                     line = line + f"{grid_formatter_to_save_tri(position = position[triangle[triangle_idx]], axis = position_idx)} "
                 #             text_file.write(line[:-1] + "\n")
         
-        if alpha_shape_eval_kwargs is not None:
+        if alpha_shape_eval_kwargs is not None and if_valid_grid:
             if alpha_shape_eval_kwargs["type"] == "grades_inside":
                 true_counter_arr = alpha_shape_eval_kwargs["geotensor"].counterTensorDict[alpha_shape_eval_kwargs["symbol"]]
                 true_amount_arr = alpha_shape_eval_kwargs["geotensor"].dataTensorDict[alpha_shape_eval_kwargs["symbol"]]
@@ -1658,7 +1698,7 @@ def plot_3D_plotly(nparr_3D, path_to_save_static : str, do_save_html : bool = Tr
                     x_loc, y_loc, z_loc = mask_to_plot.nonzero()
                     true_amount_1d_inout_arr = (true_amount_arr - alpha_shape_eval_kwargs["threshold"])[x_loc, y_loc, z_loc]
                     with open(utilsforminds.strings.format_extension(path_to_save, "txt"), "a") as text_file:
-                        text_file.write(f"{points_legend}: total number of points: {x_loc.shape[0]}, average score: {np.mean(true_amount_1d_inout_arr)}.\n")
+                        text_file.write(f"{points_legend}: total number of points: {x_loc.shape[0]}, average score: {np.sum(true_amount_1d_inout_arr) / np.count_nonzero(not_sampled_counter_arr)}, sum score: {np.sum(true_amount_1d_inout_arr)}.\n")
 
                     colors_arr = utilsforminds.numpy_array.push_arr_to_range(true_amount_1d_inout_arr, vmin = vmin, vmax = vmax) ## don't need maybe, because of cmin and cmax.
                     if get_hovertext is not None:
@@ -1683,7 +1723,7 @@ def plot_3D_plotly(nparr_3D, path_to_save_static : str, do_save_html : bool = Tr
         verts= np.concatenate([[x_physical], [y_physical], [z_physical]], axis=0).T
         # volume = sum(MeshTri(verts, faces).cell_volumes) ## analyze mesh: https://github.com/mikedh/trimesh
         
-        if save_info_txt and use_pyvista_alphashape and not alpha_shape_clustering: ## calculate and print alpha-shape information.
+        if save_info_txt and if_valid_grid and not alpha_shape_clustering: ## calculate and print alpha-shape information.
             ## calculate the volume of alpha-shape, https://stackoverflow.com/questions/61638966/find-volume-of-object-given-a-triangular-mesh
 
             surface_area = 0.
@@ -1724,9 +1764,16 @@ def plot_3D_plotly(nparr_3D, path_to_save_static : str, do_save_html : bool = Tr
         )          
 
     if not showaxis: axis_kwargs_local["visible"] = False ## This is how to toggle off axis.
-    scene_kwargs = dict(xaxis = {"range": [0, input_shape[0]], "tickvals": xyz_tickers_copied["x"]["tickvals"], "ticktext": xyz_tickers_copied["x"]["ticktext"], "tickangle": -90, **axis_kwargs_local},
-    yaxis = {"range": [0, input_shape[1]], "tickvals": xyz_tickers_copied["y"]["tickvals"], "ticktext":  xyz_tickers_copied["y"]["ticktext"], "tickangle": -90, **axis_kwargs_local},
-    zaxis = {"range": [0, input_shape[2]], "tickvals": xyz_tickers_copied["z"]["tickvals"], "ticktext":  xyz_tickers_copied["z"]["ticktext"], "tickangle": 0, **axis_kwargs_local}, **scene_kwargs_local)
+
+    if if_valid_grid:
+        scene_kwargs = dict(xaxis = {"range": [0, input_shape[0]], "tickvals": xyz_tickers_copied["x"]["tickvals"], "ticktext": xyz_tickers_copied["x"]["ticktext"], "tickangle": -90, **axis_kwargs_local},
+        yaxis = {"range": [0, input_shape[1]], "tickvals": xyz_tickers_copied["y"]["tickvals"], "ticktext":  xyz_tickers_copied["y"]["ticktext"], "tickangle": -90, **axis_kwargs_local},
+        zaxis = {"range": [0, input_shape[2]], "tickvals": xyz_tickers_copied["z"]["tickvals"], "ticktext":  xyz_tickers_copied["z"]["ticktext"], "tickangle": 0, **axis_kwargs_local}, **scene_kwargs_local)
+    else:
+        scene_kwargs = dict(xaxis = {"range": [min(0, np.min(x)), max(input_shape[0], np.max(x))], "tickvals": xyz_tickers_copied["x"]["tickvals"], "ticktext": xyz_tickers_copied["x"]["ticktext"], "tickangle": -90, **axis_kwargs_local},
+        yaxis = {"range": [min(0, np.min(y)), max(input_shape[1], np.max(y))], "tickvals": xyz_tickers_copied["y"]["tickvals"], "ticktext":  xyz_tickers_copied["y"]["ticktext"], "tickangle": -90, **axis_kwargs_local},
+        zaxis = {"range": [min(0, np.min(z)), max(input_shape[2], np.max(z))], "tickvals": xyz_tickers_copied["z"]["tickvals"], "ticktext":  xyz_tickers_copied["z"]["ticktext"], "tickangle": 0, **axis_kwargs_local}, **scene_kwargs_local)
+
     scene = graph_objs.layout.Scene(**scene_kwargs)
 
     if False:
@@ -1806,7 +1853,7 @@ def plot_3D_plotly(nparr_3D, path_to_save_static : str, do_save_html : bool = Tr
         fig.write_html(utilsforminds.strings.format_extension(path_to_save, "html"))
     # fig.write_image(utilsforminds.strings.format_extension(path_to_save, "png"))
 
-def get_triangles_of_alpha_shape(x, y, z, alpha, model= "optimize_alpha"):
+def get_triangles_of_alpha_shape(x, y, z, alpha, model= "optimize_alpha", model_kwargs = None):
     """
     
     Returns
@@ -1815,8 +1862,7 @@ def get_triangles_of_alpha_shape(x, y, z, alpha, model= "optimize_alpha"):
         tri1[j], tri2[j], tri3[j] indicate the first, second, third point of j-th triangle. For example, (x[tri1[j]], y[tri1[j]], z[tri1[j]]) is the first point of triangle.
     """
 
-    assert(model in ["weighted_alpha", "optimize_alpha"])
-
+    if model_kwargs is None: model_kwargs = {}
     if model == "optimize_alpha":
         cloud = pv.PolyData(np.array(list(zip(x, y, z)))) # set up the pyvista point cloud structure
         #Extract the total simplicial structure of the alpha shape defined via pyvista
@@ -1845,7 +1891,7 @@ def get_triangles_of_alpha_shape(x, y, z, alpha, model= "optimize_alpha"):
         # get indices from mesh triangles
         # boundary_points= points3d[boundary_faces]
         tri1, tri2, tri3 = boundary_faces.T ## x1, y1, z1 is index (in x, y, z) of point of triangle, so there can be duplication, because it is combination of three indices.
-        return tri1, tri2, tri3, boundary_mesh.volume
+        return dict(tri1= tri1, tri2= tri2, tri3= tri3, volume= boundary_mesh.volume)
     elif model == "weighted_alpha":
         positions = np.stack([x, y, z], axis = -1)
         alpha_shape = alphashape.alphashape(points= positions, alpha= alpha)
@@ -1861,7 +1907,33 @@ def get_triangles_of_alpha_shape(x, y, z, alpha, model= "optimize_alpha"):
         index_map_vertices_to_positions = np.argwhere(np.all(vertices.reshape(vertices.shape[0],1,-1) == positions,2)) ## ref: https://stackoverflow.com/questions/55612617/match-rows-of-two-2d-arrays-and-get-a-row-indices-map-using-numpy
         assert(np.all(index_map_vertices_to_positions[:, 0] == np.arange(vertices.shape[0])))
         index_map_vertices_to_positions = index_map_vertices_to_positions[:, 1]
-        return index_map_vertices_to_positions[faces[:, 0]], index_map_vertices_to_positions[faces[:, 1]], index_map_vertices_to_positions[faces[:, 2]], alpha_shape.volume
+        # return index_map_vertices_to_positions[faces[:, 0]], index_map_vertices_to_positions[faces[:, 1]], index_map_vertices_to_positions[faces[:, 2]], alpha_shape.volume
+        return dict(tri1= index_map_vertices_to_positions[faces[:, 0]], tri2= index_map_vertices_to_positions[faces[:, 1]], tri3= index_map_vertices_to_positions[faces[:, 2]], volume= alpha_shape.volume)
+    elif model == "poisson":
+        vertices, triangles = get_verts_tris_poisson(x, y, z, model_kwargs= model_kwargs, density_remove_ratio= 0.1)
+        return dict(tri1= triangles[:, 0], tri2= triangles[:, 1], tri3= triangles[:, 2], volume= -999, x= vertices[:, 0], y= vertices[:, 1], z= vertices[:, 2])
+    elif model == "ball-pivot":
+        start = time()
+        model_kwargs = {}
+        # model_kwargs = merge_dictionaries([dict(depth= 6, linear_fit= True, scale= 1.1), model_kwargs])
+        positions = np.stack([x, y, z], axis = -1)
+
+        pcd = o3d.geometry.PointCloud()
+        pcd.points = o3d.utility.Vector3dVector(positions)
+        pcd.estimate_normals()
+        print(f'Getting points and estimating normals took {time() - start}.')
+
+        start = time()
+        radii = [4.0]
+        mesh = o3d.geometry.TriangleMesh.create_from_point_cloud_ball_pivoting(
+            pcd, o3d.utility.DoubleVector(radii))
+
+        vertices = np.asarray(mesh.vertices)
+        triangles = np.asarray(mesh.triangles)
+        print(f'Ball-pivot surface reconstruction took {time() - start}.')
+        return dict(tri1= triangles[:, 0], tri2= triangles[:, 1], tri3= triangles[:, 2], volume= -999)
+    else:
+        raise Exception(NotImplementedError)
 
 def get_new_position_from_origin_and_displacement(origin, displacement, whole_space_shape = None, off_limit_position = "boundary"):
     """
@@ -2311,6 +2383,66 @@ def filter_array3d_with_density(array, window = None, density_threshold = 0.03):
                     output_cpy[local_slice] = 0
     return output_cpy
 
+def filter_points_with_density(x, y, z, model= None, kwargs_filter_points_with_density = None):
+    """
+    
+    http://www.open3d.org/docs/latest/tutorial/Advanced/pointcloud_outlier_removal.html
+    """
+    if model is None:
+        return x, y, z
+    elif model == "statistical_outlier" or model == "radius_outlier":
+        print(f"Num points BEFORE filtering: {x.shape[0]}.")
+        pcd = o3d.geometry.PointCloud()
+        pcd.points = o3d.utility.Vector3dVector(np.stack((x, y, z), axis= -1))
+        # pcd.estimate_normals()
+        if model == "statistical_outlier":
+            cl, ind = pcd.remove_statistical_outlier(**merge_dictionaries([dict(nb_neighbors=20, std_ratio=1.0), kwargs_filter_points_with_density]))
+        elif model == "radius_outlier":
+            cl, ind = pcd.remove_radius_outlier(**merge_dictionaries([dict(nb_points=16, radius=0.05), kwargs_filter_points_with_density]))
+        else:
+            raise Exception(NotImplementedError)
+        print(f"Num points AFTER filtering: {len(ind)}.")
+        return x[ind], y[ind], z[ind]
+    elif model == "poisson":
+        vertices, triangles = get_verts_tris_poisson(x, y, z, model_kwargs= kwargs_filter_points_with_density, density_remove_ratio= 0.1)
+        return vertices[:, 0], vertices[:, 1], vertices[:, 2]
+    else:
+        raise Exception(NotImplementedError)
+    
+
+def get_verts_tris_poisson(x, y, z, model_kwargs, density_remove_ratio = None):
+    start = time()
+    model_kwargs_loc = {}
+    model_kwargs_loc = merge_dictionaries([dict(depth= 8, linear_fit= False, scale= 1.1), model_kwargs])
+    positions = np.stack([x, y, z], axis = -1)
+
+    pcd = o3d.geometry.PointCloud()
+    pcd.points = o3d.utility.Vector3dVector(positions)
+    pcd.estimate_normals()
+    if False:
+        print(f'Points normals visualization.')
+        o3d.visualization.draw_geometries([pcd], point_show_normal=True)
+    if False:
+        print(f'octree division visualization.')
+        octree = o3d.geometry.Octree(max_depth=4)
+        octree.convert_from_point_cloud(pcd, size_expand=0.01)
+        o3d.visualization.draw_geometries([octree])
+    print(f'Getting points and estimating normals took {time() - start}.')
+
+    start = time()
+    # with o3d.utility.VerbosityContextManager(
+    #         o3d.utility.VerbosityLevel.Debug) as cm:
+    mesh, densities = o3d.geometry.TriangleMesh.create_from_point_cloud_poisson(pcd, **model_kwargs_loc)
+    print(f'Poisson surface reconstruction took {time() - start}.')
+
+    if density_remove_ratio is not None:
+        vertices_to_remove = densities < np.quantile(densities, density_remove_ratio)
+        mesh.remove_vertices_by_mask(vertices_to_remove)
+
+    vertices = np.asarray(mesh.vertices)
+    triangles = np.asarray(mesh.triangles)
+    print(f'Filtering points done.')
+    return vertices, triangles
 
 if __name__ == '__main__':
     pass
