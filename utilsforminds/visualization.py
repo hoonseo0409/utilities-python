@@ -33,7 +33,8 @@ from tqdm import tqdm
 from scipy import ndimage
 import moviepy.editor as mpy
 from copy import deepcopy
-import tikzplotlib
+use_tikzplotlib= False
+if use_tikzplotlib: import tikzplotlib
 from itertools import product, combinations
 from time import time
 
@@ -408,7 +409,7 @@ def plot2Ds(planeLst, titleLst, filePath, cbarLabel = 'amount', plotShape = [3, 
     plt.tight_layout()
     plt.savefig(filePath)
     if save_tikz:
-        tikzplotlib.save(format_path_extension(filePath_, '.tex'))
+        if use_tikzplotlib: tikzplotlib.save(format_path_extension(filePath_, '.tex'))
     
     if specific_value_color_dict is not None:
         plt.set_cmap(current_cmap_copied)
@@ -550,7 +551,7 @@ def plot3DScatter(npArr, vmin = None, vmax = None, filename = None, axisInfo = N
     # plt.savefig(filename, bbox_inches = "tight")
     plt.savefig(filename)
     if save_tikz:
-        tikzplotlib.save(filepath = format_path_extension(filename, '.tex'))
+        if use_tikzplotlib: tikzplotlib.save(filepath = format_path_extension(filename, '.tex'))
 
 def plot3DScatterDistinguish(nparrValue, nparrOriginalMask = None, nparrRecoveredMask = None, vmin = None, vmax = None, filename = None, axisInfo = None, maxNth = None, cbarLabel = 'amount', save_tikz = False):
     # xOriginal, yOriginal, zOriginal = npArrOriginal.nonzero()
@@ -620,7 +621,7 @@ def plot3DScatterDistinguish(nparrValue, nparrOriginalMask = None, nparrRecovere
 
     plt.savefig(filename)
     if save_tikz:
-        tikzplotlib.save(filepath = format_path_extension(filename, '.tex'))
+        if use_tikzplotlib: tikzplotlib.save(filepath = format_path_extension(filename, '.tex'))
 
 def saveGifFromArr(arr, path, fps = 1, vmin = None, vmax = None, axis = 0, get_dense_slice_threshold = 0, limit_frame = 100, frame_idc = None):
     """Save 3D or 4D Numpy array into gif.
@@ -842,7 +843,7 @@ def plot_bar_charts(path_to_save : str, name_numbers : dict, xlabels : list = No
     # plt.show()
     plt.savefig(path_to_save, format = format)
     if save_tikz:
-        tikzplotlib.save(filepath = format_path_extension(path_to_save, '.tex'))
+        if use_tikzplotlib: tikzplotlib.save(filepath = format_path_extension(path_to_save, '.tex'))
 
 def plot_multiple_lists(lists_dict: dict, path_to_save: str, labels : dict = {'x': 'Iteration', 'y': 'Loss'}, format = 'eps', fontsize = 15, save_tikz = False):
     """
@@ -881,7 +882,7 @@ def plot_multiple_lists(lists_dict: dict, path_to_save: str, labels : dict = {'x
     plt.ylabel(labels['y'], fontsize = fontsize)
     plt.savefig(path_to_save, format = format)
     if save_tikz:
-        tikzplotlib.save(filepath = format_path_extension(path_to_save, '.tex'))
+        if use_tikzplotlib: tikzplotlib.save(filepath = format_path_extension(path_to_save, '.tex'))
 
 def format_path_extension(path : str, extension : str = '.tex'):
     """ Format path as tex.
@@ -1008,7 +1009,7 @@ def plot_group_scatter(group_df, path_to_save, group_column, y_column, color_col
     # plt.grid(which = 'major', linestyle='-', linewidth=2)
     plt.savefig(path_to_save, bbox_inches = "tight")
     if save_tikz:
-        tikzplotlib.save(utilsforminds.visualization.format_path_extension(path_to_save))
+        if use_tikzplotlib: tikzplotlib.save(utilsforminds.visualization.format_path_extension(path_to_save))
     plt.cla()
 
 def plot_top_bars_with_rows(data_df, path_to_save : str, color_column = None, colors_rotation = ["red", "navy", "lightgreen", "teal", "violet", "green", "orange", "blue", "coral", "yellowgreen", "sienna", "olive", "maroon", "goldenrod", "darkblue", "orchid", "crimson"], order_by = "weights", x_column = None, group_column = None, xticks_replace_dict = None, xlabel = None, ylabel = None, title = None, num_bars = 10, num_rows = 2, re_range_max_min_proportion = None, show_group_error = True, show_group_size = True, bar_width = 'auto', opacity = 0.8, xticks_fontsize = 10, rotation_xtickers = 0, format = 'eps', save_tikz = False):
@@ -1127,7 +1128,7 @@ def plot_top_bars_with_rows(data_df, path_to_save : str, color_column = None, co
     fig.tight_layout()
     plt.savefig(path_to_save, format = format)
     if save_tikz:
-        tikzplotlib.save(utilsforminds.visualization.format_path_extension(path_to_save))
+        if use_tikzplotlib: tikzplotlib.save(utilsforminds.visualization.format_path_extension(path_to_save))
     plt.clf()
 
 def plot_xy_lines(x, y_dict_list : list, path_to_save : str, title = None, x_label = None, y_label = None, figsize= (17, 5), label_fontsize = 20, font_size_proportion = 1.0, showlegend= True, format = 'eps', save_tikz = False):
@@ -1168,7 +1169,7 @@ def plot_xy_lines(x, y_dict_list : list, path_to_save : str, title = None, x_lab
     plt.tight_layout()
     plt.savefig(path_to_save, format = format)
     if save_tikz:
-        tikzplotlib.save(utilsforminds.visualization.format_path_extension(path_to_save))
+        if use_tikzplotlib: tikzplotlib.save(utilsforminds.visualization.format_path_extension(path_to_save))
     plt.clf()
 
 def get_xy_axis_from_z(zaxis = 0):
@@ -1335,7 +1336,7 @@ def optimizealpha(points, value_flat_for_alphashape_optimization,
     return best_alpha
 
 @decorators.grid_of_functions(param_to_grid= "alphahull", param_formatter_dict= {"path_to_save_static": lambda **kwargs: kwargs["path_to_save_static"].split(".")[0] + "_" + str(kwargs["alphahull"] * 100)}, grid_condition= lambda **kwargs: True if ("kinds_to_plot" in kwargs.keys() and "alphashape" in kwargs["kinds_to_plot"]) else False)
-def plot_3D_plotly(nparr_3D, path_to_save_static : str, do_save_html : bool = True, grid_formatter_to_save_tri = None, save_info_txt = False, kinds_to_plot : list = None, marker_kwargs : dict = None, vmin = None, vmax = None, alpha_shape_kwargs : dict = None, alphahull: float = 0.65, alpha_shape_eval_kwargs = None, points_decider = lambda x: x > 1e-8, observation_mask_nparr_3D = None, title= None, points_legends : dict = None, alpha_shape_legend = "alpha-shape", scene_kwargs : dict = None, xyz_tickers = None, axis_kwargs : dict = None, showaxis = True, layout_kwargs : dict = None, figsize_ratio : dict = None, camera = None, showgrid = False, zeroline = True, showline = False, transparent_bacground = True, colorbar_kwargs = None, get_hovertext = None, alpha_shape_clustering = False, mesh_method = "weighted_alpha", additional_gos = None, coordinate_info= None, layout_legend = None, value_arr_for_alphashape_optimization = None, marker_symbols = None, kwargs_filter_points_with_density = None, points_filter_model = "poisson", model_kwargs = None, **kwargs):
+def plot_3D_plotly(nparr_3D, path_to_save_static : str, do_save_html : bool = True, grid_formatter_to_save_tri = None, save_info_txt = False, kinds_to_plot : list = None, marker_kwargs : dict = None, vmin = None, vmax = None, alpha_shape_kwargs : dict = None, alphahull: float = 0.65, alpha_shape_eval_kwargs = None, points_decider = lambda x: x > 1e-8, observation_mask_nparr_3D = None, title= None, points_legends : dict = None, alpha_shape_legend = "alpha-shape", scene_kwargs : dict = None, xyz_tickers = None, axis_kwargs : dict = None, showaxis = True, layout_kwargs : dict = None, figsize_ratio : dict = None, camera = None, showgrid = False, zeroline = True, showline = False, transparent_bacground = True, colorbar_kwargs = None, get_hovertext = None, alpha_shape_clustering = False, mesh_method = "weighted_alpha", additional_gos = None, coordinate_info= None, layout_legend = None, value_arr_for_alphashape_optimization = None, marker_symbols = None, kwargs_filter_points_with_density = None, points_filter_model = None, model_kwargs = None, if_colored_surface= False, **kwargs):
     """
     
     Parameters
@@ -1345,8 +1346,9 @@ def plot_3D_plotly(nparr_3D, path_to_save_static : str, do_save_html : bool = Tr
     """
 
     assert(len(nparr_3D.shape) == 3)
+    start = time()
     print(f"Start visualization for {path_to_save_static}")
-    if_valid_grid = points_filter_model != "poisson" and mesh_method != "poisson"
+    if_valid_grid = points_filter_model != "poisson" and mesh_method != "poisson" and (not "mesh_dict" in kwargs.keys())
     # assert(mesh_method in ["pyvista", "poisson"])
 
     # assert(use_pyvista_alphashape) ## optimization of alpha currently only implemented over pyvista.
@@ -1403,6 +1405,12 @@ def plot_3D_plotly(nparr_3D, path_to_save_static : str, do_save_html : bool = Tr
     camera_copied = merge_dictionaries([dict(up=dict(x=0, y=0, z=1), center=dict(x=0, y=0, z=0), eye=dict(x=1.25, y=1.25, z=1.25), projection= dict(type= "orthographic")), camera]) ## projection= dict(type= "orthographic") gives vertial elevation axis, which looks professinal for geologist.
 
     if additional_gos is None: additional_gos = []
+    if if_colored_surface:
+        def get_intensities(values, vmin, vmax):
+            return utilsforminds.numpy_array.push_arr_to_range(values, vmin = vmin, vmax = vmax)
+    else:
+        def get_intensities(values, vmin, vmax):
+            return None
     
     ## Generates objects to plot
     plot_objects = deepcopy(additional_gos)
@@ -1439,12 +1447,13 @@ def plot_3D_plotly(nparr_3D, path_to_save_static : str, do_save_html : bool = Tr
     if "scatter" in kinds_to_plot:
         for is_main, mask_to_plot, marker_symbol, points_legend in zip([True, False], [nparr_3D_non_mask, observation_mask_nparr_3D_added], [marker_symbols_local["nonmask"], marker_symbols_local["mask"]], [points_legends_local[1], points_legends_local[0]]):
             if np.count_nonzero(mask_to_plot) > 0:
-                x, y, z = filter_points_with_density(*mask_to_plot.nonzero(), model= points_filter_model, kwargs_filter_points_with_density= kwargs_filter_points_with_density)
-                if if_valid_grid:
+                # x, y, z = filter_points_with_density(*mask_to_plot.nonzero(), model= points_filter_model, kwargs_filter_points_with_density= kwargs_filter_points_with_density)
+                x, y, z = mask_to_plot.nonzero()
+                if (True or if_valid_grid):
                     colors_arr = utilsforminds.numpy_array.push_arr_to_range(nparr_3D[x, y, z], vmin = vmin, vmax = vmax) ## don't need maybe, because of cmin and cmax.
                 else:
                     colors_arr = "black"
-                if get_hovertext is not None and if_valid_grid:
+                if get_hovertext is not None and (True or if_valid_grid):
                     hovertext = get_hovertext(x = x, y = y, z = z, value = colors_arr)
                     hoverinfo = "text"
                 else:
@@ -1598,7 +1607,7 @@ def plot_3D_plotly(nparr_3D, path_to_save_static : str, do_save_html : bool = Tr
 
                 if mesh_method is None:
                     if if_valid_grid:
-                        plot_objects.append(graph_objs.Mesh3d(name = f"{alpha_shape_legend}-cluster-{cluster_label}", x = x_this_cluster, y = y_this_cluster, z = z_this_cluster, hovertext = hovertext, hoverinfo = hoverinfo, intensity = utilsforminds.numpy_array.push_arr_to_range(nparr_3D[x_this_cluster, y_this_cluster, z_this_cluster], vmin = vmin, vmax = vmax), colorbar = marker_kwargs_local["colorbar"], showscale = showscale, **alpha_shape_kwargs_local))
+                        plot_objects.append(graph_objs.Mesh3d(name = f"{alpha_shape_legend}-cluster-{cluster_label}", x = x_this_cluster, y = y_this_cluster, z = z_this_cluster, hovertext = hovertext, hoverinfo = hoverinfo, intensity = get_intensities(nparr_3D[x_this_cluster, y_this_cluster, z_this_cluster], vmin = vmin, vmax = vmax), colorbar = marker_kwargs_local["colorbar"], showscale = showscale, **alpha_shape_kwargs_local))
                     else:
                         plot_objects.append(graph_objs.Mesh3d(name = f"{alpha_shape_legend}-cluster-{cluster_label}", x = x_this_cluster, y = y_this_cluster, z = z_this_cluster, **alpha_shape_kwargs_local))
                 else:
@@ -1608,7 +1617,7 @@ def plot_3D_plotly(nparr_3D, path_to_save_static : str, do_save_html : bool = Tr
                         x_this_cluster, y_this_cluster, z_this_cluster = result_dict["x"], result_dict["y"], result_dict["z"]
 
                     if if_valid_grid:
-                        plot_objects.append(graph_objs.Mesh3d(name = f"{alpha_shape_legend}-cluster-{cluster_label}", x = x_this_cluster, y = y_this_cluster, z = z_this_cluster, hovertext = hovertext, hoverinfo = hoverinfo, intensity = utilsforminds.numpy_array.push_arr_to_range(nparr_3D[x_this_cluster, y_this_cluster, z_this_cluster], vmin = vmin, vmax = vmax), colorbar = marker_kwargs_local["colorbar"], showscale = showscale, i = tri1, j = tri2, k = tri3, **alpha_shape_kwargs_local))
+                        plot_objects.append(graph_objs.Mesh3d(name = f"{alpha_shape_legend}-cluster-{cluster_label}", x = x_this_cluster, y = y_this_cluster, z = z_this_cluster, hovertext = hovertext, hoverinfo = hoverinfo, intensity = get_intensities(nparr_3D[x_this_cluster, y_this_cluster, z_this_cluster], vmin = vmin, vmax = vmax), colorbar = marker_kwargs_local["colorbar"], showscale = showscale, i = tri1, j = tri2, k = tri3, **alpha_shape_kwargs_local))
                     else: ## poisson, not if_valid_grid
                         plot_objects.append(graph_objs.Mesh3d(name = alpha_shape_legend, x = x_this_cluster, y = y_this_cluster, z = z_this_cluster, i = tri1, j = tri2, k = tri3, **alpha_shape_kwargs_local))
                 showscale = False ## Only the first plot has colorbar.
@@ -1618,36 +1627,37 @@ def plot_3D_plotly(nparr_3D, path_to_save_static : str, do_save_html : bool = Tr
                 ## Their alpha-shape
                 plot_objects.append(graph_objs.Scatter3d(mode = 'markers', name = "Msh", x = mesh_dict_grid["point"][0], y = mesh_dict_grid["point"][1], z = mesh_dict_grid["point"][2], marker = graph_objs.Marker(symbol = "circle", **(utilsforminds.containers.copy_dict_and_delete_element(marker_kwargs_local, ["colorbar"]))), hovertext = hovertext, hoverinfo = hoverinfo, showlegend = True)) ## parameter, e.g. x, y, .. can be used in hovertemplate.
 
-                if not("deconv" in kwargs.keys() and kwargs["deconv"]):
+                if not ("deconv" in kwargs.keys() and kwargs["deconv"]):
                     plot_objects.append(graph_objs.Mesh3d(name = alpha_shape_legend + "_msh", x = mesh_dict_grid["point"][0], y = mesh_dict_grid["point"][1], z = mesh_dict_grid["point"][2], hovertext = hovertext, hoverinfo = hoverinfo, i = tri1, j = tri2, k = tri3, **alpha_shape_kwargs_local))
                     volume = gg.visualization.create_polydata_from_msh(kwargs["mesh_dict"]).volume
                     # volume = volume * coordinate_info[0]["grid"] * coordinate_info[1]["grid"] * coordinate_info[2]["grid"] ## The coordinates in wargs["mesh_dict"] are already in physical coordinates.
                     with open(utilsforminds.strings.format_extension(path_to_save, "txt"), "a") as text_file:
                         text_file.write(f"The volume of Leapfrog mesh: {volume}-m^3\n")
 
-                ## Our alpha-shape
-                raise Exception(NotImplementedError)
-                best_alpha = get_alpha(x, y, z)
-                result_dict = get_triangles_of_alpha_shape(x, y, z, alpha = best_alpha, model= mesh_method)
-                tri1, tri2, tri3, volume = result_dict["tri1"], result_dict["tri2"], result_dict["tri3"], result_dict["volume"]
+                if False:
+                    ## Our alpha-shape
+                    raise Exception(NotImplementedError)
+                    best_alpha = get_alpha(x, y, z)
+                    result_dict = get_triangles_of_alpha_shape(x, y, z, alpha = best_alpha, model= mesh_method)
+                    tri1, tri2, tri3, volume = result_dict["tri1"], result_dict["tri2"], result_dict["tri3"], result_dict["volume"]
 
-                ## Plot the histgram of alpha radiuses.
-                # for axis in range(3): assert(axisInfo[axis]["grid"] == axisInfo[(axis + 1) % 2]["grid"])
-                # alpha_radius_list_cp = [radius * axisInfo[0]["grid"] for radius in alpha_radius_list]
-                # if model_kwargs["kinds"] == "angular":
-                #     fig_histo = go.Figure(data=[go.Histogram(x= alpha_radius_list_cp, xbins=dict(start= 0, end= 20 * axisInfo[0]["grid"], size= 0.5 * axisInfo[0]["grid"]))])
-                # else:
-                #     fig_histo = go.Figure(data=[go.Histogram(x= alpha_radius_list_cp)])
-                # fig_histo.update_layout(xaxis= dict(tickfont= dict(size= 30)))
-                # fig_histo.update_layout(yaxis= dict(tickfont= dict(size= 30)))
-                # # fig_histo.show()
-                # fig_histo.write_html(utilsforminds.strings.format_extension(path_to_save.split(".")[:-1][0] + "_histo" , "html"))
-                
-                plot_objects.append(graph_objs.Mesh3d(name = alpha_shape_legend, x = x, y = y, z = z, hovertext = hovertext, hoverinfo = hoverinfo, intensity = utilsforminds.numpy_array.push_arr_to_range(nparr_3D[x, y, z], vmin = vmin, vmax = vmax), colorbar = marker_kwargs_local["colorbar"], i = tri1, j = tri2, k = tri3, **alpha_shape_kwargs_local))
+                    ## Plot the histgram of alpha radiuses.
+                    # for axis in range(3): assert(axisInfo[axis]["grid"] == axisInfo[(axis + 1) % 2]["grid"])
+                    # alpha_radius_list_cp = [radius * axisInfo[0]["grid"] for radius in alpha_radius_list]
+                    # if model_kwargs["kinds"] == "angular":
+                    #     fig_histo = go.Figure(data=[go.Histogram(x= alpha_radius_list_cp, xbins=dict(start= 0, end= 20 * axisInfo[0]["grid"], size= 0.5 * axisInfo[0]["grid"]))])
+                    # else:
+                    #     fig_histo = go.Figure(data=[go.Histogram(x= alpha_radius_list_cp)])
+                    # fig_histo.update_layout(xaxis= dict(tickfont= dict(size= 30)))
+                    # fig_histo.update_layout(yaxis= dict(tickfont= dict(size= 30)))
+                    # # fig_histo.show()
+                    # fig_histo.write_html(utilsforminds.strings.format_extension(path_to_save.split(".")[:-1][0] + "_histo" , "html"))
+                    
+                    plot_objects.append(graph_objs.Mesh3d(name = alpha_shape_legend, x = x, y = y, z = z, hovertext = hovertext, hoverinfo = hoverinfo, intensity = get_intensities(nparr_3D[x, y, z], vmin = vmin, vmax = vmax), colorbar = marker_kwargs_local["colorbar"], i = tri1, j = tri2, k = tri3, **alpha_shape_kwargs_local))
             else:
                 if mesh_method is None:
                     if if_valid_grid:
-                        plot_objects.append(graph_objs.Mesh3d(name = alpha_shape_legend, x = x, y = y, z = z, hovertext = hovertext, hoverinfo = hoverinfo, intensity = utilsforminds.numpy_array.push_arr_to_range(nparr_3D[x, y, z], vmin = vmin, vmax = vmax), colorbar = marker_kwargs_local["colorbar"], **alpha_shape_kwargs_local))
+                        plot_objects.append(graph_objs.Mesh3d(name = alpha_shape_legend, x = x, y = y, z = z, hovertext = hovertext, hoverinfo = hoverinfo, intensity = get_intensities(nparr_3D[x, y, z], vmin = vmin, vmax = vmax), colorbar = marker_kwargs_local["colorbar"], **alpha_shape_kwargs_local))
                     else:
                         plot_objects.append(graph_objs.Mesh3d(name = alpha_shape_legend, x = x, y = y, z = z, **alpha_shape_kwargs_local))
                 else:
@@ -1661,9 +1671,10 @@ def plot_3D_plotly(nparr_3D, path_to_save_static : str, do_save_html : bool = Tr
                         x, y, z = result_dict["x"], result_dict["y"], result_dict["z"]
 
                     if if_valid_grid:
-                        plot_objects.append(graph_objs.Mesh3d(name = alpha_shape_legend, x = x, y = y, z = z, hovertext = hovertext, hoverinfo = hoverinfo, intensity = utilsforminds.numpy_array.push_arr_to_range(nparr_3D[x, y, z], vmin = vmin, vmax = vmax), colorbar = marker_kwargs_local["colorbar"], i = tri1, j = tri2, k = tri3, **alpha_shape_kwargs_local))
+                        plot_objects.append(graph_objs.Mesh3d(name = alpha_shape_legend, x = x, y = y, z = z, hovertext = hovertext, hoverinfo = hoverinfo, intensity = get_intensities(nparr_3D[x, y, z], vmin = vmin, vmax = vmax), colorbar = marker_kwargs_local["colorbar"], i = tri1, j = tri2, k = tri3, **alpha_shape_kwargs_local))
                     else: ## poisson, not if_valid_grid
                         plot_objects.append(graph_objs.Mesh3d(name = alpha_shape_legend, x = x, y = y, z = z, i = tri1, j = tri2, k = tri3, **alpha_shape_kwargs_local))
+                        plot_objects.append(graph_objs.Scatter3d(mode = 'markers', name = "Nonuniform grid points", x = x, y = y, z = z, marker = graph_objs.Marker(color = "black", symbol = "circle", **{"colorscale": 'Rainbow', "size": 3.}), hovertext = None, hoverinfo = None, showlegend = True))
 
                 # if grid_formatter_to_save_tri is not None: ## Saving clustered alpha-shape will be implemented in the future in case we need.
                 #     if tri1 is None:
@@ -1853,6 +1864,8 @@ def plot_3D_plotly(nparr_3D, path_to_save_static : str, do_save_html : bool = Tr
         fig.write_html(utilsforminds.strings.format_extension(path_to_save, "html"))
     # fig.write_image(utilsforminds.strings.format_extension(path_to_save, "png"))
 
+    print(f"Finished visualization for {path_to_save_static}, took {round(time() - start)} secs.")
+
 def get_triangles_of_alpha_shape(x, y, z, alpha, model= "optimize_alpha", model_kwargs = None):
     """
     
@@ -1921,7 +1934,7 @@ def get_triangles_of_alpha_shape(x, y, z, alpha, model= "optimize_alpha", model_
         pcd = o3d.geometry.PointCloud()
         pcd.points = o3d.utility.Vector3dVector(positions)
         pcd.estimate_normals()
-        print(f'Getting points and estimating normals took {time() - start}.')
+        print(f'Getting points and estimating normals took {round(time() - start)}.')
 
         start = time()
         radii = [4.0]
@@ -1930,7 +1943,7 @@ def get_triangles_of_alpha_shape(x, y, z, alpha, model= "optimize_alpha", model_
 
         vertices = np.asarray(mesh.vertices)
         triangles = np.asarray(mesh.triangles)
-        print(f'Ball-pivot surface reconstruction took {time() - start}.')
+        print(f'Ball-pivot surface reconstruction took {round(time() - start)}.')
         return dict(tri1= triangles[:, 0], tri2= triangles[:, 1], tri3= triangles[:, 2], volume= -999)
     else:
         raise Exception(NotImplementedError)
@@ -2412,21 +2425,49 @@ def filter_points_with_density(x, y, z, model= None, kwargs_filter_points_with_d
 
 def get_verts_tris_poisson(x, y, z, model_kwargs, density_remove_ratio = None):
     start = time()
-    model_kwargs_loc = {}
-    model_kwargs_loc = merge_dictionaries([dict(depth= 8, linear_fit= False, scale= 1.1), model_kwargs])
+    model_kwargs_loc = merge_dictionaries([dict(depth= 10, linear_fit= True, scale= 1.9, n_threads= 1), model_kwargs]) ## default: dict(depth= 8, linear_fit= True, scale= 1.1), n_threads: https://github.com/isl-org/Open3D/issues/2027
+    """
+        pcd (open3d.geometry.PointCloud) - PointCloud from which the TriangleMesh surface is reconstructed. Has to contain normals.
+
+        depth (int, optional, default=8) - Maximum depth of the tree that will be used for surface reconstruction. Running at depth d corresponds to solving on a grid whose resolution is no larger than 2^d * 2^d * 2^d. Note that since the reconstructor adapts the octree to the sampling density, the specified reconstruction depth is only an upper bound.
+
+        width (float, optional, default=0) - Specifies the target width of the finest level octree cells. This parameter is ignored if depth is specified
+
+        scale (float, optional, default=1.1) - Specifies the ratio between the diameter of the cube used for reconstruction and the diameter of the samples' bounding cube.
+
+        linear_fit (bool, optional, default=False) - If true, the reconstructor will use linear interpolation to estimate the positions of iso-vertices.
+
+        n_threads (int, optional, default=-1) - Number of threads used for reconstruction. Set to -1 to automatically determine it.
+    """
     positions = np.stack([x, y, z], axis = -1)
 
     pcd = o3d.geometry.PointCloud()
     pcd.points = o3d.utility.Vector3dVector(positions)
     pcd.estimate_normals()
+    if True: pcd.colors = o3d.utility.Vector3dVector(np.random.uniform(0, 1, size=(x.shape[0], 3)))
+
+    if_animation = False ## http://www.open3d.org/docs/0.7.0/tutorial/Advanced/customized_visualization.html
+    if if_animation:
+        def rotate_view(vis):
+            ctr = vis.get_view_control()
+            ctr.rotate(10.0, 0.0)
+            return False
+
     if False:
         print(f'Points normals visualization.')
-        o3d.visualization.draw_geometries([pcd], point_show_normal=True)
+        if if_animation:
+            o3d.visualization.draw_geometries_with_animation_callback([pcd], rotate_view, point_show_normal= True)
+        else:
+            o3d.visualization.draw_geometries([pcd], point_show_normal=True)
+
+    print(f'octree division visualization.')
+    octree = o3d.geometry.Octree(max_depth=5) ## max_depth=4
+    octree.convert_from_point_cloud(pcd, size_expand=0.01)
     if False:
-        print(f'octree division visualization.')
-        octree = o3d.geometry.Octree(max_depth=4)
-        octree.convert_from_point_cloud(pcd, size_expand=0.01)
-        o3d.visualization.draw_geometries([octree])
+        if if_animation:
+            o3d.visualization.draw_geometries_with_animation_callback([octree], rotate_view)
+        else:
+            o3d.visualization.draw_geometries([octree, pcd])
     print(f'Getting points and estimating normals took {time() - start}.')
 
     start = time()

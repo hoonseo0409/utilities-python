@@ -4,10 +4,10 @@ import os
 import sys
 import math
 import numbers
-import pickle
-import moviepy.editor as mpy
+# import pickle
+# import moviepy.editor as mpy
 from copy import deepcopy
-import pandas as pd
+# import pandas as pd
 
 # from sklearn.grid_search import ParameterGrid # moved in recent version of sklearn
 from sklearn.model_selection import ParameterGrid
