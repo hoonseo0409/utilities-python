@@ -1195,6 +1195,8 @@ def check_points_inside_mesh(points_to_test, points_of_mesh, faces_of_mesh):
     """
 
     ## Example: mesh = trimesh.Trimesh(vertices=[[0, 0, 0], [0, 0, 1], [0, 1, 0]], faces=[[0, 1, 2]])
+    if points_to_test.shape[0] == 0:
+        return np.zeros([0]), np.zeros([0]), np.zeros([0])
 
     mesh = trimesh.Trimesh(vertices = points_of_mesh, faces= faces_of_mesh)
     signed_distacnes_of_points = trimesh.proximity.signed_distance(mesh, points_to_test)
