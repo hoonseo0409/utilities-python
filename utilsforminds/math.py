@@ -38,8 +38,11 @@ def get_norm_from_matrix(arr, under_p_1, under_p_2):
         summed += np.sum(arr[i, :] ** under_p_1) ** (under_p_2 / under_p_1)
     return summed ** (1 / under_p_2)
 
-def get_RMSE(y_true, y_pred):
+def get_RMSE(y_true, y_pred, features_range_dict= None):
     assert(y_true.shape == y_pred.shape)
+    if features_range_dict is not None:
+        y_true = y_true * features_range_dict["max-min"] + features_range_dict["min"]
+        y_pred = y_pred * features_range_dict["max-min"] + features_range_dict["min"]
     return (np.sum((y_true - y_pred) ** 2) / y_true.shape[0]) ** (1/2.)
 
 def get_RMSE_keras(y_true, y_pred):
