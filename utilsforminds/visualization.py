@@ -789,7 +789,7 @@ def plot_bar_charts(path_to_save : str, name_numbers : dict, xlabels : list = No
     # if horizontal_bars: ax.invert_yaxis()  # labels read top-to-bottom
 
     rects_list = []
-    index_copied = np.copy(index).astype(np.float)
+    index_copied = np.copy(index).astype(float)
     for name in names:
         rects_list.append(plt_dicts["bar"](index_copied, name_numbers[name], bar_width_, alpha = alpha, label = name + legend_prefix_dict[name], **plt_bars_kwargs_dict[name])) ## label will be label in legend
         index_copied += bar_width_

@@ -486,6 +486,35 @@ def getSlicesV2(npArr, dimIdxDict, assign = None):
     if assign is None: return npArr[tuple(indices)]
     else: npArr[tuple(indices)] = assign
 
+def get_slices_with_idc_v2(arr, dim_idc_dict, assign= None):
+    """
+        The array indexing with list instead of slice seems to work in Python 3.8, then we don't need to use getSlicesV2.
+
+        Examples
+        --------
+        arr = np.array([[1, 2, 3, 4], [4, 5, 6, 7]])
+        arr_2 = get_slices_with_idc_v2(arr, dim_idc_dict= {1: [1, 3]})
+        print(arr_2)
+        get_slices_with_idc_v2(arr, dim_idc_dict= {1: [1, 3]}, assign= -1)
+        print(arr)
+        \n>>>
+        [[2 4]
+        [5 7]]\n
+        [[ 1 -1  3 -1]
+        [ 4 -1  6 -1]]
+    """
+
+    indices = []
+    for dim in range(len(arr.shape)):
+        if dim not in dim_idc_dict.keys():
+            indices.append(slice(None))
+        elif type(dim_idc_dict[dim]) == type([]) or type(dim_idc_dict[dim]) == type(()):
+            indices.append(dim_idc_dict[dim])
+        else:
+            indices.append(dim_idc_dict[dim])
+    if assign is None: return arr[tuple(indices)]
+    else: arr[tuple(indices)] = assign
+
 def get_slices_with_idc_rec(arr, dim_idc_dict):
     """ Helper recursive function for get_slices_with_idc().
 
@@ -510,7 +539,7 @@ def get_slices_with_idc(arr, dim_idc_dict):
     Examples
     --------
     get_slices_with_idc(arr, {0: [2, 3], 3: [4, 1, 0]}) == arr[(2, 3),:,:,(4, 1, 0)]\n
-    arr.shape == (2, 4, 3) => get_slices_with_idc(arr, 1: [2]).shape == (2, 1, 3), not (2, 3).
+    arr.shape == (2, 4, 3) => get_slices_with_idc(arr, {1: [2]}).shape == (2, 1, 3), not (2, 3).
     
     """
 
@@ -1229,4 +1258,9 @@ def get_current_utc_timestamp():
 
 if __name__ == '__main__':
     pass
-    print(get_proportional_ranked_value(np.array([0, 0, 0, 0, 0, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]), proportion = 0.3))
+    # print(get_proportional_ranked_value(np.array([0, 0, 0, 0, 0, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]), proportion = 0.3))
+    arr = np.array([[1, 2, 3, 4], [4, 5, 6, 7]])
+    arr_2 = get_slices_with_idc_v2(arr, dim_idc_dict= {1: [1, 3]})
+    print(arr_2)
+    get_slices_with_idc_v2(arr, dim_idc_dict= {1: [1, 3]}, assign= -1)
+    print(arr)
