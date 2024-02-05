@@ -1172,6 +1172,33 @@ def plot_xy_lines(x, y_dict_list : list, path_to_save : str, title = None, x_lab
         if use_tikzplotlib: tikzplotlib.save(utilsforminds.visualization.format_path_extension(path_to_save))
     plt.clf()
 
+def plot_xs_ys_lines(xs, ys, pair_names = None, path_to_save = None, title= None, xaxis_title= None, yaxis_title= None):
+    """
+        x1 = [1, 3, 5, 7, 9]
+        y1 = np.random.random(5)
+        x2 = [2, 4, 6, 8, 10]
+        y2 = np.random.random(5)
+
+        ref: https://stackoverflow.com/questions/71900162/plotly-how-to-plot-multiple-lines-with-different-x-arrays-on-the-same-y-axis
+    """
+    assert(len(xs) == len(ys))
+    if pair_names is None: pair_names = [f"pair_{i}" for i in range(len(xs))]
+    data = []
+    for pi in range(len(xs)):
+        xs_argsort = np.argsort(xs[pi])
+        xs_sorted = [xs[pi][i] for i in xs_argsort]
+        ys_sorted = [ys[pi][i] for i in xs_argsort]
+        data.append(go.Scatter(x= xs_sorted, y= ys_sorted, name= pair_names[pi]))
+
+    fig = go.Figure(
+        data = data,
+        layout = {"xaxis": {"title": xaxis_title}, "yaxis": {"title": yaxis_title}, "title": title}
+    )
+    if path_to_save is not None:
+        fig.write_html(utilsforminds.strings.format_extension(path_to_save, "html"))
+    else:
+        fig.show()
+
 def get_xy_axis_from_z(zaxis = 0):
     assert(zaxis in [0, 1, 2])
     # return (zaxis + 1) % 3, (zaxis + 2) % 3
