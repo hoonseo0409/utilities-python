@@ -39,7 +39,7 @@ def getNewDirectoryName(parentDir, newDir, root_dir = None):
 
     if root_dir is None:
         root_dir = getExecPath()
-    if parentDir[0] != '/':
+    if parentDir[0] != '/' and parentDir[0] != '.':
         parentDir = '/' + parentDir
     if parentDir[-1] != '/':
         parentDir = parentDir + '/'

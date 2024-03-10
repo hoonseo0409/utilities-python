@@ -1172,7 +1172,7 @@ def plot_xy_lines(x, y_dict_list : list, path_to_save : str, title = None, x_lab
         if use_tikzplotlib: tikzplotlib.save(utilsforminds.visualization.format_path_extension(path_to_save))
     plt.clf()
 
-def plot_xs_ys_lines(xs, ys, pair_names = None, path_to_save = None, title= None, xaxis_title= None, yaxis_title= None):
+def plot_xs_ys_lines(xs, ys, pair_names = None, path_to_save = None, title= None, xaxis_title= None, yaxis_title= None, num_points_smooth = None, dash= None, color= None):
     """
         x1 = [1, 3, 5, 7, 9]
         y1 = np.random.random(5)
@@ -1183,17 +1183,31 @@ def plot_xs_ys_lines(xs, ys, pair_names = None, path_to_save = None, title= None
     """
     assert(len(xs) == len(ys))
     if pair_names is None: pair_names = [f"pair_{i}" for i in range(len(xs))]
+    if dash is None: dash = [None for i in range(len(xs))]
+    if color is None: color = [None for i in range(len(xs))]
+
     data = []
     for pi in range(len(xs)):
         xs_argsort = np.argsort(xs[pi])
         xs_sorted = [xs[pi][i] for i in xs_argsort]
         ys_sorted = [ys[pi][i] for i in xs_argsort]
-        data.append(go.Scatter(x= xs_sorted, y= ys_sorted, name= pair_names[pi]))
+        if num_points_smooth is not None:
+            for i in range(len(xs_sorted)):
+                ys_sorted[i] = np.mean([ys_sorted[j] for j in range(max(0, i + num_points_smooth[0]), min(len(xs_sorted), i + num_points_smooth[1] + 1))])
+        data.append(go.Scatter(x= xs_sorted, y= ys_sorted, name= pair_names[pi], line= dict(dash= dash[pi], color= color[pi], width= 8)))
 
     fig = go.Figure(
         data = data,
         layout = {"xaxis": {"title": xaxis_title}, "yaxis": {"title": yaxis_title}, "title": title}
     )
+
+    fig.update_layout(
+        dragmode='drawrect',
+        newshape=dict(line_color='cyan'),
+        plot_bgcolor= "rgba(0, 0, 0, 0)", ## Set white background https://community.plotly.com/t/having-a-transparent-background-in-plotly-express/30205
+        paper_bgcolor= "rgba(0, 0, 0, 0)", ## Set white background https://community.plotly.com/t/having-a-transparent-background-in-plotly-express/30205
+        )
+
     if path_to_save is not None:
         fig.write_html(utilsforminds.strings.format_extension(path_to_save, "html"))
     else:
