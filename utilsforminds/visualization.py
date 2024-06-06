@@ -96,7 +96,7 @@ def savePlotLstOfLsts(lstOfLsts, labelsLst, xlabel, ylabel, title, directory, sa
     if save_tikz:
         tikzplotlib.save(format_path_extension(directory, '.tex'))
 
-def plot2Ds(planeLst, titleLst, filePath, cbarLabel = 'amount', plotShape = [3, 1], subplot_length = 16., subplot_ratio = (1., 1.), planeMaskLst = None, axis = 2, axisInfo = None, vmin_vmax = None, method = 'imshow', convertXYaxis = False, rotate = 0, specific_value_color_dict = {"value": 0., "color": "white"}, label_font_size = 25, label_positions = [0., 1/3, 2/3], title_font_size = 25, cbar_font_size = 25, save_tikz = False, plot_obj_kwargs = None, plot_zeros_in_scatter = False):
+def plot2Ds(planeLst, titleLst, filePath, cbarLabel = 'amount', plotShape = [3, 1], subplot_length = 16., subplot_ratio = (1., 1.), planeMaskLst = None, axis = 2, axisInfo = None, vmin_vmax = None, method = 'imshow', convertXYaxis = False, rotate = 0, specific_value_color_dict = {"value": 0., "color": "white"}, label_font_size = 25, label_positions = None, title_font_size = 25, cbar_font_size = 25, save_tikz = False, plot_obj_kwargs = None, plot_zeros_in_scatter = False, if_zero_origin = True, if_cut_with_vmin= True):
     '''
         If you want to provide mask matrix for scatter visualization, sequence should be (original matrix, recovered matrix) or (original matrix, recovered matrix, sampled matrix), or (original matrix)
 
@@ -113,7 +113,9 @@ def plot2Ds(planeLst, titleLst, filePath, cbarLabel = 'amount', plotShape = [3, 
         filePath_ = filePath
     if plot_obj_kwargs is None: plot_obj_kwargs = {}
     
-    # label_positions = [0/4, 1/4, 2/4, 3/4, 4/4]
+    if label_positions is None:
+        label_positions = [0., 1/3, 2/3]
+        # label_positions = [0/4, 1/4, 2/4, 3/4, 4/4]
     labels_colorbar_margin_size = 2.5 * (label_font_size / 25.)
     nPlots = len(planeLst)
     whole_figure_size = [subplot_length * subplot_ratio[0] / (subplot_ratio[0] + subplot_ratio[1]) + labels_colorbar_margin_size, subplot_length * subplot_ratio[1] / (subplot_ratio[0] + subplot_ratio[1])]
@@ -144,10 +146,15 @@ def plot2Ds(planeLst, titleLst, filePath, cbarLabel = 'amount', plotShape = [3, 
     for i in range(nPlots):
         if method == 'imshow' or method == 'contour': plotPlaneLst.append(np.transpose(planeLst[i]))
         elif method == "scatter": plotPlaneLst.append(np.fliplr(planeLst[i]))
+        if if_cut_with_vmin: plotPlaneLst[i] = np.where(plotPlaneLst[i] > vmin_, plotPlaneLst[i], np.nan)
     if planeMaskLst is not None:
         for i in range(len(planeMaskLst)):
-            if method == 'imshow' or method == 'contour': plotPlaneMaskLst.append(np.transpose(planeMaskLst[i]))
-            elif method == "scatter": plotPlaneMaskLst.append(np.fliplr(planeMaskLst[i]))
+            if if_cut_with_vmin:
+                planeMaskLst_loc = np.where(planeLst[i] > vmin_, 1, 0) * planeMaskLst[i]
+            else:
+                planeMaskLst_loc = planeMaskLst[i]
+            if method == 'imshow' or method == 'contour': plotPlaneMaskLst.append(np.transpose(planeMaskLst_loc))
+            elif method == "scatter": plotPlaneMaskLst.append(np.fliplr(planeMaskLst_loc))
     
     # Set White color for unobserved points
     if specific_value_color_dict is not None:
@@ -179,15 +186,19 @@ def plot2Ds(planeLst, titleLst, filePath, cbarLabel = 'amount', plotShape = [3, 
     if method == "scatter": vertLabelIdc = [shape_[1] - idx for idx in reversed(vertLabelIdc)]
     if axisInfo is None:
         if method == 'imshow':
-            horiLabels = list(reversed(vertLabelIdc)) ## ??????????????????
+            horiLabels = list(reversed(vertLabelIdc)) ## reversed?? 
             vertLabels = vertLabelIdc
         elif method == 'contour' or method == 'scatter':
             horiLabels = horiLabelIdc
             vertLabels = vertLabelIdc
     else:
         horiAxis, vertAxis = get_xy_axis_from_z(axis)
-        horiLabels = [round(axisInfo[horiAxis]["min"] + (axisInfo[horiAxis]["max"] - axisInfo[horiAxis]["min"]) * position_proportion) for position_proportion in label_positions]
-        vertLabels = [round(axisInfo[vertAxis]["min"] + (axisInfo[vertAxis]["max"] - axisInfo[vertAxis]["min"]) * position_proportion) for position_proportion in label_positions]
+        if if_zero_origin:
+            horiLabels = [round((axisInfo[horiAxis]["max"] - axisInfo[horiAxis]["min"]) * position_proportion) for position_proportion in label_positions]
+            vertLabels = [round((axisInfo[vertAxis]["max"] - axisInfo[vertAxis]["min"]) * position_proportion) for position_proportion in label_positions]
+        else:
+            horiLabels = [round(axisInfo[horiAxis]["min"] + (axisInfo[horiAxis]["max"] - axisInfo[horiAxis]["min"]) * position_proportion) for position_proportion in label_positions]
+            vertLabels = [round(axisInfo[vertAxis]["min"] + (axisInfo[vertAxis]["max"] - axisInfo[vertAxis]["min"]) * position_proportion) for position_proportion in label_positions]
     if method == "scatter": vertLabels = list(reversed(vertLabels))
     
     axis_label_names_dict = {0: "East(m)", 1: "North(m)", 2: "Elevation(m)"}
@@ -2134,6 +2145,51 @@ def plotly_2D_contour(nparr, path_to_save, arr_filter = None, vmin = None, vmax 
     if do_save_html:
         fig.write_html(utilsforminds.strings.format_extension(path_to_save, "html"))
     fig.write_image(path_to_save)
+
+def plotly_2D_points(arr_xyv, path_to_save, arr_filter = None, vmin = None, vmax = None, layout_kwargs = None,  imshow_kwargs = None, colorbar_kwargs = None, fill_out_small_values_with_nan= False, do_save_html = False, outline_boundary = False, white_on_min= True):
+    """Plot contours from nparr.
+
+    Parameters
+    ----------
+    figsize_ratio : array-like = None
+        This looks not work.
+    """
+    colorscale = deepcopy(plotly.colors.sequential.Rainbow)
+    if white_on_min:
+        colorscale[0] = 'rgb(255,255,255)' ## Set white color for zero value.
+        if imshow_kwargs is not None and "colorscale" in imshow_kwargs.keys(): imshow_kwargs["colorscale"][0] = 'rgb(255,255,255)'
+    
+    if arr_filter is not None: arr_xyv_local = arr_filter(arr_xyv)
+    else: arr_xyv_local = deepcopy(arr_xyv)
+    if fill_out_small_values_with_nan: arr_xyv_local[:, 2] = np.where(arr_xyv_local[:, 2] < vmin, np.nan, arr_xyv_local[:, 2])
+    values_arr = arr_xyv_local[:, 2]
+
+    vmin = max(0., values_arr.min()) if vmin is None else vmin
+    vmax = max(0., values_arr.max()) if vmax is None else vmax
+    ## Set local keywords arguments
+    colorbar_kwargs_local = merge_dictionaries([{"titlefont": {"size": 30}, "title": "value"}, colorbar_kwargs])
+    fig_kwargs_local = merge_dictionaries([{"colorscale": colorscale, "colorbar": colorbar_kwargs_local}, imshow_kwargs]) ## "contours": {"start": vmin, "end": vmax},
+    # layout_kwargs_local = merge_dictionaries([{"title": None, "xaxis": {"title": "x", "tickvals" : [i * (nparr.shape[1] // 5) for i in range(1, 5)], "ticktext": [i * (nparr.shape[1] // 5) for i in range(1, 5)], "showgrid": False, "zeroline": False, "showline": False, "zerolinecolor": "black"}, "yaxis": {"title": "y", "tickvals" : [i * (nparr.shape[0] // 5) for i in range(1, 5)], "ticktext": [i * (nparr.shape[0] // 5) for i in range(1, 5)], "showgrid": False, "zeroline": False, "showline": False, "zerolinecolor": "black"}, "paper_bgcolor": 'rgba(0,0,0,0)', "plot_bgcolor": 'rgba(0,0,0,0)'}, layout_kwargs]) ## 0 axis goes to vertical, 1 axis goes to horizontal, do not use range parameter as it create weird margins.
+    layout_kwargs_local = merge_dictionaries([{"title": None, "xaxis": {"title": "Easting", "showgrid": False, "zeroline": False, "showline": False, "zerolinecolor": "black"}, "yaxis": {"title": "Northing", "showgrid": False, "zeroline": False, "showline": False, "zerolinecolor": "black"}, "paper_bgcolor": 'rgba(0,0,0,0)', "plot_bgcolor": 'rgba(0,0,0,0)'}, layout_kwargs]) ## 0 axis goes to vertical, 1 axis goes to horizontal, do not use range parameter as it create weird margins.
+
+    # fig = px.imshow(nparr_local, **imshow_kwargs_local)
+    fig = go.Figure(data=go.Scatter(
+    x=arr_xyv_local[:, 0], y=arr_xyv_local[:, 1], mode='markers',
+    marker=dict(size=3,
+        color=values_arr, #set color equal to a variable
+        # colorscale='Viridis', # one of plotly colorscales
+        **fig_kwargs_local)))
+    # px.scatter(x=arr_xyv_local[:, 0], y=arr_xyv_local[:, 1], color = values_arr, **fig_kwargs_local)
+    fig.update_layout(**layout_kwargs_local)
+
+    if outline_boundary:
+        ## https://plotly.com/python/axes/#styling-and-coloring-axes-and-the-zeroline , https://stackoverflow.com/questions/42096292/outline-plot-area-in-plotly-in-python
+        fig.update_xaxes(showline=True, linewidth=2, linecolor='black', mirror = True)
+        fig.update_yaxes(showline=True, linewidth=2, linecolor='black', mirror = True)
+    
+    if do_save_html:
+        fig.write_html(utilsforminds.strings.format_extension(path_to_save, "html"))
+    # fig.write_image(path_to_save)
 
 def plot_ROC(path_to_save, y_true, list_of_y_pred, list_of_model_names = None, list_of_class_names = None, title = 'Receiver operating characteristic', xlabel = 'False Positive Rate', ylabel = 'True Positive Rate', colors = None, linewidth = 1, extension = "eps", fontsize_ratio = 1.0):
     n_classes = y_true.shape[1]
