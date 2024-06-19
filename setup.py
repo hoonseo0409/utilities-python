@@ -20,7 +20,7 @@ dependency_links = [x.strip().replace('git+', '') for x in all_reqs if x.startsw
 setup(
     name='utilsforminds',
     version=__version__,
-    description='UColleection of python utilities.',
+    description='Colleection of python utilities.',
     long_description=long_description,
     long_description_content_type='text/markdown',
     url='https://github.com/hoonseo0409/utilsforminds',
@@ -37,5 +37,5 @@ setup(
     author='Hoon Seo',
     install_requires=install_requires,
     dependency_links=dependency_links,
-    author_email='seohoon@mymail.mines.edu'
+    author_email='autosum75@gmail.com'
 )
