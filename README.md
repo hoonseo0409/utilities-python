@@ -11,15 +11,15 @@ This repository contains a collection of Python utilities used across various re
 
 Project Description
 -------------------
-`biomarkers.py`: Processes and visualizes neuroimaging and genomic data.
-`containers.py`: Handles Python native data structures such as dictionaries and lists. For example, it generates grids from hyperparameters represented by dictionaries of lists.
-`decorators.py`: Provides [Python Decorator](https://peps.python.org/pep-0318/) to add additional features to existing functions. For example, a decorator to detect abnormal (NaN) values in function inputs or to redirect the function to another function with the same arguments.
-`helpers.py`: Contains miscellaneous functions primarily used within this package. For example, it handles paths and generates files/folders.
-`math.py`: Involves the calculation of norms, loss, regularization, and statistics.
-`numpy_array.py`: Provides utility functions to manipulate Numpy arrays.
-`strings.py`: Provides a class for pretty formatting of strings.
-`tensors.py`: Offers utility functions for TensorFlow tensors, such as parallelizing for loops.
-`visualization.py`: Contains various visualization functions, including graphs, bar charts, 2D/3D points, and alpha-shapes.
+* `biomarkers.py`: Processes and visualizes neuroimaging and genomic data.
+* `containers.py`: Handles Python native data structures such as dictionaries and lists. For example, it generates grids from hyperparameters represented by dictionaries of lists.
+* `decorators.py`: Provides [Python Decorator](https://peps.python.org/pep-0318/) to add additional features to existing functions. For example, a decorator to detect abnormal (NaN) values in function inputs or to redirect the function to another function with the same arguments.
+* `helpers.py`: Contains miscellaneous functions primarily used within this package. For example, it handles paths and generates files/folders.
+* `math.py`: Involves the calculation of norms, loss, regularization, and statistics.
+* `numpy_array.py`: Provides utility functions to manipulate Numpy arrays.
+* `strings.py`: Provides a class for pretty formatting of strings.
+* `tensors.py`: Offers utility functions for TensorFlow tensors, such as parallelizing for loops.
+* `visualization.py`: Contains various visualization functions, including graphs, bar charts, 2D/3D points, and alpha-shapes.
 
 Installation / Usage
 --------------------
