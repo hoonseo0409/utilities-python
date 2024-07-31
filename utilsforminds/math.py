@@ -3,7 +3,10 @@ import utilsforminds.helpers as helpers
 from copy import deepcopy
 import numbers
 import math
-from keras import backend as K
+if False:
+    from keras import backend as K
+else:
+    from tensorflow.keras import backend as K
 import tensorflow as tf
 
 def p_exponent_matrix(arr, p):
