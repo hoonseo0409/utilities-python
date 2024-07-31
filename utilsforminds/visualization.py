@@ -96,7 +96,7 @@ def savePlotLstOfLsts(lstOfLsts, labelsLst, xlabel, ylabel, title, directory, sa
     if save_tikz:
         tikzplotlib.save(format_path_extension(directory, '.tex'))
 
-def plot2Ds(planeLst, titleLst, filePath, cbarLabel = 'amount', plotShape = [3, 1], subplot_length = 16., subplot_ratio = (1., 1.), planeMaskLst = None, axis = 2, axisInfo = None, vmin_vmax = None, method = 'imshow', convertXYaxis = False, rotate = 0, specific_value_color_dict = {"value": 0., "color": "white"}, label_font_size = 25, label_positions = None, title_font_size = 25, cbar_font_size = 25, save_tikz = False, plot_obj_kwargs = None, plot_zeros_in_scatter = False, if_zero_origin = True, if_cut_with_vmin= True):
+def plot2Ds(planeLst, titleLst, filePath, cbarLabel = 'amount', plotShape = [3, 1], subplot_length = 16., subplot_ratio = (1., 1.), planeMaskLst = None, axis = 2, axisInfo = None, vmin_vmax = None, method = 'imshow', convertXYaxis = False, rotate = 0, specific_value_color_dict = {"value": 0., "color": "white"}, label_font_size = 25, label_positions = None, title_font_size = 25, cbar_font_size = 25, save_tikz = False, plot_obj_kwargs = None, plot_zeros_in_scatter = False, if_zero_origin = True, if_cut_with_vmin= True, if_plot_gradient= "no", data_info = None):
     '''
         If you want to provide mask matrix for scatter visualization, sequence should be (original matrix, recovered matrix) or (original matrix, recovered matrix, sampled matrix), or (original matrix)
 
@@ -107,6 +107,7 @@ def plot2Ds(planeLst, titleLst, filePath, cbarLabel = 'amount', plotShape = [3, 
     '''
 
     assert(len(planeLst) == plotShape[0])
+    assert(if_plot_gradient in ["only_gradient", "both", "no"])
     if filePath.count('/') <= 2:
         print(f"Warning: May be wrong file path: {filePath}")
     else:
@@ -116,6 +117,7 @@ def plot2Ds(planeLst, titleLst, filePath, cbarLabel = 'amount', plotShape = [3, 
     if label_positions is None:
         label_positions = [0., 1/3, 2/3]
         # label_positions = [0/4, 1/4, 2/4, 3/4, 4/4]
+    if data_info is None: data_info = {}
     labels_colorbar_margin_size = 2.5 * (label_font_size / 25.)
     nPlots = len(planeLst)
     whole_figure_size = [subplot_length * subplot_ratio[0] / (subplot_ratio[0] + subplot_ratio[1]) + labels_colorbar_margin_size, subplot_length * subplot_ratio[1] / (subplot_ratio[0] + subplot_ratio[1])]
@@ -224,19 +226,56 @@ def plot2Ds(planeLst, titleLst, filePath, cbarLabel = 'amount', plotShape = [3, 
             plt.xticks(horiLabelIdc, horiLabels, fontsize = label_font_size)
             plt.yticks(vertLabelIdc, vertLabels, fontsize = label_font_size)
 
-            if method == 'imshow':
-                if vmin_vmax is not None:
-                    img = plt.imshow(plotPlaneLst[i], vmin = vmin_, vmax = vmax_, aspect = 'auto', **plot_obj_kwargs)
+            if if_plot_gradient != "only_gradient":
+                if if_plot_gradient in ["only_gradient", "both"] and i == nPlots - 1:
+                    grad_rows, grad_cols = np.gradient(plotPlaneLst[i])
+                    grad_rows, grad_cols = grad_rows / data_info["axisInfo"][0]["grid"], grad_cols / data_info["axisInfo"][1]["grid"]
+                    to_plot_2D = (grad_rows ** 2 + grad_cols ** 2) ** 0.5
                 else:
-                    img = plt.imshow(plotPlaneLst[i], aspect = 'auto')
-                cbarInst = plt.colorbar(fraction=0.046 * subplot_ratio[1] * nPlots / subplot_ratio[0], pad=0.04, aspect= 10 * subplot_ratio[1] * nPlots / subplot_ratio[0], **plot_obj_kwargs)
-                cbarInst.set_label(cbarLabel, fontsize = cbar_font_size)
-                cbarInst.ax.tick_params(labelsize= cbar_font_size)
-            elif method == 'contour':
-                if vmin_vmax is not None:
-                    img = plt.contour(np.flipud(plotPlaneLst[i]), vmin = vmin_, vmax = vmax_, linewidths = 2.0, colors = 'black', levels = [vmin_, vmin_ + (vmax_ - vmin_) * 1/8, vmin_ + (vmax_ - vmin_) * 2/8, vmin_ + (vmax_ - vmin_) * 3/8, vmin_ + (vmax_ - vmin_) * 4/8, vmin_ + (vmax_ - vmin_) * 5/8, vmin_ + (vmax_ - vmin_) * 6/8, vmin_ + (vmax_ - vmin_) * 7/8, vmax_], **plot_obj_kwargs)
-                else:
-                    img = plt.contour(np.flipud(plotPlaneLst[i]), linewidths = 2.0, colors = 'black', levels = [vmin_, vmin_ + (vmax_ - vmin_) * 1/8, vmin_ + (vmax_ - vmin_) * 2/8, vmin_ + (vmax_ - vmin_) * 3/8, vmin_ + (vmax_ - vmin_) * 4/8, vmin_ + (vmax_ - vmin_) * 5/8, vmin_ + (vmax_ - vmin_) * 6/8, vmin_ + (vmax_ - vmin_) * 7/8, vmax_], **plot_obj_kwargs)
+                    to_plot_2D = plotPlaneLst[i]
+                if method == 'imshow':
+                    if vmin_vmax is not None:
+                        img = plt.imshow(to_plot_2D, vmin = vmin_, vmax = vmax_, aspect = 'auto', **plot_obj_kwargs)
+                    else:
+                        img = plt.imshow(to_plot_2D, aspect = 'auto')
+                    cbarInst = plt.colorbar(fraction=0.046 * subplot_ratio[1] * nPlots / subplot_ratio[0], pad=0.04, aspect= 10 * subplot_ratio[1] * nPlots / subplot_ratio[0], **plot_obj_kwargs)
+                    cbarInst.set_label(cbarLabel, fontsize = cbar_font_size)
+                    cbarInst.ax.tick_params(labelsize= cbar_font_size)
+                elif method == 'contour':
+                    if vmin_vmax is not None:
+                        img = plt.contour(np.flipud(to_plot_2D), vmin = vmin_, vmax = vmax_, linewidths = 2.0, colors = 'black', levels = [vmin_, vmin_ + (vmax_ - vmin_) * 1/8, vmin_ + (vmax_ - vmin_) * 2/8, vmin_ + (vmax_ - vmin_) * 3/8, vmin_ + (vmax_ - vmin_) * 4/8, vmin_ + (vmax_ - vmin_) * 5/8, vmin_ + (vmax_ - vmin_) * 6/8, vmin_ + (vmax_ - vmin_) * 7/8, vmax_], **plot_obj_kwargs)
+                    else:
+                        img = plt.contour(np.flipud(to_plot_2D), linewidths = 2.0, colors = 'black', levels = [vmin_, vmin_ + (vmax_ - vmin_) * 1/8, vmin_ + (vmax_ - vmin_) * 2/8, vmin_ + (vmax_ - vmin_) * 3/8, vmin_ + (vmax_ - vmin_) * 4/8, vmin_ + (vmax_ - vmin_) * 5/8, vmin_ + (vmax_ - vmin_) * 6/8, vmin_ + (vmax_ - vmin_) * 7/8, vmax_], **plot_obj_kwargs)
+            if if_plot_gradient in ["only_gradient", "both"] and i == nPlots - 1:
+                horizontal_stepsize = 1
+                vertical_stepsize = 1
+
+                xv, yv = np.meshgrid(np.arange(0, plotPlaneLst[i].shape[1], horizontal_stepsize),
+                                    np.arange(0, plotPlaneLst[i].shape[0], vertical_stepsize))
+                xv = xv.astype(np.float64) + horizontal_stepsize / 2.0
+                yv = yv.astype(np.float64) + vertical_stepsize / 2.0
+
+                # result_matrix = function_to_plot(xv, yv)
+                yd, xd = np.gradient(plotPlaneLst[i])
+
+                def func_to_vectorize(x, y, dx, dy, scaling=100.0):
+                    length = (dx ** 2 + dy ** 2) ** 0.5
+                    length = 1.0 if length == 0. else length
+                    # plt.arrow(x, y, dx*scaling / length, dy*scaling / length, fc="k", ec="k", head_width=0.06, head_length=0.1)
+                    plt.arrow(x, y, dx*scaling / length, dy*scaling / length)
+
+                # vectorized_arrow_drawing = np.vectorize(func_to_vectorize)
+
+                # plt.imshow(np.flip(result_matrix,0), extent=[horizontal_min, horizontal_max, vertical_min, vertical_max])
+                # vectorized_arrow_drawing(xv, yv, xd, yd, 0.1)
+
+                if True:
+                    length = (xd ** 2 + yd ** 2) ** 0.5
+                    scale = 1.0
+                    xd = scale * xd / length
+                    yd = scale * yd / length
+                    plt.quiver(xv, yv, xd, yd, length, clim= (vmin_vmax[0] * 0.01, vmin_vmax[1] * 0.01))
+
     
     elif method == 'scatter':
         assert(nPlots ==3)
@@ -414,6 +453,7 @@ def plot2Ds(planeLst, titleLst, filePath, cbarLabel = 'amount', plotShape = [3, 
             # cbarInst = plt.colorbar(cax = cax)
             cbarInst.set_label(cbarLabel, fontsize = cbar_font_size)
             cbarInst.ax.tick_params(labelsize= cbar_font_size)
+
 
     # tikzplotlib.save(format_path_extension(filePath_))
     # plt.savefig(filePath_, bbox_inches='tight')
@@ -2583,6 +2623,37 @@ def get_verts_tris_poisson(x, y, z, model_kwargs, density_remove_ratio = None):
     triangles = np.asarray(mesh.triangles)
     print(f'Filtering points done.')
     return vertices, triangles
+
+def plot_gradient_2D(nparr_2D, filepath):
+    """ref: https://stackoverflow.com/questions/51201364/plot-gradient-arrows-over-heatmap-with-plt"""
+    # function_to_plot = lambda x, y: x**2 + y**2
+    # horizontal_min, horizontal_max, horizontal_stepsize = -2, 3, 0.3
+    # vertical_min, vertical_max, vertical_stepsize = -1, 4, 0.5
+
+    # horizontal_dist = horizontal_max-horizontal_min
+    # vertical_dist = vertical_max-vertical_min
+
+    horizontal_stepsize = 1
+    vertical_stepsize = 1
+
+    xv, yv = np.meshgrid(np.arange(0, nparr_2D.shape[1], horizontal_stepsize),
+                        np.arange(0, nparr_2D.shape[0], vertical_stepsize))
+    xv+=horizontal_stepsize/2.0
+    yv+=vertical_stepsize/2.0
+
+    # result_matrix = function_to_plot(xv, yv)
+    yd, xd = np.gradient(nparr_2D)
+
+    def func_to_vectorize(x, y, dx, dy, scaling=0.01):
+        plt.arrow(x, y, dx*scaling, dy*scaling, fc="k", ec="k", head_width=0.06, head_length=0.1)
+
+    vectorized_arrow_drawing = np.vectorize(func_to_vectorize)
+
+    plt.imshow(np.flip(result_matrix,0), extent=[horizontal_min, horizontal_max, vertical_min, vertical_max])
+    vectorized_arrow_drawing(xv, yv, xd, yd, 0.1)
+    plt.colorbar()
+    # plt.show()
+    plt.savefig(filepath)
 
 if __name__ == '__main__':
     pass
