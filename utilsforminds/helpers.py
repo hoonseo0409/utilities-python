@@ -352,7 +352,7 @@ def splitRange(isNoPartitions, number, start, end):
         endIdx = endIdx + partSize
     return result
 
-def splitList(isNoPartitions, number, lst):
+def splitList(isNoPartitions, number, lst, if_repeat_duplication = False):
     """
     
     Examples
@@ -365,15 +365,22 @@ def splitList(isNoPartitions, number, lst):
         [[0, 1, 2, 3, 4, 5], [6, 7, 8, 9, 10, 11], [12, 13, 14, 15, 16, 17], [18, 19, 20, 21, 22, 23], [24, 25, 26, 27, 28]]
     helpers.splitList(False, 5, list(range(31))) : 
         [[0, 1, 2, 3, 4], [5, 6, 7, 8, 9], [10, 11, 12, 13, 14], [15, 16, 17, 18, 19], [20, 21, 22, 23, 24], [25, 26, 27, 28, 29], [30]]
+    splitList(False, 5, list(range(31)), if_repeat_duplication= True):
+        [[0, 1, 2, 3, 4], [5, 6, 7, 8, 9], [10, 11, 12, 13, 14], [15, 16, 17, 18, 19], [20, 21, 22, 23, 24], [25, 26, 27, 28, 29], [26, 27, 28, 29, 30]]
     """
 
+    if if_repeat_duplication: assert(not isNoPartitions)
     assert(number > 0 and len(lst) > 0)
     if not isNoPartitions:
-        number < len(lst)
+        assert(number < len(lst))
     ranges = splitRange(isNoPartitions, number, 0, len(lst))
     result = []
     for rng in ranges:
-        result.append(lst[rng[0]:rng[1]])
+        if not isNoPartitions and if_repeat_duplication and rng[1] - rng[0] < number:
+            elems = lst[-number:]
+        else:
+            elems = lst[rng[0]:rng[1]]
+        result.append(elems)
     return result
 
 def fromDictToDirName(dict, limitLength = 150):
@@ -1258,9 +1265,4 @@ def get_current_utc_timestamp():
 
 if __name__ == '__main__':
     pass
-    # print(get_proportional_ranked_value(np.array([0, 0, 0, 0, 0, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]), proportion = 0.3))
-    arr = np.array([[1, 2, 3, 4], [4, 5, 6, 7]])
-    arr_2 = get_slices_with_idc_v2(arr, dim_idc_dict= {1: [1, 3]})
-    print(arr_2)
-    get_slices_with_idc_v2(arr, dim_idc_dict= {1: [1, 3]}, assign= -1)
-    print(arr)
+    print(splitList(False, 5, list(range(31)), if_repeat_duplication= True))

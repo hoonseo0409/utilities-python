@@ -96,7 +96,7 @@ def savePlotLstOfLsts(lstOfLsts, labelsLst, xlabel, ylabel, title, directory, sa
     if save_tikz:
         tikzplotlib.save(format_path_extension(directory, '.tex'))
 
-def plot2Ds(planeLst, titleLst, filePath, cbarLabel = 'amount', plotShape = [3, 1], subplot_length = 16., subplot_ratio = (1., 1.), planeMaskLst = None, axis = 2, axisInfo = None, vmin_vmax = None, method = 'imshow', convertXYaxis = False, rotate = 0, specific_value_color_dict = {"value": 0., "color": "white"}, label_font_size = 25, label_positions = None, title_font_size = 25, cbar_font_size = 25, save_tikz = False, plot_obj_kwargs = None, plot_zeros_in_scatter = False, if_zero_origin = True, if_cut_with_vmin= True, if_plot_gradient= "no", data_info = None):
+def plot2Ds(planeLst, titleLst, filePath, cbarLabel = 'amount', plotShape = [3, 1], subplot_length = 16., subplot_ratio = (1., 1.), planeMaskLst = None, axis = 2, axisInfo = None, vmin_vmax = None, method = 'imshow', convertXYaxis = False, rotate = 0, specific_value_color_dict = {"value": 0., "color": "white"}, label_font_size = 25, label_positions = None, title_font_size = 25, cbar_font_size = 25, save_tikz = False, plot_obj_kwargs = None, plot_zeros_in_scatter = False, if_zero_origin = True, if_cut_with_vmin= True, if_cut_with_vmax= False, if_plot_gradient= "no", data_info = None):
     '''
         If you want to provide mask matrix for scatter visualization, sequence should be (original matrix, recovered matrix) or (original matrix, recovered matrix, sampled matrix), or (original matrix)
 
@@ -145,18 +145,34 @@ def plot2Ds(planeLst, titleLst, filePath, cbarLabel = 'amount', plotShape = [3, 
     
     plotPlaneLst = []
     plotPlaneMaskLst = []
+    def vmin_max_filter(arr):
+        if if_cut_with_vmin and not if_cut_with_vmax:
+            return arr >= vmin_
+        elif not if_cut_with_vmin and if_cut_with_vmax:
+            return arr <= vmax_
+        else:
+            assert(if_cut_with_vmin and if_cut_with_vmax)
+            return (arr >= vmin_) & (arr <= vmax_)
+    
     for i in range(nPlots):
-        if method == 'imshow' or method == 'contour': plotPlaneLst.append(np.transpose(planeLst[i]))
-        elif method == "scatter": plotPlaneLst.append(np.fliplr(planeLst[i]))
-        if if_cut_with_vmin: plotPlaneLst[i] = np.where(plotPlaneLst[i] > vmin_, plotPlaneLst[i], np.nan)
+        if False:
+            plotPlaneLst.append(planeLst[i])
+        else:
+            if True and method == 'imshow' or method == 'contour': plotPlaneLst.append(np.transpose(planeLst[i]))
+            else: plotPlaneLst.append(np.fliplr(planeLst[i]))
+
+        if if_cut_with_vmin or if_cut_with_vmax: plotPlaneLst[i] = np.where(vmin_max_filter(plotPlaneLst[i]), plotPlaneLst[i], np.nan)
     if planeMaskLst is not None:
         for i in range(len(planeMaskLst)):
-            if if_cut_with_vmin:
-                planeMaskLst_loc = np.where(planeLst[i] > vmin_, 1, 0) * planeMaskLst[i]
+            if if_cut_with_vmin or if_cut_with_vmax:
+                planeMaskLst_loc = np.where(vmin_max_filter(planeLst[i]), 1, 0) * planeMaskLst[i]
             else:
                 planeMaskLst_loc = planeMaskLst[i]
-            if method == 'imshow' or method == 'contour': plotPlaneMaskLst.append(np.transpose(planeMaskLst_loc))
-            elif method == "scatter": plotPlaneMaskLst.append(np.fliplr(planeMaskLst_loc))
+            if False:
+                plotPlaneMaskLst.append(planeMaskLst_loc)
+            else:
+                if True and method == 'imshow' or method == 'contour': plotPlaneMaskLst.append(np.transpose(planeMaskLst_loc))
+                else: plotPlaneMaskLst.append(np.fliplr(planeMaskLst_loc))
     
     # Set White color for unobserved points
     if specific_value_color_dict is not None:
@@ -175,11 +191,14 @@ def plot2Ds(planeLst, titleLst, filePath, cbarLabel = 'amount', plotShape = [3, 
     #         plotPlaneLst[i] = np.where(plotPlaneMaskLst[i] >= 1., plotPlaneLst[i], np.nan)
 
     if rotate % 360 != 0:
+        assert(rotate in [90])
         for i in range(nPlots):
-            plotPlaneLst[i] = ndimage.rotate(plotPlaneLst[i], rotate)
+            if False: plotPlaneLst[i] = ndimage.rotate(plotPlaneLst[i], rotate)
+            else: plotPlaneLst[i] = np.rot90(plotPlaneLst[i])
         if planeMaskLst is not None:
             for i in range(len(planeMaskLst)):
-                plotPlaneMaskLst[i] = ndimage.rotate(plotPlaneMaskLst[i], rotate)
+                if False: plotPlaneMaskLst[i] = ndimage.rotate(plotPlaneMaskLst[i], rotate)
+                else: plotPlaneMaskLst[i] = np.rot90(plotPlaneMaskLst[i])
         shape_ = plotPlaneLst[0].shape
 
     horiLabelIdc = [min(round(shape_[0] * position_proportion), shape_[0] - 1) for position_proportion in label_positions]
@@ -202,6 +221,10 @@ def plot2Ds(planeLst, titleLst, filePath, cbarLabel = 'amount', plotShape = [3, 
             horiLabels = [round(axisInfo[horiAxis]["min"] + (axisInfo[horiAxis]["max"] - axisInfo[horiAxis]["min"]) * position_proportion) for position_proportion in label_positions]
             vertLabels = [round(axisInfo[vertAxis]["min"] + (axisInfo[vertAxis]["max"] - axisInfo[vertAxis]["min"]) * position_proportion) for position_proportion in label_positions]
     if method == "scatter": vertLabels = list(reversed(vertLabels))
+    for labels_list in [horiLabels, vertLabels]:
+        for label_idx in range(len(labels_list)):
+            if isinstance(labels_list[label_idx], (int, float)) and labels_list[label_idx] >= 1e+6:
+                labels_list[label_idx] = f"{labels_list[label_idx] // 1000}k"
     
     axis_label_names_dict = {0: "East(m)", 1: "North(m)", 2: "Elevation(m)"}
     xlabel = axis_label_names_dict[get_xy_axis_from_z(axis)[0]]
