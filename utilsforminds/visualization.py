@@ -96,7 +96,7 @@ def savePlotLstOfLsts(lstOfLsts, labelsLst, xlabel, ylabel, title, directory, sa
     if save_tikz:
         tikzplotlib.save(format_path_extension(directory, '.tex'))
 
-def plot2Ds(planeLst, titleLst, filePath, cbarLabel = 'amount', plotShape = [3, 1], subplot_length = 16., subplot_ratio = (1., 1.), planeMaskLst = None, axis = 2, axisInfo = None, vmin_vmax = None, method = 'imshow', convertXYaxis = False, rotate = 0, specific_value_color_dict = {"value": 0., "color": "white"}, label_font_size = 25, label_positions = None, title_font_size = 25, cbar_font_size = 25, save_tikz = False, plot_obj_kwargs = None, plot_zeros_in_scatter = False, if_zero_origin = True, if_cut_with_vmin= True, if_cut_with_vmax= False, if_plot_gradient= "no", data_info = None):
+def plot2Ds(planeLst, titleLst, filePath, cbarLabel = 'amount', plotShape = [3, 1], subplot_length = 16., subplot_ratio = (1., 1.), planeMaskLst = None, axis = 2, axisInfo = None, vmin_vmax = None, method = 'imshow', convertXYaxis = False, rotate = 0, specific_value_color_dict = {"value": 0., "color": "white"}, label_font_size = 25, label_positions = None, title_font_size = 25, cbar_font_size = 25, save_tikz = False, plot_obj_kwargs = None, plot_zeros_in_scatter = False, if_zero_origin = True, if_cut_with_vmin= False, if_cut_with_vmax= False, if_plot_gradient= "no", data_info = None):
     '''
         If you want to provide mask matrix for scatter visualization, sequence should be (original matrix, recovered matrix) or (original matrix, recovered matrix, sampled matrix), or (original matrix)
 
@@ -1811,35 +1811,41 @@ def plot_3D_plotly(nparr_3D, path_to_save_static : str, do_save_html : bool = Tr
                 sampled_counter_arr = alpha_shape_eval_kwargs["geotensor"].sampledCounterTensorDict[alpha_shape_eval_kwargs["symbol"]]
                 not_sampled_counter_arr = np.where(true_counter_arr > 0, np.where(sampled_counter_arr > 0, 0., 1.), 0.)
 
-                x_in, y_in, z_in = check_points_inside_mesh(points_to_test = np.stack(np.nonzero(not_sampled_counter_arr), axis = 1), points_of_mesh = np.stack([x, y, z], axis = 1), faces_of_mesh = np.stack([tri1, tri2, tri3], axis = 1))
-                mask_3d_in = np.zeros(not_sampled_counter_arr.shape)
-                mask_3d_in[x_in, y_in, z_in] = 1.
-                mask_3d_out = np.where(not_sampled_counter_arr > 0, np.where(mask_3d_in > 0, 0., 1.), 0.)
-                
-                true_amount_1d_arr = (true_amount_arr - alpha_shape_eval_kwargs["threshold"])[np.nonzero(not_sampled_counter_arr)]
-                vmin = np.percentile(true_amount_1d_arr, 5)
-                marker_kwargs_local_2 = deepcopy(marker_kwargs_local)
-                marker_kwargs_local_2["cmin"] = vmin
-                vmax = np.percentile(true_amount_1d_arr, 95)
-                marker_kwargs_local_2["cmax"] = vmax
-                for is_main, mask_to_plot, marker_symbol, points_legend in zip([True, False], [mask_3d_in, mask_3d_out], ["circle", "cross"], ["inside", "outside"]):
-                    x_loc, y_loc, z_loc = mask_to_plot.nonzero()
-                    true_amount_1d_inout_arr = (true_amount_arr - alpha_shape_eval_kwargs["threshold"])[x_loc, y_loc, z_loc]
-                    with open(utilsforminds.strings.format_extension(path_to_save, "txt"), "a") as text_file:
-                        text_file.write(f"{points_legend}: total number of points: {x_loc.shape[0]}, average score: {np.sum(true_amount_1d_inout_arr) / np.count_nonzero(not_sampled_counter_arr)}, sum score: {np.sum(true_amount_1d_inout_arr)}.\n")
+                if np.count_nonzero(not_sampled_counter_arr) > 0:
+                    x_in, y_in, z_in = check_points_inside_mesh(points_to_test = np.stack(np.nonzero(not_sampled_counter_arr), axis = 1), points_of_mesh = np.stack([x, y, z], axis = 1), faces_of_mesh = np.stack([tri1, tri2, tri3], axis = 1))
+                    if x_in.shape[0] > 0:
+                        mask_3d_in = np.zeros(not_sampled_counter_arr.shape)
+                        mask_3d_in[x_in, y_in, z_in] = 1.
+                        mask_3d_out = np.where(not_sampled_counter_arr > 0, np.where(mask_3d_in > 0, 0., 1.), 0.)
+                    else:
+                        mask_3d_in = None
+                        mask_3d_out = np.where(not_sampled_counter_arr > 0, 1., 0.)
+                    
+                    true_amount_1d_arr = (true_amount_arr - alpha_shape_eval_kwargs["threshold"])[np.nonzero(not_sampled_counter_arr)]
+                    vmin = np.percentile(true_amount_1d_arr, 5)
+                    marker_kwargs_local_2 = deepcopy(marker_kwargs_local)
+                    marker_kwargs_local_2["cmin"] = vmin
+                    vmax = np.percentile(true_amount_1d_arr, 95)
+                    marker_kwargs_local_2["cmax"] = vmax
+                    for is_main, mask_to_plot, marker_symbol, points_legend in zip([True, False], [mask_3d_in, mask_3d_out], ["circle", "cross"], ["inside", "outside"]):
+                        if mask_to_plot is None: continue
+                        x_loc, y_loc, z_loc = mask_to_plot.nonzero()
+                        true_amount_1d_inout_arr = (true_amount_arr - alpha_shape_eval_kwargs["threshold"])[x_loc, y_loc, z_loc]
+                        with open(utilsforminds.strings.format_extension(path_to_save, "txt"), "a") as text_file:
+                            text_file.write(f"{points_legend}: total number of points: {x_loc.shape[0]}, average score: {np.sum(true_amount_1d_inout_arr) / np.count_nonzero(not_sampled_counter_arr)}, sum score: {np.sum(true_amount_1d_inout_arr)}.\n")
 
-                    colors_arr = utilsforminds.numpy_array.push_arr_to_range(true_amount_1d_inout_arr, vmin = vmin, vmax = vmax) ## don't need maybe, because of cmin and cmax.
-                    if get_hovertext is not None:
-                        hovertext = get_hovertext(x = x_loc, y = y_loc, z = z_loc, value = colors_arr)
-                        hoverinfo = "text"
-                    else:
-                        hovertext = None
-                        hoverinfo = None
-                    if is_main: ## Only plot one colorbar.
-                        marker_kwargs_copied = deepcopy(marker_kwargs_local_2)
-                    else:
-                        marker_kwargs_copied = utilsforminds.containers.copy_dict_and_delete_element(marker_kwargs_local_2, ["colorbar"])
-                    plot_objects.append(graph_objs.Scatter3d(mode = 'markers', name = points_legend, x = x_loc, y = y_loc, z = z_loc, marker = graph_objs.Marker(color = colors_arr, symbol = marker_symbol, **marker_kwargs_copied), hovertext = hovertext, hoverinfo = hoverinfo, showlegend = True)) ## parameter, e.g. x, y, .. can be used in hovertemplate.
+                        colors_arr = utilsforminds.numpy_array.push_arr_to_range(true_amount_1d_inout_arr, vmin = vmin, vmax = vmax) ## don't need maybe, because of cmin and cmax.
+                        if get_hovertext is not None:
+                            hovertext = get_hovertext(x = x_loc, y = y_loc, z = z_loc, value = colors_arr)
+                            hoverinfo = "text"
+                        else:
+                            hovertext = None
+                            hoverinfo = None
+                        if is_main: ## Only plot one colorbar.
+                            marker_kwargs_copied = deepcopy(marker_kwargs_local_2)
+                        else:
+                            marker_kwargs_copied = utilsforminds.containers.copy_dict_and_delete_element(marker_kwargs_local_2, ["colorbar"])
+                        plot_objects.append(graph_objs.Scatter3d(mode = 'markers', name = points_legend, x = x_loc, y = y_loc, z = z_loc, marker = graph_objs.Marker(color = colors_arr, symbol = marker_symbol, **marker_kwargs_copied), hovertext = hovertext, hoverinfo = hoverinfo, showlegend = True)) ## parameter, e.g. x, y, .. can be used in hovertemplate.
 
         if coordinate_info is not None: 
             x_physical, y_physical, z_physical= x * coordinate_info[0]["grid"] + coordinate_info[0]["min"], y * coordinate_info[1]["grid"] + coordinate_info[1]["min"], z * coordinate_info[2]["grid"] + coordinate_info[2]["min"]

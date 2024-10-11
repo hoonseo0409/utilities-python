@@ -1,4 +1,5 @@
 import pandas as pd
+import numpy as np
 
 def get_amount_counter_min_max_from_excel(path_to_xlsx, shape = (80, 80, 80)):
     df = pd.read_excel(path_to_xlsx)
